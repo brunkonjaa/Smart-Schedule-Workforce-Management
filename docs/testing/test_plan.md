@@ -92,6 +92,20 @@
 | UAT-06 | Staff views assigned shifts | screenshot + notes |
 | UAT-07 | Staff attempts unauthorized action and receives correct denial | screenshot + notes |
 
+## Screenshot Storage and Naming Rule
+
+1. Store all screenshots in `assets/screenshots/`.
+2. Put screenshots into subfolders based on what they show, such as `auth`, `staff`, `availability`, `leave`, `shifts`, `rota`, or `deployment`.
+3. Use one global numbering sequence across the whole project, starting at `001` and continuing upward without restarting in each folder.
+4. Start every screenshot filename with the number so it can be cited directly in the report.
+5. After the number, add a short clear description in lowercase with hyphens.
+
+Examples:
+
+1. `assets/screenshots/auth/001_manager-login.png`
+2. `assets/screenshots/staff/002_staff-created.png`
+3. `assets/screenshots/leave/010_leave-blocks-assignment.png`
+
 ## Exit Criteria
 
 1. All critical defects are fixed.

@@ -46,6 +46,20 @@ Smart Schedule is a hospitality rota system for small teams. Managers add staff,
 9. `wireframes/` UI sketches
 10. `logs/` local log output if needed
 
+## Screenshot Evidence Rule
+
+1. Save all evidence screenshots under `assets/screenshots/`.
+2. Group screenshots into subfolders based on what they show.
+3. Use one global screenshot number sequence from `001` upward across all folders.
+4. Keep the number at the start of the filename so report references stay simple.
+
+Example structure:
+
+1. `assets/screenshots/auth/001_manager-login.png`
+2. `assets/screenshots/staff/002_staff-created.png`
+3. `assets/screenshots/availability/003_staff-availability-submitted.png`
+4. `assets/screenshots/leave/004_leave-approved.png`
+
 ## Deployment Plan
 
 1. PostgreSQL database on `Neon Free`
