@@ -47,6 +47,10 @@ Update this list whenever a new screenshot is saved.
 - `020` - Sprint 2 planned
 - `021` - Sprint 2 started
 - `022` - SCRUM-10 in progress
+- `023` - users migration status applied
+- `024` - SCRUM-10 done
+- `025` - users table visible in Neon
+- `026` - users table columns query
 
 ## Practical Rule
 

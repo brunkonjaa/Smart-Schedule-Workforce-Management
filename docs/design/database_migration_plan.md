@@ -19,8 +19,9 @@ This document turns the database design into a practical migration order.
 
 ## Planned Migration Files
 
-1. `database/migrations/001_create_core_schema.sql`
-2. `database/migrations/002_seed_initial_data.sql`
+1. `database/migrations/001_create_users_schema.sql`
+2. `database/migrations/002_create_staff_profiles_schema.sql`
+3. `database/migrations/003_seed_initial_data.sql`
 
 ## PostgreSQL Decisions
 
@@ -105,4 +106,4 @@ If `connect-pg-simple` is used with its own table creation option, that table ca
 
 ## Next Action
 
-Write `database/migrations/001_create_core_schema.sql`.
+Write `database/migrations/001_create_users_schema.sql`.

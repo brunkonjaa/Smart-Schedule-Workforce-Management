@@ -26,10 +26,11 @@ Smart Schedule is a hospitality rota system for small teams. Managers add staff,
 2. The frontend shell is built for the main pages.
 3. PostgreSQL connection to the Neon database is working.
 4. Migration runner scripts and folder structure are in place.
-5. Theme switching, role switching, and smooth page transitions are in place.
-6. Screenshot evidence is saved in `assets/screenshots/tests/`, including migration and sprint-closure proof.
-7. The next Jira sprint has been created for the next backend build block.
-8. Users schema migration is the current next foundation task.
+5. Users schema migration has been applied and verified on Neon.
+6. Theme switching, role switching, and smooth page transitions are in place.
+7. Screenshot evidence is saved in `assets/screenshots/tests/`, including migration and sprint-closure proof.
+8. Sprint 2 is active in Jira for the identity and staff base work.
+9. Staff profiles schema migration is the current next foundation task.
 
 ## Current Tech Stack
 

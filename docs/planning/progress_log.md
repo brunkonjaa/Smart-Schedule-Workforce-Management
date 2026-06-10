@@ -327,3 +327,71 @@ This file records what changed, why it changed, and what comes next. Older entri
 
 1. Add the users schema migration
 2. Add the staff profiles schema migration
+
+## 2026-06-10
+
+### Snapshot
+
+- Phase: Sprint 2 start
+- Sprint: Sprint 2 - Identity and Staff Base
+- Status: Sprint started and first schema task moved into progress
+
+### What Changed
+
+1. Renamed the next Jira sprint to match the identity and staff build phase.
+2. Added the Phase 2 work items for users schema, staff profiles schema, seed data, session setup, and login/logout routes.
+3. Started Sprint 2 in Jira.
+4. Moved `SCRUM-10` users schema migration to in progress.
+
+### Why It Changed
+
+1. The sprint board needed to match the Phase 2 plan before backend schema work continued.
+2. Keeping only one active issue in progress makes the work trail cleaner and more believable.
+3. This keeps the next coding step focused on the users schema migration only.
+
+### Evidence
+
+1. `assets/screenshots/tests/jira/019_sprint-1-completed.png`
+2. `assets/screenshots/tests/jira/020_sprint-2-planned.png`
+3. `assets/screenshots/tests/jira/021_sprint-2-started.png`
+4. `assets/screenshots/tests/jira/022_scrum-10-in-progress.png`
+
+### Next Steps
+
+1. Add the users schema migration
+2. Run the migration through the backend runner
+
+## 2026-06-10
+
+### Snapshot
+
+- Phase: Sprint 2 schema build
+- Sprint: Sprint 2 - Identity and Staff Base
+- Status: Users schema migration completed and verified
+
+### What Changed
+
+1. Added the first real SQL migration file for the `users` table.
+2. Added `pgcrypto` setup for UUID generation with `gen_random_uuid()`.
+3. Added the `users` table with lowercase email, role, and active-state constraints.
+4. Updated the migration plan document so the file sequence matches the phased commit plan.
+5. Applied the migration through the backend runner and confirmed it on Neon.
+
+### Why It Changed
+
+1. The identity layer needed a real base table before staff profiles, sessions, or login routes can be built.
+2. The first schema migration needed to stay narrow so errors are easier to isolate and explain.
+3. Matching the migration filenames to the session and commit order keeps the build trail coherent.
+
+### Evidence
+
+1. `database/migrations/001_create_users_schema.sql`
+2. `docs/design/database_migration_plan.md`
+3. `npm run db:migrate`
+4. `npm run db:migrate:status`
+5. Verified `users` table columns and constraints through the Neon-backed database connection
+
+### Next Steps
+
+1. Add the staff profiles schema migration
+2. Capture users migration evidence screenshots
