@@ -7,6 +7,8 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
+    "db:migrate": "node src/scripts/run-migrations.js up",
+    "db:migrate:status": "node src/scripts/run-migrations.js status",
     "test": "jest --runInBand",
     "test:watch": "jest --watch"
   },

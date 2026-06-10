@@ -22,12 +22,14 @@ Smart Schedule is a hospitality rota system for small teams. Managers add staff,
 
 ## Current Build Status
 
-1. Sprint 1 is active.
+1. Sprint 1 foundation work is complete in Jira.
 2. The frontend shell is built for the main pages.
 3. PostgreSQL connection to the Neon database is working.
-4. Theme switching, role switching, and smooth page transitions are in place.
-5. Screenshot evidence is saved in `assets/screenshots/tests/`.
-6. Migration structure is the current next foundation task.
+4. Migration runner scripts and folder structure are in place.
+5. Theme switching, role switching, and smooth page transitions are in place.
+6. Screenshot evidence is saved in `assets/screenshots/tests/`, including migration and sprint-closure proof.
+7. The next Jira sprint has been created for the next backend build block.
+8. Users schema migration is the current next foundation task.
 
 ## Current Tech Stack
 

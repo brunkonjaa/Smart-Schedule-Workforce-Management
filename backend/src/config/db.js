@@ -19,8 +19,13 @@ const checkDatabaseConnection = async () => {
   await pool.query('SELECT 1');
 };
 
+const closePool = async () => {
+  await pool.end();
+};
+
 module.exports = {
   checkDatabaseConnection,
+  closePool,
   pool,
   query
 };

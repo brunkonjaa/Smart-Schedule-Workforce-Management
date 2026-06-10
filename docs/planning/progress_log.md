@@ -261,3 +261,69 @@ This file records what changed, why it changed, and what comes next. Older entri
 
 1. Create the migration folder and naming structure
 2. Add the first migration runner flow
+
+## 2026-06-10
+
+### Snapshot
+
+- Phase: Sprint 1 foundation build
+- Sprint: Sprint 1 - Foundation
+- Status: Migration structure completed
+
+### What Changed
+
+1. Added a reusable PostgreSQL migration module in the backend.
+2. Added CLI scripts to run migrations and check migration status.
+3. Added tracked database structure files for migrations, schema notes, and seeds.
+4. Added migration folder guidance so the next schema files follow one naming pattern.
+
+### Why It Changed
+
+1. The project needed one stable migration flow before any schema SQL files are added.
+2. Tracking applied filenames in the database keeps later schema changes ordered and repeatable.
+3. This keeps Session 11 focused on the users schema itself instead of migration plumbing.
+
+### Evidence
+
+1. `backend/src/database/migrations.js`
+2. `backend/src/scripts/run-migrations.js`
+3. `backend/package.json`
+4. `database/migrations/README.md`
+
+### Next Steps
+
+1. Add the users schema migration
+2. Run the first real schema migration against Neon
+
+## 2026-06-10
+
+### Snapshot
+
+- Phase: Sprint transition
+- Sprint: Sprint 1 complete, next sprint prepared
+- Status: Session 10 evidence captured and board updated
+
+### What Changed
+
+1. Captured migration runner screenshots for the empty migration state.
+2. Marked `SCRUM-7` done after verifying the migration commands.
+3. Completed the first foundation sprint in Jira.
+4. Created the next sprint shell for the upcoming schema and auth work.
+
+### Why It Changed
+
+1. Session 10 needed clear proof that the migration runner works before schema SQL is added.
+2. Jira needed to match the real completed foundation checkpoint.
+3. This keeps the next work block focused on the users schema migration instead of sprint cleanup.
+
+### Evidence
+
+1. `assets/screenshots/tests/migrations/015_migration-status-no-files.png`
+2. `assets/screenshots/tests/migrations/016_migration-runner-no-files.png`
+3. `assets/screenshots/tests/jira/017_sprint-1-all-items-done.png`
+4. `assets/screenshots/tests/jira/018_next-sprint-created.png`
+
+### Next Steps
+
+1. Add the users schema migration
+2. Add the staff profiles schema migration

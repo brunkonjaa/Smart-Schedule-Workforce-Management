@@ -5,7 +5,7 @@ Use this folder for all report evidence screenshots.
 ## Storage Rule
 
 1. Save screenshots in subfolders based on what they show.
-2. Keep current evidence under `tests/` with simple subfolders such as `backend-setup`, `database-setup`, `frontend-shell`, and `jira`.
+2. Keep current evidence under `tests/` with simple subfolders such as `backend-setup`, `database-setup`, `frontend-shell`, `migrations`, and `jira`.
 3. Keep one global number sequence across every folder.
 
 ## Filename Rule
@@ -39,6 +39,10 @@ Update this list whenever a new screenshot is saved.
 - `012` - DB health check working
 - `013` - SCRUM-6 done
 - `014` - SCRUM-7 in progress
+- `015` - migration status no files
+- `016` - migration runner no files
+- `017` - Sprint 1 all items done
+- `018` - next sprint created
 
 ## Practical Rule
 
