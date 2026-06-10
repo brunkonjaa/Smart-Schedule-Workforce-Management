@@ -43,6 +43,10 @@ Update this list whenever a new screenshot is saved.
 - `016` - migration runner no files
 - `017` - Sprint 1 all items done
 - `018` - next sprint created
+- `019` - Sprint 1 completed
+- `020` - Sprint 2 planned
+- `021` - Sprint 2 started
+- `022` - SCRUM-10 in progress
 
 ## Practical Rule
 
