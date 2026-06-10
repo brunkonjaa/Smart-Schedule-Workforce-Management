@@ -20,10 +20,18 @@ Smart Schedule is a hospitality rota system for small teams. Managers add staff,
 7. Staff shift view
 8. Basic conflict warnings
 
+## Current Build Status
+
+1. Sprint 1 is active.
+2. The frontend shell is built for the main pages.
+3. Theme switching, role switching, and smooth page transitions are in place.
+4. Screenshot evidence is saved in `assets/screenshots/tests/`.
+5. PostgreSQL connection work and migration structure are still to do.
+
 ## Current Tech Stack
 
 1. Frontend: HTML, CSS, JavaScript
-2. Frontend support: Bootstrap, limited use
+2. Frontend support: custom CSS and reusable JavaScript modules
 3. Backend: Node.js with Express
 4. Database: PostgreSQL
 5. Database hosting: Neon Free
@@ -55,10 +63,10 @@ Smart Schedule is a hospitality rota system for small teams. Managers add staff,
 
 Example structure:
 
-1. `assets/screenshots/auth/001_manager-login.png`
-2. `assets/screenshots/staff/002_staff-created.png`
-3. `assets/screenshots/availability/003_staff-availability-submitted.png`
-4. `assets/screenshots/leave/004_leave-approved.png`
+1. `assets/screenshots/tests/backend-setup/001_backend-health-check-response.png`
+2. `assets/screenshots/tests/backend-setup/002_backend-server-running.png`
+3. `assets/screenshots/tests/frontend-shell/003_overview-dark.png`
+4. `assets/screenshots/tests/jira/009_sprint-1-board.png`
 
 ## Deployment Plan
 

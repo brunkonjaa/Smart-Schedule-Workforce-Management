@@ -288,3 +288,49 @@ Some background notes and duplicate summaries are removed from the active repo s
 
 Status:
 Active
+
+### D-13 Frontend Shell Before Backend Wiring
+
+Problem:
+The backend could keep growing without a stable UI target.
+
+Options considered:
+
+1. Keep building backend pieces first
+2. Build the frontend shell first
+3. Try to build both at the same time
+
+Selected option:
+`Build the frontend shell first`
+
+Reason for selection:
+It gives the project a clear structure for the main workflows and makes later backend wiring easier.
+
+Drawbacks accepted:
+The shell uses placeholder data until the backend is connected.
+
+Status:
+Active
+
+### D-14 Jira For Sprint Tracking
+
+Problem:
+Project progress needed a clearer sprint record than informal notes alone.
+
+Options considered:
+
+1. Keep tracking only in local notes
+2. Use Jira for sprint tracking and ticket status
+3. Delay sprint tracking until later
+
+Selected option:
+`Use Jira for sprint tracking and ticket status`
+
+Reason for selection:
+It gives a clearer record of what was planned, finished, and still open in each sprint.
+
+Drawbacks accepted:
+It adds a small amount of admin work.
+
+Status:
+Active

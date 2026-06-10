@@ -5,7 +5,7 @@ Use this folder for all report evidence screenshots.
 ## Storage Rule
 
 1. Save screenshots in subfolders based on what they show.
-2. Suggested folders: `auth`, `staff`, `availability`, `leave`, `shifts`, `rota`, `deployment`, `tests`.
+2. Keep current evidence under `tests/` with simple subfolders such as `backend-setup`, `frontend-shell`, and `jira`.
 3. Keep one global number sequence across every folder.
 
 ## Filename Rule
@@ -16,23 +16,23 @@ Use this format:
 
 Examples:
 
-1. `auth/001_manager-login.png`
-2. `staff/002_staff-created.png`
-3. `leave/010_leave-blocks-assignment.png`
+1. `tests/backend-setup/001_backend-health-check-response.png`
+2. `tests/frontend-shell/003_overview-dark.png`
+3. `tests/jira/009_sprint-1-board.png`
 
 ## Numbering Log
 
 Update this list whenever a new screenshot is saved.
 
-- `001` -
-- `002` -
-- `003` -
-- `004` -
-- `005` -
-- `006` -
-- `007` -
-- `008` -
-- `009` -
+- `001` - backend health check response
+- `002` - backend server running
+- `003` - overview dark
+- `004` - overview light
+- `005` - overview staff light
+- `006` - rota light
+- `007` - shifts dark
+- `008` - shifts light
+- `009` - Sprint 1 board
 - `010` -
 
 ## Practical Rule

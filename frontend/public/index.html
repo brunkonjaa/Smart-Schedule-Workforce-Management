@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Schedule</title>
+    <link rel="stylesheet" href="../src/styles/main.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="app-header">
+        <div class="brand-lockup">
+          <a class="brand-mark" href="#overview" aria-label="Smart Schedule home">
+            <span>SS</span>
+          </a>
+          <div class="brand-copy">
+            <p class="brand-kicker">Hospitality Workforce Management</p>
+            <h1>Smart Schedule</h1>
+          </div>
+        </div>
+
+        <nav class="top-nav" aria-label="Primary"></nav>
+
+        <div class="header-actions">
+          <div class="segmented-control" id="role-switcher" aria-label="Preview role"></div>
+          <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle theme">
+            <span class="theme-toggle-label">Dark mode</span>
+          </button>
+        </div>
+      </header>
+
+      <main class="app-main">
+        <section class="page-intro" id="page-intro"></section>
+        <section class="workspace" id="workspace" aria-live="polite"></section>
+      </main>
+    </div>
+
+    <script src="../src/pages/page-config.js"></script>
+    <script src="../src/services/preview-state.js"></script>
+    <script src="../src/components/layout.js"></script>
+    <script src="../src/scripts/app.js"></script>
+  </body>
+</html>

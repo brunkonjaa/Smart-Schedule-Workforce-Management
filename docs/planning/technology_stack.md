@@ -11,7 +11,7 @@
 | Area | Decision |
 | --- | --- |
 | Frontend | HTML, CSS, JavaScript |
-| Frontend support | Bootstrap, limited use |
+| Frontend support | Custom CSS and reusable JavaScript modules |
 | Backend | Node.js with Express |
 | Database | PostgreSQL |
 | Database hosting | Neon Free |
@@ -24,7 +24,7 @@
 | Database access | `pg` |
 | Environment config | `dotenv` |
 | Testing | Jest, Supertest, Postman, manual UAT |
-| Project management | Trello |
+| Project management | Jira |
 | Source control | GitHub |
 
 ## Why This Stack

@@ -157,3 +157,69 @@ This file records what changed, why it changed, and what comes next. Older entri
 
 1. Create the first PostgreSQL migration
 2. Scaffold the Express backend
+
+## 2026-06-09
+
+### Snapshot
+
+- Phase: Sprint 1 foundation build
+- Sprint: Sprint 1 - Foundation
+- Status: Frontend shell completed
+
+### What Changed
+
+1. Built the frontend shell for overview, login, staff, availability, leave, shifts, assignments, and rota pages.
+2. Added top navigation, manager and staff role switching, light and dark theme switching, and smooth page transitions.
+3. Reworked the pages around compact controls, tables, forms, and action-first layouts.
+4. Captured frontend shell screenshots and saved them in the repo evidence folder.
+
+### Why It Changed
+
+1. The project needed a stable UI structure before backend wiring starts.
+2. The main screens now show what each workflow will look like without waiting for live data.
+3. This gives the project something clear to demo and connect later backend work to.
+
+### Evidence
+
+1. `frontend/public/index.html`
+2. `frontend/src/pages/page-config.js`
+3. `frontend/src/components/layout.js`
+4. `frontend/src/scripts/app.js`
+5. `frontend/src/styles/main.css`
+6. `assets/screenshots/tests/frontend-shell/`
+
+### Next Steps
+
+1. Add the PostgreSQL connection layer
+2. Add the migration structure
+
+## 2026-06-10
+
+### Snapshot
+
+- Phase: Sprint 1 tracking
+- Sprint: Sprint 1 - Foundation
+- Status: Sprint started and evidence organized
+
+### What Changed
+
+1. Started Sprint 1 in Jira.
+2. Marked the completed frontend shell work, screenshot capture, and progress note tasks as done.
+3. Moved screenshot evidence into simple numbered folders for backend setup, frontend shell, and Jira process proof.
+
+### Why It Changed
+
+1. The sprint board now matches the real project state.
+2. Evidence is easier to find for the report and lecturer review.
+3. The remaining Sprint 1 work is now clearly limited to database connection and migrations.
+
+### Evidence
+
+1. `assets/screenshots/tests/backend-setup/`
+2. `assets/screenshots/tests/frontend-shell/`
+3. `assets/screenshots/tests/jira/009_sprint-1-board.png`
+
+### Next Steps
+
+1. Build the PostgreSQL connection layer
+2. Create the first migration structure

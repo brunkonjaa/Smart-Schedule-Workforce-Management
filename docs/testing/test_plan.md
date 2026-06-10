@@ -95,16 +95,16 @@
 ## Screenshot Storage and Naming Rule
 
 1. Store all screenshots in `assets/screenshots/`.
-2. Put screenshots into subfolders based on what they show, such as `auth`, `staff`, `availability`, `leave`, `shifts`, `rota`, or `deployment`.
+2. Put screenshots into simple subfolders based on what they show.
 3. Use one global numbering sequence across the whole project, starting at `001` and continuing upward without restarting in each folder.
 4. Start every screenshot filename with the number so it can be cited directly in the report.
 5. After the number, add a short clear description in lowercase with hyphens.
 
 Examples:
 
-1. `assets/screenshots/auth/001_manager-login.png`
-2. `assets/screenshots/staff/002_staff-created.png`
-3. `assets/screenshots/leave/010_leave-blocks-assignment.png`
+1. `assets/screenshots/tests/backend-setup/001_backend-health-check-response.png`
+2. `assets/screenshots/tests/frontend-shell/003_overview-dark.png`
+3. `assets/screenshots/tests/jira/009_sprint-1-board.png`
 
 ## Exit Criteria
 
