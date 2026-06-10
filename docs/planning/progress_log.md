@@ -223,3 +223,41 @@ This file records what changed, why it changed, and what comes next. Older entri
 
 1. Build the PostgreSQL connection layer
 2. Create the first migration structure
+
+## 2026-06-10
+
+### Snapshot
+
+- Phase: Sprint 1 foundation build
+- Sprint: Sprint 1 - Foundation
+- Status: PostgreSQL connection layer completed
+
+### What Changed
+
+1. Created a real Neon PostgreSQL project for the app.
+2. Added local database config through `backend/.env`.
+3. Added the PostgreSQL connection module using `pg`.
+4. Updated the backend health route so it verifies database connectivity.
+5. Captured database setup and Jira evidence screenshots.
+
+### Why It Changed
+
+1. The project needed a real database target before migrations are added.
+2. A live connection check removes guesswork before schema work starts.
+3. This keeps the next step focused only on migration structure.
+
+### Evidence
+
+1. `backend/src/config/env.js`
+2. `backend/src/config/db.js`
+3. `backend/src/app.js`
+4. `assets/screenshots/tests/database-setup/010_neon-project-created.png`
+5. `assets/screenshots/tests/database-setup/011_database-url-configured.png`
+6. `assets/screenshots/tests/database-setup/012_db-health-check-working.png`
+7. `assets/screenshots/tests/jira/013_scrum-6-done.png`
+8. `assets/screenshots/tests/jira/014_scrum-7-in-progress.png`
+
+### Next Steps
+
+1. Create the migration folder and naming structure
+2. Add the first migration runner flow

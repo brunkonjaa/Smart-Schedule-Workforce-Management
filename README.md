@@ -24,9 +24,10 @@ Smart Schedule is a hospitality rota system for small teams. Managers add staff,
 
 1. Sprint 1 is active.
 2. The frontend shell is built for the main pages.
-3. Theme switching, role switching, and smooth page transitions are in place.
-4. Screenshot evidence is saved in `assets/screenshots/tests/`.
-5. PostgreSQL connection work and migration structure are still to do.
+3. PostgreSQL connection to the Neon database is working.
+4. Theme switching, role switching, and smooth page transitions are in place.
+5. Screenshot evidence is saved in `assets/screenshots/tests/`.
+6. Migration structure is the current next foundation task.
 
 ## Current Tech Stack
 
