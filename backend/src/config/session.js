@@ -5,6 +5,7 @@ const { pool } = require('./db');
 
 const PgSessionStore = connectPgSimple(session);
 const developmentFallbackSecret = 'smart-schedule-dev-session-secret';
+const sessionCookieName = 'smart_schedule.sid';
 
 const resolveSessionSecret = () => {
   if (config.sessionSecret) {
@@ -24,7 +25,7 @@ const sessionMiddleware = session({
     pool,
     tableName: 'user_sessions'
   }),
-  name: 'smart_schedule.sid',
+  name: sessionCookieName,
   secret: resolveSessionSecret(),
   resave: false,
   saveUninitialized: false,
@@ -38,5 +39,6 @@ const sessionMiddleware = session({
 });
 
 module.exports = {
+  sessionCookieName,
   sessionMiddleware
 };

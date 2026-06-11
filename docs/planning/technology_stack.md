@@ -15,13 +15,13 @@ Older notes drifted between `MySQL`, `PostgreSQL`, and bigger framework combinat
 | Database | `PostgreSQL` | connected to Neon |
 | Database host | `Neon Free` | active |
 | Web host target | `Render Free Web Service` | planned direction |
-| API style | REST JSON | planned beyond `/health` |
+| API style | REST JSON | `/health` and auth routes live |
 | Database driver | `pg` | wired now |
-| Auth direction | `express-session` | middleware wired, login flow still next |
+| Auth direction | `express-session` | login, logout, and session user routes live |
 | Session store direction | `connect-pg-simple` | PostgreSQL-backed store wired |
-| Password hashing | `bcrypt` | package installed, usage still next |
+| Password hashing | `bcrypt` | used in auth service |
 | Environment config | `dotenv` | wired now |
-| Testing direction | `Jest`, `Supertest`, `Postman`, manual checks | planned, not built out yet |
+| Testing direction | `Jest`, `Supertest`, `Postman`, manual checks | auth route tests started |
 | Diagramming | `Visual Paradigm` | SRS diagram exports committed |
 | Project tracking | Jira | active |
 | Source control | GitHub | active |
@@ -59,7 +59,7 @@ I made that change before the real schema work went too far, which saved me from
 
 ### `express`
 
-Used for the backend app and routing. At the moment the live route in the repo is still just the health check, so this is foundation first.
+Used for the backend app and routing. The repo now has the health route plus the first auth routes, so the backend is finally doing more than just boot and answer one connectivity check.
 
 ### `pg`
 
@@ -71,7 +71,7 @@ Used to load local environment values such as `DATABASE_URL`.
 
 ### `express-session`
 
-Used to keep login state on the server. The middleware is now wired into the Express app, even though the actual login and logout routes still come next.
+Used to keep login state on the server. The middleware is wired into the Express app and now backs `POST /api/v1/auth/login`, `GET /api/v1/auth/me`, and `POST /api/v1/auth/logout`.
 
 ### `connect-pg-simple`
 
@@ -79,11 +79,11 @@ Used to keep session records in PostgreSQL instead of the default memory store.
 
 ### `bcrypt`
 
-Installed for password hashing. Same story here. The decision is locked, but the login code still comes after the identity and seed groundwork.
+Used for password checking in the auth service. I kept that simple first. The stronger route protection and role checks still come after this step.
 
 ### `Jest` and `Supertest`
 
-Installed as the test direction for backend work. There are no proper automated test files in the repo yet, so this is still preparation rather than finished coverage.
+Used now for the first backend route tests. The repo still does not have broad workflow coverage, but auth route tests are in place and the rest of the test surface can build on that.
 
 ## Deployment Notes
 

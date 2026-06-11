@@ -576,3 +576,48 @@ Each entry should answer four practical things:
 
 1. keep the diagram exports in sync if the auth or assignment flow changes later
 2. move back to backend login and logout work
+
+## 2026-06-12
+
+### Snapshot
+
+- Phase: Sprint 2 auth route build
+- Sprint: Sprint 2 - Identity and Staff Base
+- Status: login and logout route checkpoint completed locally, evidence captured, commit still pending
+
+### What Changed
+
+1. I added `backend/src/routes/auth.js` for login, logout, and session-user lookup.
+2. I added `backend/src/services/auth-service.js` so the route layer does not keep all the database and password logic inside one file.
+3. I updated the app so the auth routes are mounted under `/api/v1/auth` and added a simple fallback `500` handler.
+4. I added backend auth tests under `backend/src/__tests__/auth-routes.test.js`.
+5. I captured the Jira and PowerShell evidence screenshots for the full `SCRUM-14` checkpoint.
+
+### Why It Changed
+
+1. The session base was already in place, so this was the first point where identity became a real working backend feature instead of only setup.
+2. I kept this checkpoint narrow on purpose. First I wanted login, logout, session lookup, and test proof. The stronger route protection still comes after that.
+
+### Drawback Accepted
+
+1. This still does not protect the rest of the business routes because auth middleware and RBAC middleware are still separate checkpoints.
+2. The current evidence is mostly backend JSON and Jira proof, not a finished frontend login flow yet.
+
+### Evidence
+
+1. `backend/src/routes/auth.js`
+2. `backend/src/services/auth-service.js`
+3. `backend/src/__tests__/auth-routes.test.js`
+4. `assets/screenshots/tests/jira/037_scrum-13-done-and-scrum-14-in-progress.png`
+5. `assets/screenshots/tests/jira/038_scrum-14-done.png`
+6. `assets/screenshots/tests/backend-auth/039_login-success-response.png`
+7. `assets/screenshots/tests/backend-auth/040_auth-me-success-response.png`
+8. `assets/screenshots/tests/backend-auth/041_logout-success-response.png`
+9. `assets/screenshots/tests/backend-auth/042_auth-me-after-logout-unauthorized.png`
+10. local `npm test` run with the auth route test block passing
+
+### Next Steps
+
+1. add authentication middleware for protected non-auth routes
+2. add role-based access middleware after that
+3. move into staff CRUD only when route protection is stable

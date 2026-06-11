@@ -13,10 +13,11 @@ Keep current evidence under `tests/` and split it by what the screenshot is prov
 Current folders in use:
 
 1. `backend-setup`
-2. `database-setup`
-3. `frontend-shell`
-4. `jira`
-5. `migrations`
+2. `backend-auth`
+3. `database-setup`
+4. `frontend-shell`
+5. `jira`
+6. `migrations`
 
 If a new type of evidence is needed later, add another clear folder instead of dumping everything into one place.
 
@@ -79,6 +80,11 @@ Examples:
 - `035` seed migration status applied
 - `036` SCRUM-12 done
 - `037` SCRUM-13 done and SCRUM-14 in progress
+- `038` SCRUM-14 done
+- `039` login success response
+- `040` auth me success response
+- `041` logout success response
+- `042` auth me after logout unauthorized
 
 ## Practical Reminder
 

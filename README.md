@@ -40,17 +40,20 @@ Built now:
 8. `users` schema migration
 9. `staff_profiles` schema migration
 10. initial seed data migration
-11. exported SRS diagrams under `docs/SRS/diagrams/`
+11. login, logout, and authenticated-session routes under `/api/v1/auth`
+12. backend auth service for credential checks and public user shaping
+13. Jest and Supertest auth route tests
+14. exported SRS diagrams under `docs/SRS/diagrams/`
 
 Not built yet:
 
-1. login and logout routes
+1. authentication middleware for the rest of the protected routes
 2. staff CRUD routes
 3. availability routes
 4. leave request routes
 5. shift routes
 6. assignment logic
-7. automated backend tests
+7. broader automated backend coverage beyond auth
 
 That distinction matters because a lot of the docs describe the target build shape, not just the already-running code.
 
@@ -112,6 +115,7 @@ Examples:
 1. `assets/screenshots/tests/backend-setup/001_backend-health-check-response.png`
 2. `assets/screenshots/tests/jira/027_scrum-11-in-progress.png`
 3. `assets/screenshots/tests/database-setup/029_staff-profiles-columns-query.png`
+4. `assets/screenshots/tests/backend-auth/039_login-success-response.png`
 
 ## Hosting Direction
 

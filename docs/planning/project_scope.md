@@ -49,11 +49,13 @@ Parts already visible in the repo:
 4. `staff_profiles` schema migration
 5. initial seed data migration
 6. PostgreSQL-backed session configuration
-7. SRS diagram exports under `docs/SRS/diagrams/`
+7. login, logout, and current-session auth routes
+8. first backend auth tests
+9. SRS diagram exports under `docs/SRS/diagrams/`
 
 Parts still not built yet:
 
-1. login and logout routes
+1. authentication and role middleware for the rest of the route surface
 2. availability routes
 3. leave routes
 4. shifts and assignments routes

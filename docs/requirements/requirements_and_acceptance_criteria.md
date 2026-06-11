@@ -4,7 +4,7 @@
 
 These are the active MVP requirements for the project.
 
-They are not a claim that every requirement is already implemented in the current repo state. Right now the repo has the frontend shell, backend foundation, migrations, and seed setup. Most of the route-level and workflow-level requirements still come after that.
+They are not a claim that every requirement is already implemented in the current repo state. Right now the repo has the frontend shell, backend foundation, migrations, seed setup, and the first working auth routes. Most of the workflow-level requirements still come after that.
 
 ## User Roles
 
@@ -161,13 +161,16 @@ Right now the repo already supports or partially supports:
 2. backend JSON handling
 3. PostgreSQL connectivity
 4. schema and seed migration flow
+5. login with server-side session creation
+6. logout with session destroy
+7. current-user lookup through `GET /api/v1/auth/me`
+8. first backend auth route tests
 
 It does not yet fully support:
 
-1. login and logout routes
-2. RBAC route enforcement
-3. availability, leave, shifts, or assignment endpoints
-4. automated requirement-level test coverage
+1. RBAC route enforcement
+2. availability, leave, shifts, or assignment endpoints
+3. broader automated requirement-level test coverage
 
 ## Traceability Rule
 

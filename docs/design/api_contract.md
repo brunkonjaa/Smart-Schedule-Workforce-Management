@@ -4,7 +4,7 @@
 
 This file mixes two things:
 
-1. the one route that is actually live in the repo now
+1. the small route set that is actually live in the repo now
 2. the target contract for the next backend routes
 
 I am writing it that way on purpose so the design stays honest. Right now the backend is still in foundation and identity setup, not in full feature delivery.
@@ -34,6 +34,90 @@ If the database check fails, the route returns:
 }
 ```
 
+### `POST /api/v1/auth/login`
+
+Purpose:
+Log in a seeded or registered user with email and password.
+
+Current request:
+
+```json
+{
+  "email": "manager@example.com",
+  "password": "ManagerPass123!"
+}
+```
+
+Current success `200`:
+
+```json
+{
+  "message": "Login successful.",
+  "user": {
+    "id": "uuid",
+    "email": "manager@example.com",
+    "role": "MANAGER",
+    "staffProfileId": "uuid"
+  }
+}
+```
+
+Current error `401`:
+
+```json
+{
+  "error": "Authentication Failed",
+  "message": "Invalid email or password."
+}
+```
+
+Current validation error `400`:
+
+```json
+{
+  "details": [
+    "password is required"
+  ],
+  "error": "Validation Failed",
+  "message": "The login request is missing required fields."
+}
+```
+
+### `GET /api/v1/auth/me`
+
+Purpose:
+Return the current authenticated user from the server-side session.
+
+Current success `200`:
+
+```json
+{
+  "user": {
+    "id": "uuid",
+    "email": "manager@example.com",
+    "role": "MANAGER",
+    "staffProfileId": "uuid"
+  }
+}
+```
+
+Current unauthenticated error `401`:
+
+```json
+{
+  "error": "Authentication Required",
+  "message": "You must be logged in to access this route."
+}
+```
+
+### `POST /api/v1/auth/logout`
+
+Purpose:
+Destroy the current session and clear the `smart_schedule.sid` cookie.
+
+Current success:
+`204`
+
 ## Current Session Base Note
 
 The backend app now boots with PostgreSQL-backed session middleware through `express-session` and `connect-pg-simple`.
@@ -45,7 +129,7 @@ That matters because the auth direction is no longer abstract. The app already h
 3. `user_sessions` store configuration
 4. production `trust proxy` handling in `backend/src/app.js`
 
-What is still missing is the actual login and logout route layer. So the session base is real now, but the auth endpoints below are still planned routes, not live ones.
+That part is no longer just planned. The session base is live now because the auth routes are using it already. What is still missing is route protection for the rest of the feature surface.
 
 ## Contract Conventions For The Next Routes
 
@@ -71,54 +155,13 @@ Example error payload:
 
 ## Current Build Reality
 
-These routes below are target routes, not already-implemented routes.
+The auth routes above are live now. The routes below are still target routes.
 
 That means:
 
 1. the route shapes are planned here first
-2. the repo does not yet expose them
+2. the repo does not yet expose most of them
 3. auth, RBAC, and ownership checks still need to be wired in backend code
-
-## Authentication Routes
-
-### `POST /api/v1/auth/login`
-
-Purpose:
-Log in a user.
-
-Planned request:
-
-```json
-{
-  "email": "manager@example.com",
-  "password": "PlainTextPasswordInput"
-}
-```
-
-Planned success `200`:
-
-```json
-{
-  "user": {
-    "id": "uuid",
-    "email": "manager@example.com",
-    "role": "MANAGER",
-    "staffProfileId": "uuid"
-  }
-}
-```
-
-Planned error:
-
-1. `401` for invalid credentials
-
-### `POST /api/v1/auth/logout`
-
-Purpose:
-Log out the current user.
-
-Planned success:
-`204`
 
 ## Staff Routes
 

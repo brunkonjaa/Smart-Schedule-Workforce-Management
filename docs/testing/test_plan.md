@@ -10,8 +10,9 @@ It also needs one honest note at the start. Most of the cases below are planned 
 2. manual Neon and pgAdmin database checks
 3. backend health-route verification
 4. migration status and migration apply checks
+5. automated auth route tests with `Jest` and `Supertest`
 
-There are no real Jest or Supertest test files in the repo yet.
+That still is not broad test coverage. It is just the first real backend test block.
 
 ## Test Strategy
 
@@ -47,6 +48,9 @@ At the current checkpoint I can already verify:
 4. the `users` and `staff_profiles` tables exist in Neon
 5. the seed data file can populate starter records
 6. the frontend shell renders the planned workflow pages
+7. valid login creates a session
+8. `GET /api/v1/auth/me` returns the current session user
+9. logout destroys the session
 
 ## Unit Test Coverage Planned
 
@@ -83,12 +87,14 @@ At the current checkpoint I can already verify:
 | --- | --- | --- | --- |
 | API-01 | `POST /api/v1/auth/login` | Valid credentials | `200` |
 | API-02 | `POST /api/v1/auth/login` | Invalid credentials | `401` |
-| API-03 | `GET /api/v1/staff` | Staff session used | `403` |
-| API-04 | `POST /api/v1/availability` | End time before start time | `400` |
-| API-05 | `PUT /api/v1/leave-requests/{id}/approve` | Manager approves valid request | `200` |
-| API-06 | `POST /api/v1/shifts` | Invalid shift time | `400` |
-| API-07 | `POST /api/v1/assignments` | Overlapping shift | `409` |
-| API-08 | `GET /api/v1/rota` | Staff requests own rota | `200` |
+| API-03 | `GET /api/v1/auth/me` | Authenticated session | `200` |
+| API-04 | `POST /api/v1/auth/logout` | Valid session logout | `204` |
+| API-05 | `GET /api/v1/staff` | Staff session used | `403` |
+| API-06 | `POST /api/v1/availability` | End time before start time | `400` |
+| API-07 | `PUT /api/v1/leave-requests/{id}/approve` | Manager approves valid request | `200` |
+| API-08 | `POST /api/v1/shifts` | Invalid shift time | `400` |
+| API-09 | `POST /api/v1/assignments` | Overlapping shift | `409` |
+| API-10 | `GET /api/v1/rota` | Staff requests own rota | `200` |
 
 ## Security Test Cases Planned
 
@@ -125,6 +131,7 @@ Examples:
 1. `assets/screenshots/tests/backend-setup/001_backend-health-check-response.png`
 2. `assets/screenshots/tests/frontend-shell/003_overview-dark.png`
 3. `assets/screenshots/tests/jira/031_scrum-11-done.png`
+4. `assets/screenshots/tests/backend-auth/039_login-success-response.png`
 
 ## Exit Criteria
 
