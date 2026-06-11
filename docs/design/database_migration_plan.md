@@ -1,109 +1,123 @@
 # Database Migration Plan
 
-## Change Note
+## Why This File Exists
 
-- Previous position: this plan was written for `MySQL` and a larger schema.
-- Updated position: this plan now targets `PostgreSQL` and the tighter MVP schema.
-- Why: to match the current database design.
+This file turns the schema direction into the order I am actually using in the repo.
 
-## Purpose
-
-This document turns the database design into a practical migration order.
+It used to be easier for these migration notes to drift into abstract planning. I do not want that here. This file should show what is already done, what is next, and why the order matters.
 
 ## Migration Style
 
-1. Use plain SQL files
-2. Use simple numbered filenames
-3. Keep the first migration focused on schema only
-4. Put seed data in a separate file
+I am keeping the migration style simple:
 
-## Planned Migration Files
+1. plain SQL files
+2. numbered filenames
+3. schema first
+4. seed data separate from structure
+
+Trade-off accepted:
+
+Keeping schema and seed data separate means an extra step during setup, but it makes debugging much cleaner. If something breaks, I can tell much faster whether the problem is structure or data.
+
+## Migration Files In The Repo Now
 
 1. `database/migrations/001_create_users_schema.sql`
 2. `database/migrations/002_create_staff_profiles_schema.sql`
 3. `database/migrations/003_seed_initial_data.sql`
 
-## PostgreSQL Decisions
+## What Is Already Applied In The Current Build Trail
 
-1. Use native `UUID`
-2. Use `TIMESTAMPTZ`
-3. Use `CHECK` constraints for basic validation
-4. Use `gen_random_uuid()` if available
+Already done:
 
-## Build Order
+1. `001_create_users_schema.sql`
+2. `002_create_staff_profiles_schema.sql`
+3. `003_seed_initial_data.sql`
 
-### Step 1: Extensions and Shared Setup
+That gives the project:
 
-Create or confirm:
+1. the identity table
+2. the linked staff profile table
+3. starter records for one manager and three staff users
 
-1. `pgcrypto` if UUID generation uses `gen_random_uuid()`
+## Why The Order Was Kept This Way
 
-### Step 2: Identity Tables
+The order was not random.
 
-Create in this order:
+First I needed the migration runner. After that I needed `users` because everything identity-related depends on it. Then `staff_profiles` had to come next because later staff operations depend on that link. Seed data only made sense after both tables were stable.
 
-1. `users`
-2. `staff_profiles`
+If I had mixed staff schema and seed records together too early, the history would be harder to explain and a failed migration would be messier to isolate.
 
-### Step 3: Availability and Leave
+## PostgreSQL Decisions Locked In
 
-Create in this order:
+1. use native `UUID`
+2. use `TIMESTAMPTZ`
+3. use `CHECK` constraints for simple validation
+4. use `gen_random_uuid()` through `pgcrypto`
 
-1. `availability_entries`
-2. `leave_requests`
+## Build Order For The Next Schema Phase
 
-### Step 4: Shifts and Assignments
+### Step 1
 
-Create in this order:
+Create `availability_entries`
 
-1. `shifts`
-2. `shift_assignments`
+Reason:
+Availability is the next real dependency for rota conflict checks.
 
-## Required Constraints
+### Step 2
 
-1. `users.email` unique
-2. `staff_profiles.user_id` unique
-3. `availability_entries.day_of_week BETWEEN 1 AND 7`
-4. `availability_entries.end_time > availability_entries.start_time`
-5. `leave_requests.end_date >= leave_requests.start_date`
-6. `shifts.end_time > shifts.start_time`
-7. `shift_assignments.shift_id` unique
+Create `leave_requests`
 
-## Required Foreign Keys
+Reason:
+Leave decisions have to exist before assignment blocking can be enforced properly.
 
-1. `staff_profiles.user_id -> users.id`
-2. `availability_entries.staff_profile_id -> staff_profiles.id`
-3. `leave_requests.staff_profile_id -> staff_profiles.id`
-4. `leave_requests.decided_by_user_id -> users.id`
-5. `shifts.created_by_user_id -> users.id`
-6. `shift_assignments.shift_id -> shifts.id`
-7. `shift_assignments.staff_profile_id -> staff_profiles.id`
-8. `shift_assignments.assigned_by_user_id -> users.id`
+### Step 3
 
-## Required Indexes
+Create `shifts`
 
-1. Unique index on `users(email)`
-2. Index on `staff_profiles(is_active)`
-3. Index on `availability_entries(staff_profile_id, week_start, day_of_week)`
-4. Index on `leave_requests(staff_profile_id, start_date, end_date, status)`
-5. Index on `shifts(shift_date)`
-6. Index on `shift_assignments(staff_profile_id)`
+Reason:
+Assignments cannot exist without shift records.
+
+### Step 4
+
+Create `shift_assignments`
+
+Reason:
+This is where overlap checks, role checks, and weekly rota output start becoming useful.
+
+## Constraints Already Real
+
+1. lowercase email check on `users.email`
+2. role check on `users.role`
+3. unique `staff_profiles.user_id`
+4. `staff_profiles.contract_hours >= 0`
+
+## Constraints Planned Next
+
+1. `availability_entries.day_of_week BETWEEN 1 AND 7`
+2. `availability_entries.end_time > availability_entries.start_time`
+3. `leave_requests.end_date >= leave_requests.start_date`
+4. `shifts.end_time > shifts.start_time`
+5. `shift_assignments.shift_id` unique
 
 ## Seed Data Plan
 
-The seed file should add:
+The current seed file already adds:
 
 1. one manager user
-2. a few staff users
+2. three staff users
 3. matching staff profiles
-4. sample availability
-5. sample leave requests
-6. sample shifts
+
+I kept it small on purpose. It is enough to test identity and early staff flows without filling the repo with demo noise too early.
+
+Later sample data for availability, leave, shifts, and assignments should only be added after those tables actually exist.
 
 ## Session Table Note
 
-If `connect-pg-simple` is used with its own table creation option, that table can stay outside the main migration files. If not, add a small session-table migration later.
+If `connect-pg-simple` creates its own table during setup, that can stay outside the main project migration chain. If that starts getting in the way, I can add a dedicated session-table migration later.
 
 ## Next Action
 
-Write `database/migrations/001_create_users_schema.sql`.
+1. finish the seed-data Jira proof
+2. wire `express-session`
+3. add login and logout routes
+4. start the availability schema only after the auth base is usable

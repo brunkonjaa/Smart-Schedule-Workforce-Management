@@ -1,0 +1,95 @@
+INSERT INTO users (id, email, password_hash, role, is_active, created_at, updated_at)
+VALUES
+  (
+    '4be2aa6f-2a3b-4b61-9b8b-0a1e5a2f5c01',
+    'manager@example.com',
+    '$2b$10$tE3VAmOWK.MyEqBjiDJlcu0JgmkshbqRQTLHEayHa9RsHLnVqLkCu',
+    'MANAGER',
+    TRUE,
+    NOW(),
+    NOW()
+  ),
+  (
+    '6c514db0-aabc-4da2-a3df-2a64875d5b02',
+    'staff1@example.com',
+    '$2b$10$dLFPIarlDrdo6FiRvmrmqenONhPLqQ2MsAk3txrZ4gci8l11VASc2',
+    'STAFF',
+    TRUE,
+    NOW(),
+    NOW()
+  ),
+  (
+    '8e97f39e-1a77-48b9-8f64-34765f418103',
+    'staff2@example.com',
+    '$2b$10$nAsu9CQKF4Uz8v9D0gd1QeqJcEn1yTYsKaBgbZMBZkA0tcnRo0o/q',
+    'STAFF',
+    TRUE,
+    NOW(),
+    NOW()
+  ),
+  (
+    'a1b55a6d-5d58-48c4-94ff-50ac61c7f904',
+    'staff3@example.com',
+    '$2b$10$vSsO06C.AiOGLGEe8QDc8OQ3L3lXu3122xWPO.V4vkj33GYG0yLIW',
+    'STAFF',
+    TRUE,
+    NOW(),
+    NOW()
+  );
+
+INSERT INTO staff_profiles (
+  id,
+  user_id,
+  full_name,
+  primary_role,
+  contract_hours,
+  phone_number,
+  is_active,
+  created_at,
+  updated_at
+)
+VALUES
+  (
+    '2f0d4d54-b1a6-434a-8c78-3f236f8d9001',
+    '4be2aa6f-2a3b-4b61-9b8b-0a1e5a2f5c01',
+    'Morgan Kelly',
+    'FLOOR',
+    40.00,
+    '0850000001',
+    TRUE,
+    NOW(),
+    NOW()
+  ),
+  (
+    '50e73474-520f-45cc-a02d-4c781e65f002',
+    '6c514db0-aabc-4da2-a3df-2a64875d5b02',
+    'Alex Byrne',
+    'FLOOR',
+    25.00,
+    '0850000002',
+    TRUE,
+    NOW(),
+    NOW()
+  ),
+  (
+    '69cab548-558c-4f46-8fb2-eb2936ca0003',
+    '8e97f39e-1a77-48b9-8f64-34765f418103',
+    'Jamie Murphy',
+    'BAR',
+    20.00,
+    '0850000003',
+    TRUE,
+    NOW(),
+    NOW()
+  ),
+  (
+    '7d735471-d381-434b-a5e2-c5e3d1850004',
+    'a1b55a6d-5d58-48c4-94ff-50ac61c7f904',
+    'Casey Doyle',
+    'KITCHEN',
+    30.00,
+    '0850000004',
+    TRUE,
+    NOW(),
+    NOW()
+  );
