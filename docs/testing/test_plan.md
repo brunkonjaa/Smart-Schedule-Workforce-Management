@@ -1,18 +1,27 @@
 # Test Plan
 
-## Change Note
+## What This Plan Covers
 
-- Previous position: this plan covered swaps, suggestions, reports, and audit-heavy checks.
-- Updated position: this plan now matches the current MVP.
-- Why: to match the active feature set.
+This file covers the testing direction for the MVP.
+
+It also needs one honest note at the start. Most of the cases below are planned coverage, not finished automated coverage. Right now the repo has:
+
+1. manual frontend shell evidence
+2. manual Neon and pgAdmin database checks
+3. backend health-route verification
+4. migration status and migration apply checks
+
+There are no real Jest or Supertest test files in the repo yet.
 
 ## Test Strategy
 
-1. Unit tests for business rules
-2. Integration tests for workflow steps
-3. API tests for endpoint behavior
-4. Manual UAT for full user flows
-5. Security tests for auth and access control
+I am splitting testing into these layers:
+
+1. unit tests for business rules
+2. integration tests for linked workflow steps
+3. API tests for route behavior
+4. manual UAT for full user flows
+5. security checks for auth, RBAC, and ownership rules
 
 ## Test Environments
 
@@ -20,15 +29,26 @@
 
 1. Node.js and Express backend
 2. PostgreSQL database
-3. HTML, CSS, and JavaScript frontend
+3. HTML, CSS, and JavaScript frontend shell
 
 ### Hosted
 
 1. Render web service
 2. Neon PostgreSQL database
-3. Seeded test data for demo and screenshots
+3. seeded test data for demo and screenshots
 
-## Unit Test Coverage
+## What Is Already Verifiable
+
+At the current checkpoint I can already verify:
+
+1. the backend can reach the database through `/health`
+2. the Express app boots with the PostgreSQL-backed session middleware in place
+3. the migration runner reports applied and pending files
+4. the `users` and `staff_profiles` tables exist in Neon
+5. the seed data file can populate starter records
+6. the frontend shell renders the planned workflow pages
+
+## Unit Test Coverage Planned
 
 ### Scheduling Rule Tests
 
@@ -47,7 +67,7 @@
 | UT-LEAVE-01 | Leave end date before start date | Validation fails |
 | UT-LEAVE-02 | Approve pending leave | Status becomes `APPROVED` |
 
-## Integration Tests
+## Integration Tests Planned
 
 | Test ID | Description | Expected Result |
 | --- | --- | --- |
@@ -57,7 +77,7 @@
 | IT-04 | Availability query returns only target week records | Week filter applied correctly |
 | IT-05 | Staff rota view shows only own assigned shifts | Ownership filter works |
 
-## API Test Cases
+## API Test Cases Planned
 
 | Test ID | Endpoint | Scenario | Expected Result |
 | --- | --- | --- | --- |
@@ -70,7 +90,7 @@
 | API-07 | `POST /api/v1/assignments` | Overlapping shift | `409` |
 | API-08 | `GET /api/v1/rota` | Staff requests own rota | `200` |
 
-## Security Test Cases
+## Security Test Cases Planned
 
 | Test ID | Scenario | Expected Result |
 | --- | --- | --- |
@@ -80,36 +100,38 @@
 | SEC-04 | Use expired or invalid session | `401` or `403` |
 | SEC-05 | Verify no secret values appear in logs or responses | Secrets absent |
 
-## UAT Scenarios
+## UAT Scenarios Planned
 
 | UAT ID | Scenario | Evidence Needed |
 | --- | --- | --- |
-| UAT-01 | Manager logs in and creates a staff member | screenshot + notes |
-| UAT-02 | Staff logs in and submits availability for a week | screenshot + notes |
-| UAT-03 | Staff submits leave request | screenshot + notes |
-| UAT-04 | Manager approves leave and sees it block assignment | screenshots + notes |
-| UAT-05 | Manager creates shifts and assigns staff | screenshots + notes |
-| UAT-06 | Staff views assigned shifts | screenshot + notes |
-| UAT-07 | Staff attempts unauthorized action and receives correct denial | screenshot + notes |
+| UAT-01 | Manager logs in and creates a staff member | screenshot plus notes |
+| UAT-02 | Staff logs in and submits availability for a week | screenshot plus notes |
+| UAT-03 | Staff submits leave request | screenshot plus notes |
+| UAT-04 | Manager approves leave and sees it block assignment | screenshots plus notes |
+| UAT-05 | Manager creates shifts and assigns staff | screenshots plus notes |
+| UAT-06 | Staff views assigned shifts | screenshot plus notes |
+| UAT-07 | Staff attempts unauthorized action and receives correct denial | screenshot plus notes |
 
-## Screenshot Storage and Naming Rule
+## Screenshot Rule
 
-1. Store all screenshots in `assets/screenshots/`.
-2. Put screenshots into simple subfolders based on what they show.
-3. Use one global numbering sequence across the whole project, starting at `001` and continuing upward without restarting in each folder.
-4. Start every screenshot filename with the number so it can be cited directly in the report.
-5. After the number, add a short clear description in lowercase with hyphens.
+1. store screenshots under `assets/screenshots/`
+2. split them into clear folders by what they prove
+3. keep one global numbering sequence
+4. start every filename with the number
+5. avoid screenshots that leak secrets
 
 Examples:
 
 1. `assets/screenshots/tests/backend-setup/001_backend-health-check-response.png`
 2. `assets/screenshots/tests/frontend-shell/003_overview-dark.png`
-3. `assets/screenshots/tests/jira/009_sprint-1-board.png`
+3. `assets/screenshots/tests/jira/031_scrum-11-done.png`
 
 ## Exit Criteria
 
-1. All critical defects are fixed.
-2. Core UAT scenarios pass.
-3. Auth and RBAC tests pass.
-4. No failing tests remain in the final evidence set.
-5. The hosted version works for demo use.
+Before I call the MVP test-ready, these need to be true:
+
+1. critical defects are fixed
+2. core UAT scenarios pass
+3. auth and RBAC tests pass
+4. no failing test evidence remains in the final set
+5. the hosted version works well enough for demo use

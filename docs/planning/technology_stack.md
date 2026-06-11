@@ -1,96 +1,101 @@
 # Technology Stack
 
-## Change Note
+## Why This File Exists
 
-- Previous position: the stack was locked as `MySQL` with `mysql2`.
-- Updated position: the stack now uses `PostgreSQL`, `pg`, `Neon Free`, and `Render Free Web Service`.
-- Why: to match the current proposal and hosting plan.
+This file is the plain stack record for the current repo, not a wishlist.
+
+Older notes drifted between `MySQL`, `PostgreSQL`, and bigger framework combinations. I needed one place that says what I actually kept and why.
 
 ## Current Stack
 
-| Area | Decision |
-| --- | --- |
-| Frontend | HTML, CSS, JavaScript |
-| Frontend support | Custom CSS and reusable JavaScript modules |
-| Backend | Node.js with Express |
-| Database | PostgreSQL |
-| Database hosting | Neon Free |
-| Web hosting | Render Free Web Service |
-| API style | REST |
-| Authentication | Session-based authentication |
-| Session library | `express-session` |
-| Session store | `connect-pg-simple` |
-| Password security | `bcrypt` |
-| Database access | `pg` |
-| Environment config | `dotenv` |
-| Testing | Jest, Supertest, Postman, manual UAT |
-| Project management | Jira |
-| Source control | GitHub |
+| Area | Current Choice | Repo State |
+| --- | --- | --- |
+| Frontend | `HTML`, `CSS`, `JavaScript` | built as a shell |
+| Backend | `Node.js` with `Express` | foundation in place |
+| Database | `PostgreSQL` | connected to Neon |
+| Database host | `Neon Free` | active |
+| Web host target | `Render Free Web Service` | planned direction |
+| API style | REST JSON | planned beyond `/health` |
+| Database driver | `pg` | wired now |
+| Auth direction | `express-session` | middleware wired, login flow still next |
+| Session store direction | `connect-pg-simple` | PostgreSQL-backed store wired |
+| Password hashing | `bcrypt` | package installed, usage still next |
+| Environment config | `dotenv` | wired now |
+| Testing direction | `Jest`, `Supertest`, `Postman`, manual checks | planned, not built out yet |
+| Project tracking | Jira | active |
+| Source control | GitHub | active |
 
-## Why This Stack
+## Why I Kept This Stack
 
-This stack keeps the project simple. It also fits the system well.
+I kept the stack simple on purpose.
 
-Node.js and Express are enough for the API and business rules. HTML, CSS, and JavaScript are enough for the frontend. PostgreSQL fits the relational data model better than a document database, and Neon gives an easy hosted database option. Render gives a simple way to deploy the app.
+`Node.js` and `Express` are enough for the API side of this project, and plain frontend code is enough for the UI shell I already built. For a semester project that matters, because every extra framework decision becomes another thing to explain, debug, and maintain.
 
-## Why The Database Changed
+I moved the database direction to `PostgreSQL` and stayed there. That fits the relational model better than trying to bend the project into a document database, and it also matches the current proposal instead of fighting it.
 
-The older draft used `MySQL`. The current proposal uses `PostgreSQL`.
+## What Changed From The Older Direction
 
-## Core Rules
+The earlier stack notes leaned on `MySQL` with `mysql2`.
 
-1. Third-party tools can support the app, but they do not define the project.
-2. The scheduling rules stay in project code.
-3. The database schema stays project-owned.
-4. Authentication stays session-based.
-5. The frontend stays plain HTML, CSS, and JavaScript.
+I changed that to:
 
-## Libraries That Support The Build
+1. `PostgreSQL`
+2. `pg`
+3. `Neon Free`
+4. `Render Free Web Service`
 
-### Express
+I made that change before the real schema work went too far, which saved me from having two different database stories across the repo.
 
-Used for backend routing and request handling.
+## Core Build Rules
 
-### PostgreSQL
+1. keep the frontend plain unless there is a real reason to add more tooling
+2. keep business rules in project code, not hidden in third-party services
+3. keep the schema project-owned
+4. keep authentication session-based
+5. keep hosting cheap enough for the module, even if that means accepting free-tier limits
 
-Used for relational data such as users, staff profiles, availability, leave requests, shifts, and assignments.
+## Libraries That Matter Right Now
 
-### pg
+### `express`
 
-Used to connect the Node.js backend to PostgreSQL.
+Used for the backend app and routing. At the moment the live route in the repo is still just the health check, so this is foundation first.
 
-### express-session
+### `pg`
 
-Used to keep login state on the server.
+Used to connect the backend to PostgreSQL and Neon.
 
-### connect-pg-simple
+### `dotenv`
 
-Used to store sessions in PostgreSQL. This matters for deployment on Render.
+Used to load local environment values such as `DATABASE_URL`.
 
-### bcrypt
+### `express-session`
 
-Used to hash passwords.
+Used to keep login state on the server. The middleware is now wired into the Express app, even though the actual login and logout routes still come next.
 
-### dotenv
+### `connect-pg-simple`
 
-Used to load environment variables.
+Used to keep session records in PostgreSQL instead of the default memory store.
 
-### Jest and Supertest
+### `bcrypt`
 
-Used for backend and API testing.
+Installed for password hashing. Same story here. The decision is locked, but the login code still comes after the identity and seed groundwork.
+
+### `Jest` and `Supertest`
+
+Installed as the test direction for backend work. There are no proper automated test files in the repo yet, so this is still preparation rather than finished coverage.
 
 ## Deployment Notes
 
-1. Neon connections should use SSL.
-2. Render needs environment variables for database access and session secrets.
-3. The app should use `DATABASE_URL` for the hosted database.
-4. Session storage should not use the default memory store in production.
+1. the Neon connection should use SSL
+2. Render will need environment variables for database access and session secrets
+3. the hosted app should use `DATABASE_URL`
+4. session storage should not stay on the default memory store once auth is active
 
-## Environment Variables
+## Environment Variables In Use Or Planned
 
 1. `DATABASE_URL`
 2. `SESSION_SECRET`
 3. `NODE_ENV`
 4. `PORT`
 
-If it changes again, record it in `docs/planning/decision_log.md`.
+If the stack changes again, it needs to be recorded in `docs/planning/decision_log.md` instead of quietly drifting in one file only.

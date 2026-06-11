@@ -1,23 +1,24 @@
 # Database Design
 
-## Change Note
+## What This Design Means Right Now
 
-- Previous position: this design included `skills`, `swap_requests`, `assignment_override_reasons`, `rota_publications`, and `audit_log`. It also assumed `MySQL`.
-- Updated position: the design is now smaller and uses `PostgreSQL`.
-- Why: to match the current proposal and current MVP.
+This file describes the current PostgreSQL schema direction for the MVP.
 
-## Purpose
+Two things matter here:
 
-This document defines the core PostgreSQL schema for the current MVP.
+1. not every table in this file already exists in the live database
+2. the first part of the design is already real, because `users` and `staff_profiles` are migrated now
+
+That distinction is important. I do not want the schema notes to read like the whole project is already built when it is not.
 
 ## Design Rules
 
-1. Keep the schema relational and clear.
-2. Keep one source of truth for staff, shifts, leave, and assignments.
-3. Use constraints where they help.
-4. Keep the first version small enough to build and test properly.
+1. keep the schema relational and easy to trace
+2. keep one source of truth for users, staff records, shifts, leave, and assignments
+3. use database constraints for basic protection instead of leaving everything to route code
+4. build the schema in the same order the app depends on it
 
-## Current Scope Tables
+## Current MVP Tables
 
 1. `users`
 2. `staff_profiles`
@@ -26,9 +27,25 @@ This document defines the core PostgreSQL schema for the current MVP.
 5. `shifts`
 6. `shift_assignments`
 
-## Deferred Tables From Earlier Drafts
+## Tables Already In The Repo Database Layer
 
-These are not part of the first schema version now:
+These are already represented by real migration files:
+
+1. `users`
+2. `staff_profiles`
+
+## Tables Still Planned Next
+
+These are still design targets, not migrated tables yet:
+
+1. `availability_entries`
+2. `leave_requests`
+3. `shifts`
+4. `shift_assignments`
+
+## Deferred Tables From Older Drafts
+
+These were in the wider version and are not part of the first build:
 
 1. `skills`
 2. `staff_skills`
@@ -39,21 +56,25 @@ These are not part of the first schema version now:
 
 ## PostgreSQL Notes
 
-1. Use native `UUID` columns.
-2. Use `TIMESTAMPTZ` for timestamps.
-3. Use `CHECK` constraints for simple rules.
-4. Use `gen_random_uuid()` if `pgcrypto` is enabled.
+1. use native `UUID`
+2. use `TIMESTAMPTZ` for timestamp fields
+3. use `CHECK` constraints for simple rules
+4. use `gen_random_uuid()` through `pgcrypto`
 
 ## Table Definitions
 
 ### `users`
 
-Purpose: login identity and user role.
+Purpose:
+Login identity and role information.
+
+Current repo note:
+This table already exists through `001_create_users_schema.sql`.
 
 | Column | Type | Constraints |
 | --- | --- | --- |
 | `id` | UUID | PK |
-| `email` | VARCHAR(255) | NOT NULL, UNIQUE |
+| `email` | VARCHAR(255) | NOT NULL, lowercase check, UNIQUE |
 | `password_hash` | VARCHAR(255) | NOT NULL |
 | `role` | VARCHAR(20) | NOT NULL |
 | `is_active` | BOOLEAN | NOT NULL DEFAULT `true` |
@@ -62,12 +83,16 @@ Purpose: login identity and user role.
 
 Notes:
 
-1. `email` should be stored in lowercase.
-2. `role` is either `MANAGER` or `STAFF`.
+1. `role` is `MANAGER` or `STAFF`
+2. lowercase email is enforced in the schema, not just left to application logic
 
 ### `staff_profiles`
 
-Purpose: staff data linked to a user account.
+Purpose:
+Staff details linked to a user account.
+
+Current repo note:
+This table already exists through `002_create_staff_profiles_schema.sql`.
 
 | Column | Type | Constraints |
 | --- | --- | --- |
@@ -81,9 +106,18 @@ Purpose: staff data linked to a user account.
 | `created_at` | TIMESTAMPTZ | NOT NULL |
 | `updated_at` | TIMESTAMPTZ | NOT NULL |
 
+Notes:
+
+1. one user maps to one staff profile in the current design
+2. the `is_active` index is there for later filtering
+
 ### `availability_entries`
 
-Purpose: weekly availability windows submitted by staff.
+Purpose:
+Weekly availability windows submitted by staff.
+
+Current repo note:
+Still planned. No migration file yet.
 
 | Column | Type | Constraints |
 | --- | --- | --- |
@@ -99,13 +133,17 @@ Purpose: weekly availability windows submitted by staff.
 
 Rules:
 
-1. `status` is either `AVAILABLE` or `UNAVAILABLE`.
-2. `end_time` must be greater than `start_time`.
-3. Exact duplicate entries should be blocked.
+1. `status` is `AVAILABLE` or `UNAVAILABLE`
+2. `end_time` must be greater than `start_time`
+3. exact duplicate entries should be blocked
 
 ### `leave_requests`
 
-Purpose: staff leave workflow.
+Purpose:
+Staff leave workflow with manager decision tracking.
+
+Current repo note:
+Still planned. No migration file yet.
 
 | Column | Type | Constraints |
 | --- | --- | --- |
@@ -123,12 +161,16 @@ Purpose: staff leave workflow.
 
 Rules:
 
-1. `status` is `PENDING`, `APPROVED`, or `REJECTED`.
-2. `end_date` must be on or after `start_date`.
+1. `status` is `PENDING`, `APPROVED`, or `REJECTED`
+2. `end_date` must be on or after `start_date`
 
 ### `shifts`
 
-Purpose: shift records for the rota week.
+Purpose:
+Shift records for the weekly rota.
+
+Current repo note:
+Still planned. No migration file yet.
 
 | Column | Type | Constraints |
 | --- | --- | --- |
@@ -144,12 +186,16 @@ Purpose: shift records for the rota week.
 
 Rules:
 
-1. `end_time` must be greater than `start_time`.
-2. Only same-day shifts are supported in the MVP.
+1. `end_time` must be greater than `start_time`
+2. the first version supports same-day shifts only
 
 ### `shift_assignments`
 
-Purpose: assign one staff member to one shift.
+Purpose:
+Link one staff member to one shift.
+
+Current repo note:
+Still planned. No migration file yet.
 
 | Column | Type | Constraints |
 | --- | --- | --- |
@@ -162,26 +208,31 @@ Purpose: assign one staff member to one shift.
 
 Notes:
 
-1. One shift has one assignment in the MVP.
-2. Reassignment updates the same record or replaces it in service logic.
+1. the MVP assumes one assignment per shift
+2. reassignment can update or replace the stored record in service logic later
 
 ## Indexing Plan
 
-1. Unique index on `users(email)`
-2. Index on `staff_profiles(is_active)`
-3. Index on `availability_entries(staff_profile_id, week_start, day_of_week)`
-4. Index on `leave_requests(staff_profile_id, start_date, end_date, status)`
-5. Index on `shifts(shift_date)`
-6. Index on `shift_assignments(staff_profile_id)`
+Indexes already real:
 
-## Conflict Logic Supported By Schema
+1. unique index on `users(email)`
+2. index on `staff_profiles(is_active)`
 
-1. Overlap check by joining `shift_assignments` and `shifts` for the same staff member and date
-2. Leave check by matching `shift_date` against approved leave ranges
-3. Availability check by matching shift time to submitted windows
-4. Role check by comparing `shifts.required_role` and `staff_profiles.primary_role`
-5. Contract hours warning by summing assigned shift lengths for the week
+Indexes planned next:
+
+1. index on `availability_entries(staff_profile_id, week_start, day_of_week)`
+2. index on `leave_requests(staff_profile_id, start_date, end_date, status)`
+3. index on `shifts(shift_date)`
+4. index on `shift_assignments(staff_profile_id)`
+
+## Conflict Logic The Schema Is Meant To Support
+
+1. overlap checks by comparing assigned shifts for the same staff member
+2. leave checks by matching shift dates against approved leave ranges
+3. availability checks by matching shift time against submitted windows
+4. role checks by comparing `required_role` and `primary_role`
+5. contract-hours warnings by summing assigned shift lengths for a week
 
 ## Session Storage Note
 
-The deployed app uses `connect-pg-simple` for sessions. That session table is infrastructure support. It is not part of the core project schema.
+The deployed direction uses `connect-pg-simple` for sessions. I am treating that session table as infrastructure support rather than a core scheduling table.

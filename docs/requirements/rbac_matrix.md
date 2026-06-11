@@ -1,16 +1,16 @@
 # RBAC Matrix
 
-## Change Note
+## What This Matrix Is
 
-- Previous position: this matrix covered swaps, reports, suggestions, and audit endpoints.
-- Updated position: it now covers the current MVP routes only.
-- Why: to match the active routes.
+This matrix shows the intended backend access rules for the MVP routes.
+
+It is important to say this clearly: the route protection below is the target behavior. The repo has not wired the auth and RBAC middleware yet, so this file is the contract for the next backend step, not proof that the checks already run.
 
 ## Roles
 
-1. `Manager`
-2. `Staff`
-3. `Unauthenticated`
+1. `Unauthenticated`
+2. `STAFF`
+3. `MANAGER`
 
 ## Endpoint Matrix
 
@@ -37,14 +37,20 @@
 
 ## Object-Level Rules
 
-1. A staff user can only create, update, or delete their own availability entries.
-2. A staff user can only create leave requests for themselves.
-3. A staff user can only view their own leave records.
-4. A staff user can only view their own rota records.
-5. A staff user cannot create shifts or assignments.
+1. a staff user can only create, update, or delete their own availability entries
+2. a staff user can only create leave requests for themselves
+3. a staff user can only view their own leave records
+4. a staff user can only view their own rota records
+5. a staff user cannot create shifts or assignments
+
+## Current Repo Note
+
+The current repo already has the role idea in the frontend shell and in the database direction, but not in route middleware yet.
+
+That means this matrix is mainly here to stop the auth build from becoming vague later.
 
 ## Security Test Expectations
 
-1. Every manager-only endpoint should have at least one `403` test using a staff account.
-2. Every ownership-sensitive endpoint should have at least one cross-user denial test.
-3. Unauthenticated access to protected routes should return `401`.
+1. every manager-only endpoint should have at least one `403` test using a staff account
+2. every ownership-sensitive endpoint should have at least one cross-user denial test
+3. unauthenticated access to protected routes should return `401`

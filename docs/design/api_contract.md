@@ -1,24 +1,54 @@
 # API Contract
 
-## Change Note
+## Read This File The Right Way
 
-- Previous position: this contract included suggestion, swap, report, and publish endpoints.
-- Updated position: the contract now covers the current MVP only.
-- Why: to match the current build plan.
+This file mixes two things:
 
-## Conventions
+1. the one route that is actually live in the repo now
+2. the target contract for the next backend routes
 
-1. Base path: `/api/v1`
-2. Auth: server-side session with `express-session`
-3. Response type: `application/json`
-4. Timestamps: ISO 8601
-5. Errors should use one shared shape
+I am writing it that way on purpose so the design stays honest. Right now the backend is still in foundation and identity setup, not in full feature delivery.
+
+## Current Live Route
+
+### `GET /health`
+
+Purpose:
+Confirm that the backend is up and the PostgreSQL connection can respond.
+
+Current response shape:
+
+```json
+{
+  "database": "connected",
+  "status": "ok"
+}
+```
+
+If the database check fails, the route returns:
+
+```json
+{
+  "database": "disconnected",
+  "status": "error"
+}
+```
+
+## Contract Conventions For The Next Routes
+
+Once the main feature routes are added, these are the rules I am keeping:
+
+1. base path: `/api/v1`
+2. auth style: server-side session with `express-session`
+3. response type: `application/json`
+4. timestamps: ISO 8601
+5. errors should follow one shared shape
 
 Example error payload:
 
 ```json
 {
-  "timestamp": "2026-06-04T16:00:00Z",
+  "timestamp": "2026-06-11T16:00:00Z",
   "status": 400,
   "error": "Validation Failed",
   "message": "endDate must be on or after startDate",
@@ -26,13 +56,24 @@ Example error payload:
 }
 ```
 
-## Authentication
+## Current Build Reality
+
+These routes below are target routes, not already-implemented routes.
+
+That means:
+
+1. the route shapes are planned here first
+2. the repo does not yet expose them
+3. auth, RBAC, and ownership checks still need to be wired in backend code
+
+## Authentication Routes
 
 ### `POST /api/v1/auth/login`
 
-Purpose: log in a user.
+Purpose:
+Log in a user.
 
-Request:
+Planned request:
 
 ```json
 {
@@ -41,7 +82,7 @@ Request:
 }
 ```
 
-Success `200`:
+Planned success `200`:
 
 ```json
 {
@@ -54,29 +95,31 @@ Success `200`:
 }
 ```
 
-Errors:
+Planned error:
 
-1. `401` invalid credentials
+1. `401` for invalid credentials
 
 ### `POST /api/v1/auth/logout`
 
-Purpose: log out the current user.
+Purpose:
+Log out the current user.
 
-Success `204`
+Planned success:
+`204`
 
-## Staff
+## Staff Routes
 
 ### `GET /api/v1/staff`
 
-Purpose: list staff records. Manager only.
-
-Success `200`
+Purpose:
+List staff records. Manager only.
 
 ### `POST /api/v1/staff`
 
-Purpose: create a staff user and profile. Manager only.
+Purpose:
+Create a staff user and linked profile. Manager only.
 
-Request:
+Planned request:
 
 ```json
 {
@@ -85,36 +128,39 @@ Request:
   "fullName": "Alex Byrne",
   "primaryRole": "FLOOR",
   "contractHours": 25,
-  "phoneNumber": "0850000000"
+  "phoneNumber": "0850000002"
 }
 ```
 
-Success `201`
+Planned success:
+`201`
 
 ### `PUT /api/v1/staff/{staffId}`
 
-Purpose: update a staff profile. Manager only.
+Purpose:
+Update a staff profile. Manager only.
 
-Success `200`
+Planned success:
+`200`
 
-## Availability
+## Availability Routes
 
 ### `GET /api/v1/availability`
 
-Purpose: view availability entries.
+Purpose:
+View availability entries.
 
-Query params:
+Planned query params:
 
 1. `weekStart` required date
-2. `staffProfileId` optional, manager only
-
-Success `200`
+2. `staffProfileId` optional for manager use
 
 ### `POST /api/v1/availability`
 
-Purpose: create availability entries for the logged-in staff user.
+Purpose:
+Create availability entries for the logged-in staff user.
 
-Request:
+Planned request:
 
 ```json
 {
@@ -130,36 +176,37 @@ Request:
 }
 ```
 
-Success `201`
+Planned success:
+`201`
 
 ### `PUT /api/v1/availability/{availabilityId}`
 
-Purpose: update own future availability entry.
-
-Success `200`
+Purpose:
+Update own future availability entry.
 
 ### `DELETE /api/v1/availability/{availabilityId}`
 
-Purpose: delete own future availability entry.
+Purpose:
+Delete own future availability entry.
 
-Success `204`
-
-## Leave Requests
+## Leave Request Routes
 
 ### `GET /api/v1/leave-requests`
 
-Purpose: view leave requests.
+Purpose:
+View leave requests.
 
-Behavior:
+Planned behavior:
 
-1. Manager sees all
-2. Staff sees only own records
+1. manager sees all
+2. staff sees only own records
 
 ### `POST /api/v1/leave-requests`
 
-Purpose: create a leave request.
+Purpose:
+Create a leave request.
 
-Request:
+Planned request:
 
 ```json
 {
@@ -169,43 +216,32 @@ Request:
 }
 ```
 
-Success `201`
+Planned success:
+`201`
 
 ### `PUT /api/v1/leave-requests/{leaveRequestId}/approve`
 
-Purpose: approve leave. Manager only.
-
-Request:
-
-```json
-{
-  "managerComment": "Approved"
-}
-```
-
-Success `200`
+Purpose:
+Approve leave. Manager only.
 
 ### `PUT /api/v1/leave-requests/{leaveRequestId}/reject`
 
-Purpose: reject leave. Manager only.
+Purpose:
+Reject leave. Manager only.
 
-Success `200`
-
-## Shifts
+## Shift Routes
 
 ### `GET /api/v1/shifts`
 
-Purpose: list shifts for a week. Manager only.
-
-Query params:
-
-1. `weekStart` required
+Purpose:
+List shifts for a week. Manager only.
 
 ### `POST /api/v1/shifts`
 
-Purpose: create a shift. Manager only.
+Purpose:
+Create a shift. Manager only.
 
-Request:
+Planned request:
 
 ```json
 {
@@ -217,21 +253,19 @@ Request:
 }
 ```
 
-Success `201`
-
 ### `PUT /api/v1/shifts/{shiftId}`
 
-Purpose: update a shift. Manager only.
+Purpose:
+Update a shift. Manager only.
 
-Success `200`
-
-## Assignments
+## Assignment Route
 
 ### `POST /api/v1/assignments`
 
-Purpose: assign staff to a shift. Manager only.
+Purpose:
+Assign a staff member to a shift. Manager only.
 
-Request:
+Planned request:
 
 ```json
 {
@@ -240,40 +274,40 @@ Request:
 }
 ```
 
-Success `201`
+Planned success:
+`201`
 
-Possible errors:
+Possible business-rule errors:
 
 1. `409` leave conflict
 2. `409` overlap conflict
 3. `409` availability conflict
 4. `409` role conflict
-5. `404` unknown shift or staff member
+5. `404` unknown shift or staff record
 
-## Rota
+## Rota Route
 
 ### `GET /api/v1/rota`
 
-Purpose: view the weekly rota.
+Purpose:
+View the weekly rota.
 
-Query params:
+Planned query params:
 
 1. `weekStart` required
 
-Behavior:
+Planned behavior:
 
-1. Manager sees the full weekly rota
-2. Staff sees only their own assigned shifts
+1. manager sees the full weekly rota
+2. staff sees only their own assigned shifts
 
-Success `200`
+## Security Rules For The Contract
 
-## Security Rules
-
-1. All state-changing endpoints require authentication
-2. Manager-only endpoints require backend role checks
-3. Staff endpoints require ownership checks where needed
-4. No response should expose password hashes or secret values
-5. Validation errors return `400`
-6. Unauthenticated access returns `401`
-7. Forbidden access returns `403`
-8. Business-rule conflicts return `409`
+1. all state-changing routes require authentication
+2. manager-only routes require backend role checks
+3. staff routes need ownership checks where relevant
+4. responses must not expose password hashes or secrets
+5. validation failures return `400`
+6. unauthenticated access returns `401`
+7. forbidden access returns `403`
+8. business-rule conflicts return `409`

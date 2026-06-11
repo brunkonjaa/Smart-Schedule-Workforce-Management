@@ -1,85 +1,124 @@
 # Smart Schedule
 
-## Change Note
+## What This Repo Is
 
-- Previous version: the repo pointed to `MySQL`, `mysql2`, and a wider MVP with swaps, reports, and audit logging.
-- Updated version: the repo now uses `PostgreSQL`, `Neon Free`, and `Render Free Web Service`.
+Smart Schedule is a rota and staff coordination project for small hospitality teams.
 
-## Project Summary
+The idea is simple enough. Managers need one place to keep staff records, check availability, review leave, build weekly shifts, and see the rota without chasing messages or patching things together in spreadsheets. Staff need the smaller side of that, which is mainly login, availability, leave requests, and their own assigned shifts.
 
-Smart Schedule is a hospitality rota system for small teams. Managers add staff, review availability, approve or reject leave, and create weekly rotas. Staff log in, submit availability, request leave, and check their shifts.
+Right now this repo is not the full finished system yet. The frontend shell is built, the backend foundation is in place, the Neon database connection is working, and the first schema and seed migrations are in the repo. Most of the real business routes still come after this checkpoint.
 
-## Current MVP
+## Why The Scope Was Tightened
 
-1. Login and logout
-2. User roles
-3. Staff records
-4. Availability
-5. Leave requests
-6. Basic rota creation
-7. Staff shift view
-8. Basic conflict warnings
+The earlier version of the project kept drifting wider. It had swaps, reports, audit log ideas, and some smarter scheduling features written into old notes. I cut that back because it was getting too easy to describe and too hard to finish properly.
 
-## Current Build Status
+The current build keeps the base workflow first:
 
-1. Sprint 1 foundation work is complete in Jira.
-2. The frontend shell is built for the main pages.
-3. PostgreSQL connection to the Neon database is working.
-4. Migration runner scripts and folder structure are in place.
-5. Users schema migration has been applied and verified on Neon.
-6. Theme switching, role switching, and smooth page transitions are in place.
-7. Screenshot evidence is saved in `assets/screenshots/tests/`, including migration and sprint-closure proof.
-8. Sprint 2 is active in Jira for the identity and staff base work.
-9. Staff profiles schema migration is the current next foundation task.
+1. identity
+2. staff records
+3. availability
+4. leave
+5. shifts
+6. assignments
+7. rota view
 
-## Current Tech Stack
+That is enough for the module and it is still a real scheduling problem.
 
-1. Frontend: HTML, CSS, JavaScript
-2. Frontend support: custom CSS and reusable JavaScript modules
-3. Backend: Node.js with Express
-4. Database: PostgreSQL
-5. Database hosting: Neon Free
-6. Web hosting: Render Free Web Service
-7. Authentication: `express-session` and `bcrypt`
-8. Session storage: PostgreSQL-backed sessions with `connect-pg-simple`
-9. Database access: `pg`
-10. Testing: Jest, Supertest, Postman, manual UAT
+## What Is Actually In The Repo Now
+
+The current repo state is closer to foundation plus setup than to a finished app.
+
+Built now:
+
+1. frontend shell pages in plain `HTML`, `CSS`, and `JavaScript`
+2. role switch preview between manager and staff views
+3. theme switching and page navigation in the frontend shell
+4. backend Express app with JSON handling and a database-backed `/health` route
+5. PostgreSQL connection setup using `pg`
+6. PostgreSQL-backed session middleware configuration with `express-session` and `connect-pg-simple`
+7. migration runner with `up` and `status` commands
+8. `users` schema migration
+9. `staff_profiles` schema migration
+10. initial seed data migration
+
+Not built yet:
+
+1. login and logout routes
+2. staff CRUD routes
+3. availability routes
+4. leave request routes
+5. shift routes
+6. assignment logic
+7. automated backend tests
+
+That distinction matters because a lot of the docs describe the target build shape, not just the already-running code.
+
+## Current Target MVP
+
+These are still the active MVP features I am building toward:
+
+1. login and logout
+2. manager and staff roles
+3. staff records
+4. weekly availability submission
+5. leave requests with approve or reject flow
+6. shift creation
+7. manual assignment
+8. staff rota view
+9. basic conflict checks
+
+## Current Stack
+
+1. Frontend: `HTML`, `CSS`, `JavaScript`
+2. Backend: `Node.js` with `Express`
+3. Database: `PostgreSQL`
+4. Database host: `Neon Free`
+5. Web host target: `Render Free Web Service`
+6. Database driver: `pg`
+7. Auth direction: `express-session` with `bcrypt`
+8. Session storage direction: `connect-pg-simple`
+9. Testing plan: `Jest`, `Supertest`, `Postman`, and manual checks
+10. Project tracking: Jira
+
+I stayed with plain frontend code on purpose. For this project it keeps the moving parts lower, and it is easier to explain in the report. On the other hand it means I need to keep my own structure tidy instead of leaning on a frontend framework.
 
 ## Folder Structure
 
-1. `backend/` Node.js and Express app
-2. `frontend/` HTML, CSS, and JavaScript app
-3. `database/` schema, migrations, and seed files
-4. `docs/` planning, architecture, design, requirements, and testing docs
-5. `assets/` screenshots and report assets
-6. `scripts/` utility scripts
+1. `backend/` Express app, config, database utilities, and scripts
+2. `frontend/` shell UI, reusable layout code, and styles
+3. `database/` ordered SQL migrations and database notes
+4. `docs/` planning, design, requirements, and testing files
+5. `assets/` screenshots and other evidence files
+6. `scripts/` helper scripts if needed later
 7. `infra/` deployment support files
 8. `research/` notes and references
-9. `wireframes/` UI sketches
-10. `logs/` local log output if needed
+9. `wireframes/` early UI sketches
+10. `logs/` local output if I need it during setup
 
 ## Screenshot Evidence Rule
 
-1. Save all evidence screenshots under `assets/screenshots/`.
-2. Group screenshots into subfolders based on what they show.
-3. Use one global screenshot number sequence from `001` upward across all folders.
-4. Keep the number at the start of the filename so report references stay simple.
+All report evidence screenshots stay under `assets/screenshots/`.
 
-Example structure:
+Rules:
+
+1. keep screenshots in simple subfolders based on what they show
+2. use one number sequence across the whole project
+3. keep the number at the start of the filename
+4. do not save secrets such as raw passwords or full connection strings in evidence screenshots
+
+Examples:
 
 1. `assets/screenshots/tests/backend-setup/001_backend-health-check-response.png`
-2. `assets/screenshots/tests/backend-setup/002_backend-server-running.png`
-3. `assets/screenshots/tests/frontend-shell/003_overview-dark.png`
-4. `assets/screenshots/tests/jira/009_sprint-1-board.png`
+2. `assets/screenshots/tests/jira/027_scrum-11-in-progress.png`
+3. `assets/screenshots/tests/database-setup/029_staff-profiles-columns-query.png`
 
-## Deployment Plan
+## Hosting Direction
 
-1. PostgreSQL database on `Neon Free`
-2. Node.js and Express app on `Render Free Web Service`
-3. App config through environment variables
-4. SSL enabled for the Neon database connection
+The current hosting plan is still `Neon Free` for the database and `Render Free Web Service` for the app.
 
-## Main Documents
+I chose that because it is cheap, simple to demonstrate, and enough for the module. The trade-off is obvious as well. Free-tier cold starts and other limits are acceptable for this stage, but I would not describe that setup as production-ready for a real hospitality business.
+
+## Main Docs
 
 1. `docs/planning/technology_stack.md`
 2. `docs/planning/project_scope.md`

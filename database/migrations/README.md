@@ -1,23 +1,53 @@
 # Database Migrations
 
-Use this folder for ordered PostgreSQL migration files.
+This folder holds the ordered PostgreSQL migration files for the project.
+
+## Current Files
+
+At this checkpoint the folder contains:
+
+1. `001_create_users_schema.sql`
+2. `002_create_staff_profiles_schema.sql`
+3. `003_seed_initial_data.sql`
+
+The order matters. I kept the schema work first and the sample data after that because it is much easier to explain and debug that way.
 
 ## Naming Rule
 
-1. Use plain `.sql` files.
-2. Start each filename with a zero-padded number.
-3. Add a short snake_case description after the number.
+Each migration file should:
+
+1. be a plain `.sql` file
+2. start with a zero-padded number
+3. use a short snake_case description after the number
 
 Examples:
 
-1. `001_create_users.sql`
-2. `002_create_staff_profiles.sql`
+1. `001_create_users_schema.sql`
+2. `002_create_staff_profiles_schema.sql`
+3. `004_create_availability_entries_schema.sql`
 
 ## Run Commands
 
-From `backend/`:
+Run migrations from `backend/`:
 
 1. `npm run db:migrate`
 2. `npm run db:migrate:status`
 
-The runner stores applied filenames in the `schema_migrations` table.
+## What The Runner Tracks
+
+The backend migration runner stores applied filenames in the `schema_migrations` table.
+
+That table is there so I can answer two simple questions without guessing:
+
+1. what has already been applied
+2. what is still pending
+
+## Practical Rule
+
+Keep schema changes and seed data separate where possible.
+
+That adds one extra file sometimes, but it keeps the history cleaner. If a schema file fails, I know I am debugging structure. If a seed file fails, I know I am debugging records.
+
+## Session Table Note
+
+The project is set up to use `connect-pg-simple`, but session middleware is not wired yet. If the session table is later created by library setup, that is fine. If I need more control, I can add a dedicated migration for it.

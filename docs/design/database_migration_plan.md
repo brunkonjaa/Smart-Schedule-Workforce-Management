@@ -117,7 +117,6 @@ If `connect-pg-simple` creates its own table during setup, that can stay outside
 
 ## Next Action
 
-1. finish the seed-data Jira proof
-2. wire `express-session`
-3. add login and logout routes
-4. start the availability schema only after the auth base is usable
+1. wire `express-session`
+2. add login and logout routes
+3. start the availability schema only after the auth base is usable

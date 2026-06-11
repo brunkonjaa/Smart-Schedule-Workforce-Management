@@ -1,35 +1,36 @@
-# Requirements and Acceptance Criteria
+# Requirements And Acceptance Criteria
 
-## Change Note
+## How To Read This File
 
-- Previous position: this file included smart suggestions, swaps, reports, and audit logging as active requirements.
-- Updated position: this file now covers the current MVP only.
-- Why: to match the current proposal and build plan.
+These are the active MVP requirements for the project.
+
+They are not a claim that every requirement is already implemented in the current repo state. Right now the repo has the frontend shell, backend foundation, migrations, and seed setup. Most of the route-level and workflow-level requirements still come after that.
 
 ## User Roles
 
 ### Manager
 
-1. Logs in
-2. Creates and updates staff records
-3. Reviews staff availability
-4. Reviews leave requests
-5. Creates shifts
-6. Assigns staff to shifts
-7. Views the weekly rota
+1. logs in
+2. creates and updates staff records
+3. reviews staff availability
+4. reviews leave requests
+5. creates shifts
+6. assigns staff to shifts
+7. views the weekly rota
 
 ### Staff
 
-1. Logs in
-2. Submits availability
-3. Requests leave
-4. Views own assigned shifts
+1. logs in
+2. submits availability
+3. requests leave
+4. views own assigned shifts
 
 ## Functional Requirements
 
-### FR-01 Authentication and Session Management
+### FR-01 Authentication And Session Management
 
-Description: The system must authenticate users and create a secure session.
+Description:
+The system must authenticate users and create a secure session.
 
 | ID | Acceptance Criteria |
 | --- | --- |
@@ -42,18 +43,20 @@ Description: The system must authenticate users and create a secure session.
 
 ### FR-02 Role-Based Access Control
 
-Description: The backend must enforce `Manager` and `Staff` privileges.
+Description:
+The backend must enforce `MANAGER` and `STAFF` privileges.
 
 | ID | Acceptance Criteria |
 | --- | --- |
 | RBAC-01 | Staff users cannot access manager-only endpoints such as staff creation, shift creation, and leave approval. |
-| RBAC-02 | Managers can access operational endpoints needed to manage the rota. |
+| RBAC-02 | Managers can access the routes needed to manage the rota workflow. |
 | RBAC-03 | A staff user can access only their own availability, leave requests, and rota view. |
-| RBAC-04 | Authorization checks are enforced on the server. |
+| RBAC-04 | Authorization checks are enforced on the server, not only in the frontend shell. |
 
 ### FR-03 Staff Record Management
 
-Description: Managers must be able to keep a staff list with role and contract-hour data.
+Description:
+Managers must be able to keep a staff list with role and contract-hour data.
 
 | ID | Acceptance Criteria |
 | --- | --- |
@@ -64,7 +67,8 @@ Description: Managers must be able to keep a staff list with role and contract-h
 
 ### FR-04 Availability Submission
 
-Description: Staff must be able to submit working availability for a target week.
+Description:
+Staff must be able to submit working availability for a target week.
 
 | ID | Acceptance Criteria |
 | --- | --- |
@@ -77,7 +81,8 @@ Description: Staff must be able to submit working availability for a target week
 
 ### FR-05 Leave Request Workflow
 
-Description: Staff must be able to request leave and managers must be able to decide the request.
+Description:
+Staff must be able to request leave and managers must be able to decide the request.
 
 | ID | Acceptance Criteria |
 | --- | --- |
@@ -91,19 +96,21 @@ Description: Staff must be able to request leave and managers must be able to de
 
 ### FR-06 Shift Creation
 
-Description: Managers must be able to create shifts before assignment.
+Description:
+Managers must be able to create shifts before assignment.
 
 | ID | Acceptance Criteria |
 | --- | --- |
 | SHIFT-01 | A manager can create a shift with date, start time, end time, required role, and optional notes. |
 | SHIFT-02 | A shift where end time is before start time is rejected. |
-| SHIFT-03 | A shift can exist without an assigned staff member. |
+| SHIFT-03 | A shift can exist before any staff member is assigned to it. |
 | SHIFT-04 | A manager can edit a shift. |
 | SHIFT-05 | A manager can view all shifts for a selected week. |
 
-### FR-07 Shift Assignment and Conflict Warnings
+### FR-07 Shift Assignment And Conflict Warnings
 
-Description: Managers must be able to assign staff to shifts while the system checks common conflicts.
+Description:
+Managers must be able to assign staff while the system checks the common conflicts first.
 
 | ID | Acceptance Criteria |
 | --- | --- |
@@ -117,7 +124,8 @@ Description: Managers must be able to assign staff to shifts while the system ch
 
 ### FR-08 Weekly Rota View
 
-Description: The system must show weekly shifts to the correct user.
+Description:
+The system must show weekly shifts to the correct user.
 
 | ID | Acceptance Criteria |
 | --- | --- |
@@ -126,27 +134,43 @@ Description: The system must show weekly shifts to the correct user.
 | ROTA-03 | The rota view shows shift date, start time, end time, and assigned staff name where relevant. |
 | ROTA-04 | The rota can be filtered by week. |
 
-## Deferred Requirements From Earlier Drafts
+## Deferred Requirements From The Older Draft
 
-These were in older versions and may return later:
+These were part of the wider version and can return later if time allows:
 
 1. smart candidate suggestions
 2. swap requests
 3. reports
-4. audit logging features beyond basic backend support
+4. broader audit logging features
 5. rota publication state
 
 ## Non-Functional Requirements
 
-1. The system must work on desktop and mobile-width browsers.
-2. The backend must validate all state-changing input.
-3. Passwords must be hashed with `bcrypt`.
-4. The application must return meaningful HTTP status codes.
-5. The project must keep clear requirement-to-test traceability.
-6. The app must run locally and in a hosted setup using Render and Neon.
+1. the system must work on desktop and mobile-width browsers
+2. the backend must validate all state-changing input
+3. passwords must be hashed with `bcrypt`
+4. the application must return meaningful HTTP status codes
+5. the project must keep requirement-to-test traceability
+6. the app must run locally and in a hosted setup using Render and Neon
+
+## Current Repo Note
+
+Right now the repo already supports or partially supports:
+
+1. frontend shell on desktop and mobile-width layouts
+2. backend JSON handling
+3. PostgreSQL connectivity
+4. schema and seed migration flow
+
+It does not yet fully support:
+
+1. login sessions
+2. RBAC route enforcement
+3. availability, leave, shifts, or assignment endpoints
+4. automated requirement-level test coverage
 
 ## Traceability Rule
 
-1. Every backlog item should reference one or more requirement IDs.
-2. Every test case should reference one or more acceptance IDs.
-3. Every major report claim should map to evidence.
+1. every backlog item should point to one or more requirement IDs
+2. every test case should point to one or more acceptance IDs
+3. every strong report claim should map to repo or screenshot evidence
