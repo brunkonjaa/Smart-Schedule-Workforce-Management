@@ -48,6 +48,8 @@ Parts already visible in the repo:
 3. `users` schema migration
 4. `staff_profiles` schema migration
 5. initial seed data migration
+6. PostgreSQL-backed session configuration
+7. SRS diagram exports under `docs/SRS/diagrams/`
 
 Parts still not built yet:
 

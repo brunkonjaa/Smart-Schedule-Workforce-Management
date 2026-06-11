@@ -78,6 +78,7 @@ Examples:
 - `034` seeded users query result
 - `035` seed migration status applied
 - `036` SCRUM-12 done
+- `037` SCRUM-13 done and SCRUM-14 in progress
 
 ## Practical Reminder
 

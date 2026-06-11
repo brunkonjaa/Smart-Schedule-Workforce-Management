@@ -164,7 +164,7 @@ Right now the repo already supports or partially supports:
 
 It does not yet fully support:
 
-1. login sessions
+1. login and logout routes
 2. RBAC route enforcement
 3. availability, leave, shifts, or assignment endpoints
 4. automated requirement-level test coverage

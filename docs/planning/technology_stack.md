@@ -22,6 +22,7 @@ Older notes drifted between `MySQL`, `PostgreSQL`, and bigger framework combinat
 | Password hashing | `bcrypt` | package installed, usage still next |
 | Environment config | `dotenv` | wired now |
 | Testing direction | `Jest`, `Supertest`, `Postman`, manual checks | planned, not built out yet |
+| Diagramming | `Visual Paradigm` | SRS diagram exports committed |
 | Project tracking | Jira | active |
 | Source control | GitHub | active |
 

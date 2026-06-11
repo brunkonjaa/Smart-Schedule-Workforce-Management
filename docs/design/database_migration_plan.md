@@ -113,10 +113,12 @@ Later sample data for availability, leave, shifts, and assignments should only b
 
 ## Session Table Note
 
-If `connect-pg-simple` creates its own table during setup, that can stay outside the main project migration chain. If that starts getting in the way, I can add a dedicated session-table migration later.
+`connect-pg-simple` is now wired through `backend/src/config/session.js`, and the current setup lets it create `user_sessions` with `createTableIfMissing: true`.
+
+I left that outside the main migration chain for now because the goal of that checkpoint was to get the session base running first. If the session table starts needing more control later, I can still add a dedicated migration.
 
 ## Next Action
 
-1. wire `express-session`
-2. add login and logout routes
+1. add login and logout routes
+2. add authentication middleware
 3. start the availability schema only after the auth base is usable

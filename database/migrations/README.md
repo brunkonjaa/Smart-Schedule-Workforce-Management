@@ -50,4 +50,6 @@ That adds one extra file sometimes, but it keeps the history cleaner. If a schem
 
 ## Session Table Note
 
-The project is set up to use `connect-pg-simple`, but session middleware is not wired yet. If the session table is later created by library setup, that is fine. If I need more control, I can add a dedicated migration for it.
+The project is already wired to use `connect-pg-simple` through `backend/src/config/session.js`.
+
+Right now I am letting that library manage the `user_sessions` table with `createTableIfMissing: true` instead of forcing it into the main migration chain. That keeps the first auth checkpoint smaller. If that starts getting awkward later, I can still add a dedicated SQL migration for sessions.

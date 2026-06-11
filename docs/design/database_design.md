@@ -61,6 +61,17 @@ These were in the wider version and are not part of the first build:
 3. use `CHECK` constraints for simple rules
 4. use `gen_random_uuid()` through `pgcrypto`
 
+## SRS Diagram Note
+
+I also exported a simpler data model diagram for the SRS under `docs/SRS/diagrams/smart_schedule_data_model.png`.
+
+That Visual Paradigm version uses more generic display types where the tool got awkward, but the real repo design standard here is still PostgreSQL-first:
+
+1. `UUID`
+2. `TIMESTAMPTZ`
+3. explicit constraints
+4. real FK links based on the SQL files in `database/migrations/`
+
 ## Table Definitions
 
 ### `users`

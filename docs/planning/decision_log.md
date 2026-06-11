@@ -338,3 +338,26 @@ It adds admin work around screenshots, ticket state, and naming.
 
 Status:
 Active
+
+### D-15 Minimal Visual Paradigm Set For SRS
+
+Problem:
+The SRS needed real diagrams, but I did not want to build a huge UML pack just to look busy.
+
+Options considered:
+
+1. create a wide diagram set for every possible feature
+2. create only the minimum diagrams that actually support the MVP
+3. skip proper diagrams and rely only on text
+
+Selected option:
+`Minimal project-specific diagram set`
+
+Reason for selection:
+This kept the SRS grounded in the real Smart Schedule build. I created the diagrams that actually explain the system now: use case, data model, assign-staff sequence, and assign-staff activity.
+
+Drawback accepted:
+The diagram set is intentionally narrow. If the later build changes the workflows too much, the exports under `docs/SRS/diagrams/` will need another pass.
+
+Status:
+Active

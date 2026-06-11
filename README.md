@@ -6,7 +6,7 @@ Smart Schedule is a rota and staff coordination project for small hospitality te
 
 The idea is simple enough. Managers need one place to keep staff records, check availability, review leave, build weekly shifts, and see the rota without chasing messages or patching things together in spreadsheets. Staff need the smaller side of that, which is mainly login, availability, leave requests, and their own assigned shifts.
 
-Right now this repo is not the full finished system yet. The frontend shell is built, the backend foundation is in place, the Neon database connection is working, and the first schema and seed migrations are in the repo. Most of the real business routes still come after this checkpoint.
+Right now this repo is not the full finished system yet. The frontend shell is built, the backend foundation is in place, the Neon database connection is working, the first schema and seed migrations are in the repo, and the PostgreSQL-backed session layer is wired. Most of the real business routes still come after this checkpoint.
 
 ## Why The Scope Was Tightened
 
@@ -40,6 +40,7 @@ Built now:
 8. `users` schema migration
 9. `staff_profiles` schema migration
 10. initial seed data migration
+11. exported SRS diagrams under `docs/SRS/diagrams/`
 
 Not built yet:
 
@@ -84,10 +85,10 @@ I stayed with plain frontend code on purpose. For this project it keeps the movi
 
 ## Folder Structure
 
-1. `backend/` Express app, config, database utilities, and scripts
+1. `backend/` Express app, config, database utilities, session config, and scripts
 2. `frontend/` shell UI, reusable layout code, and styles
 3. `database/` ordered SQL migrations and database notes
-4. `docs/` planning, design, requirements, and testing files
+4. `docs/` planning, design, requirements, testing files, and SRS support exports
 5. `assets/` screenshots and other evidence files
 6. `scripts/` helper scripts if needed later
 7. `infra/` deployment support files

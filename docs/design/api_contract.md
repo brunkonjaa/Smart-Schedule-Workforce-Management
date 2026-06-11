@@ -9,7 +9,7 @@ This file mixes two things:
 
 I am writing it that way on purpose so the design stays honest. Right now the backend is still in foundation and identity setup, not in full feature delivery.
 
-## Current Live Route
+## Current Live Backend Surface
 
 ### `GET /health`
 
@@ -33,6 +33,19 @@ If the database check fails, the route returns:
   "status": "error"
 }
 ```
+
+## Current Session Base Note
+
+The backend app now boots with PostgreSQL-backed session middleware through `express-session` and `connect-pg-simple`.
+
+That matters because the auth direction is no longer abstract. The app already has:
+
+1. `backend/src/config/session.js`
+2. `smart_schedule.sid` cookie naming
+3. `user_sessions` store configuration
+4. production `trust proxy` handling in `backend/src/app.js`
+
+What is still missing is the actual login and logout route layer. So the session base is real now, but the auth endpoints below are still planned routes, not live ones.
 
 ## Contract Conventions For The Next Routes
 

@@ -460,3 +460,119 @@ Each entry should answer four practical things:
 1. wire `express-session`
 2. verify the session store setup against Neon
 3. add login and logout routes
+
+## 2026-06-11
+
+### Snapshot
+
+- Phase: Sprint 2 evidence and doc alignment
+- Sprint: Sprint 2 - Identity and Staff Base
+- Status: schema and seed evidence commit closed and repo docs brought back into line
+
+### What Changed
+
+1. I committed the delayed screenshot evidence for the staff-profiles and seed-data checkpoints.
+2. I updated the main repo markdown files so they stopped lagging behind the real migration order.
+3. I kept that cleanup separate from the next auth code checkpoint.
+
+### Why It Changed
+
+1. The evidence for `SCRUM-11` and `SCRUM-12` existed already, but it was sitting outside the matching commit trail.
+2. I did not want session work to absorb old screenshots and older doc fixes just because they were still in the tree.
+
+### Evidence
+
+1. `assets/screenshots/tests/jira/027_scrum-11-in-progress.png`
+2. `assets/screenshots/tests/database-setup/028_staff-profiles-table-visible-in-neon.png`
+3. `assets/screenshots/tests/database-setup/029_staff-profiles-columns-query.png`
+4. `assets/screenshots/tests/migrations/030_staff-profiles-migration-file.png`
+5. `assets/screenshots/tests/jira/031_scrum-11-done.png`
+6. `assets/screenshots/tests/jira/032_scrum-12-in-progress.png`
+7. `assets/screenshots/tests/migrations/033_seed-initial-data-file.png`
+8. `assets/screenshots/tests/database-setup/034_seeded-users-query-result.png`
+9. `assets/screenshots/tests/migrations/035_seed-migration-status-applied.png`
+10. `assets/screenshots/tests/jira/036_scrum-12-done.png`
+11. commit `6f51a0b`
+
+### Next Steps
+
+1. wire PostgreSQL-backed session middleware
+2. verify the app still boots cleanly
+3. move into login and logout work only after that base is stable
+
+## 2026-06-11
+
+### Snapshot
+
+- Phase: Sprint 2 auth base
+- Sprint: Sprint 2 - Identity and Staff Base
+- Status: session configuration completed, `SCRUM-13` done, `SCRUM-14` moved into progress
+
+### What Changed
+
+1. I added `backend/src/config/session.js`.
+2. I wired `express-session` and `connect-pg-simple` into `backend/src/app.js`.
+3. I configured the PostgreSQL-backed store to use `user_sessions` and create the table if missing.
+4. I added production proxy handling and a development fallback secret so the app still boots cleanly outside production.
+
+### Why It Changed
+
+1. Login and logout routes needed a real session base first.
+2. I wanted to prove the app could boot with the PostgreSQL-backed store before the auth route work started.
+
+### Drawback Accepted
+
+1. This still does not give users a working login flow by itself.
+2. The session table is currently library-managed instead of being part of the numbered SQL migration chain.
+
+### Evidence
+
+1. `backend/src/config/session.js`
+2. `backend/src/app.js`
+3. local `/health` check still returning `{"database":"connected","status":"ok"}`
+4. Jira board state with `SCRUM-13` done and `SCRUM-14` in progress
+
+### Next Steps
+
+1. add login and logout routes
+2. add auth middleware after the route layer exists
+3. keep the next checkpoint narrow instead of mixing it with old Jira evidence
+
+## 2026-06-11
+
+### Snapshot
+
+- Phase: SRS support work
+- Sprint: Sprint 2 still active
+- Status: minimal Visual Paradigm diagram set exported and copied into the repo
+
+### What Changed
+
+1. I finished the use case diagram for the Smart Schedule actors and core MVP functions.
+2. I finished the simplified data model diagram that matches the current repo schema direction.
+3. I finished one sequence diagram for assigning staff to a shift.
+4. I finished one activity diagram for the same workflow.
+5. I copied the exported PNGs into `docs/SRS/diagrams/`.
+
+### Why It Changed
+
+1. The SRS needed real project diagrams, not placeholders.
+2. I kept the set small because the project is still mid-build and I did not want diagram sprawl for features that do not exist yet.
+
+### Drawback Accepted
+
+1. These diagrams are tied to the current MVP and current workflow assumptions.
+2. If later route or schema work changes the assignment flow too much, the diagrams will need another pass.
+
+### Evidence
+
+1. `docs/SRS/diagrams/smart_schedule_use_case_diagram.png`
+2. `docs/SRS/diagrams/smart_schedule_data_model.png`
+3. `docs/SRS/diagrams/smart_schedule_assign_staff_sequence_diagram.png`
+4. `docs/SRS/diagrams/smart_schedule_assign_staff_activity_diagram.png`
+5. commit `ce56446`
+
+### Next Steps
+
+1. keep the diagram exports in sync if the auth or assignment flow changes later
+2. move back to backend login and logout work
