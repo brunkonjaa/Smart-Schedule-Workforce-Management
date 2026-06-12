@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 const express = require('express');
 const session = require('express-session');
 const request = require('supertest');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requireRole } = require('../middleware/auth');
 const { closePool, query } = require('../config/db');
 const { sessionCookieName } = require('../config/session');
 
@@ -46,6 +46,12 @@ const buildTestApp = () => {
     });
   });
 
+  app.get('/test/manager-only', requireRole('MANAGER'), (request, response) => {
+    response.status(200).json({
+      user: request.authUser
+    });
+  });
+
   app.use((error, request, response, next) => {
     if (response.headersSent) {
       next(error);
@@ -63,11 +69,14 @@ const buildTestApp = () => {
 describe('auth middleware', () => {
   const app = buildTestApp();
   const activeUserId = crypto.randomUUID();
+  const staffUserId = crypto.randomUUID();
   const inactiveUserId = crypto.randomUUID();
   const activeStaffProfileId = crypto.randomUUID();
+  const staffUserProfileId = crypto.randomUUID();
   const inactiveStaffProfileId = crypto.randomUUID();
   const passwordHashValue = 'SmartScheduleTest123!';
   const activeEmail = `middleware-active-${Date.now()}@example.com`;
+  const staffEmail = `middleware-staff-${Date.now()}@example.com`;
   const inactiveEmail = `middleware-inactive-${Date.now()}@example.com`;
 
   beforeAll(async () => {
@@ -86,7 +95,33 @@ describe('auth middleware', () => {
         INSERT INTO users (id, email, password_hash, role, is_active, created_at, updated_at)
         VALUES ($1, $2, $3, 'STAFF', TRUE, NOW(), NOW())
       `,
+      [staffUserId, staffEmail, passwordHash]
+    );
+
+    await query(
+      `
+        INSERT INTO users (id, email, password_hash, role, is_active, created_at, updated_at)
+        VALUES ($1, $2, $3, 'STAFF', TRUE, NOW(), NOW())
+      `,
       [inactiveUserId, inactiveEmail, passwordHash]
+    );
+
+    await query(
+      `
+        INSERT INTO staff_profiles (
+          id,
+          user_id,
+          full_name,
+          primary_role,
+          contract_hours,
+          phone_number,
+          is_active,
+          created_at,
+          updated_at
+        )
+        VALUES ($1, $2, 'Middleware Staff User', 'BAR', 30.00, '0856666666', TRUE, NOW(), NOW())
+      `,
+      [staffUserProfileId, staffUserId]
     );
 
     await query(
@@ -127,12 +162,14 @@ describe('auth middleware', () => {
   });
 
   afterAll(async () => {
-    await query('DELETE FROM staff_profiles WHERE id IN ($1, $2)', [
+    await query('DELETE FROM staff_profiles WHERE id IN ($1, $2, $3)', [
       activeStaffProfileId,
+      staffUserProfileId,
       inactiveStaffProfileId
     ]);
-    await query('DELETE FROM users WHERE id IN ($1, $2)', [
+    await query('DELETE FROM users WHERE id IN ($1, $2, $3)', [
       activeUserId,
+      staffUserId,
       inactiveUserId
     ]);
     await closePool();
@@ -161,6 +198,62 @@ describe('auth middleware', () => {
     expect(loginResponse.status).toBe(204);
 
     const protectedResponse = await agent.get('/test/protected');
+
+    expect(protectedResponse.status).toBe(200);
+    expect(protectedResponse.body).toEqual({
+      user: {
+        email: activeEmail,
+        id: activeUserId,
+        role: 'MANAGER',
+        staffProfileId: activeStaffProfileId
+      }
+    });
+  });
+
+  test('requireRole rejects unauthenticated requests', async () => {
+    const response = await request(app).get('/test/manager-only');
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      error: 'Authentication Required',
+      message: 'You must be logged in to access this route.'
+    });
+  });
+
+  test('requireRole rejects authenticated users without the allowed role', async () => {
+    const agent = request.agent(app);
+
+    const loginResponse = await agent.post('/test/login').send({
+      email: staffEmail,
+      id: staffUserId,
+      role: 'STAFF',
+      staffProfileId: staffUserProfileId
+    });
+
+    expect(loginResponse.status).toBe(204);
+
+    const protectedResponse = await agent.get('/test/manager-only');
+
+    expect(protectedResponse.status).toBe(403);
+    expect(protectedResponse.body).toEqual({
+      error: 'Forbidden',
+      message: 'You do not have permission to access this route.'
+    });
+  });
+
+  test('requireRole allows authenticated users with the allowed role', async () => {
+    const agent = request.agent(app);
+
+    const loginResponse = await agent.post('/test/login').send({
+      email: activeEmail,
+      id: activeUserId,
+      role: 'MANAGER',
+      staffProfileId: activeStaffProfileId
+    });
+
+    expect(loginResponse.status).toBe(204);
+
+    const protectedResponse = await agent.get('/test/manager-only');
 
     expect(protectedResponse.status).toBe(200);
     expect(protectedResponse.body).toEqual({

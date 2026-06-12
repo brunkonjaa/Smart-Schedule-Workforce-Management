@@ -61,22 +61,72 @@ const loadAuthenticatedUser = async (request, response) => {
   return buildPublicUser(user);
 };
 
+const resolveAuthenticatedUser = (request, response) => {
+  if (request.authUser) {
+    return Promise.resolve(request.authUser);
+  }
+
+  return Promise.resolve(loadAuthenticatedUser(request, response)).then(
+    (authenticatedUser) => {
+      if (!authenticatedUser) {
+        return null;
+      }
+
+      request.authUser = authenticatedUser;
+      return authenticatedUser;
+    }
+  );
+};
+
+const sendForbidden = (response) => {
+  return response.status(403).json({
+    error: 'Forbidden',
+    message: 'You do not have permission to access this route.'
+  });
+};
+
 const requireAuth = (request, response, next) => {
-  Promise.resolve(loadAuthenticatedUser(request, response))
+  resolveAuthenticatedUser(request, response)
     .then((authenticatedUser) => {
       if (!authenticatedUser) {
         return;
       }
 
-      request.authUser = authenticatedUser;
       next();
     })
     .catch(next);
+};
+
+const requireRole = (...allowedRoles) => {
+  const normalizedRoles = allowedRoles.filter(Boolean);
+
+  if (normalizedRoles.length === 0) {
+    throw new Error('requireRole must be called with at least one role.');
+  }
+
+  return (request, response, next) => {
+    resolveAuthenticatedUser(request, response)
+      .then((authenticatedUser) => {
+        if (!authenticatedUser) {
+          return;
+        }
+
+        if (!normalizedRoles.includes(authenticatedUser.role)) {
+          sendForbidden(response);
+          return;
+        }
+
+        next();
+      })
+      .catch(next);
+  };
 };
 
 module.exports = {
   clearSessionCookie,
   destroySession,
   requireAuth,
+  requireRole,
+  sendForbidden,
   sendAuthenticationRequired
 };
