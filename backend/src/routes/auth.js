@@ -1,11 +1,14 @@
 const express = require('express');
 const {
   authenticateUser,
-  buildPublicUser,
-  findUserById,
   normalizeEmail
 } = require('../services/auth-service');
-const { sessionCookieName } = require('../config/session');
+const {
+  clearSessionCookie,
+  destroySession,
+  requireAuth
+} = require('../middleware/auth');
+const { loginRateLimiter } = require('../config/rate-limit');
 
 const router = express.Router();
 
@@ -38,27 +41,6 @@ const saveSession = (request) => {
 
       resolve();
     });
-  });
-};
-
-const destroySession = (request) => {
-  return new Promise((resolve, reject) => {
-    request.session.destroy((error) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-
-      resolve();
-    });
-  });
-};
-
-const clearSessionCookie = (response) => {
-  response.clearCookie(sessionCookieName, {
-    httpOnly: true,
-    path: '/',
-    sameSite: 'lax'
   });
 };
 
@@ -97,6 +79,7 @@ const validateLoginPayload = (payload) => {
 
 router.post(
   '/login',
+  loginRateLimiter,
   asyncHandler(async (request, response) => {
     const { details, email, password } = validateLoginPayload(request.body);
 
@@ -136,41 +119,10 @@ router.post(
 
 router.get(
   '/me',
+  requireAuth,
   asyncHandler(async (request, response) => {
-    if (!request.session?.user?.id) {
-      return response.status(401).json({
-        error: 'Authentication Required',
-        message: 'You must be logged in to access this route.'
-      });
-    }
-
-    const user = await findUserById(request.session.user.id);
-
-    if (!user || !user.isActive) {
-      await destroySession(request);
-      clearSessionCookie(response);
-
-      return response.status(401).json({
-        error: 'Authentication Required',
-        message: 'Your session is no longer valid.'
-      });
-    }
-
-    if (
-      typeof user.staffProfileIsActive === 'boolean' &&
-      !user.staffProfileIsActive
-    ) {
-      await destroySession(request);
-      clearSessionCookie(response);
-
-      return response.status(401).json({
-        error: 'Authentication Required',
-        message: 'Your session is no longer valid.'
-      });
-    }
-
     return response.status(200).json({
-      user: buildPublicUser(user)
+      user: request.authUser
     });
   })
 );

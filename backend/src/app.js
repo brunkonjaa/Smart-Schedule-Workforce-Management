@@ -1,4 +1,5 @@
 const express = require('express');
+const helmet = require('helmet');
 const config = require('./config/env');
 const { checkDatabaseConnection } = require('./config/db');
 const { sessionMiddleware } = require('./config/session');
@@ -10,6 +11,7 @@ if (config.nodeEnv === 'production') {
   app.set('trust proxy', 1);
 }
 
+app.use(helmet());
 app.use(sessionMiddleware);
 app.use(express.json());
 app.use('/api/v1/auth', authRoutes);

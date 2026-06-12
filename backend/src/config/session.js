@@ -6,6 +6,18 @@ const { pool } = require('./db');
 const PgSessionStore = connectPgSimple(session);
 const developmentFallbackSecret = 'smart-schedule-dev-session-secret';
 const sessionCookieName = 'smart_schedule.sid';
+const sessionIdleTimeoutMs = config.sessionIdleTimeoutMinutes * 60 * 1000;
+const sessionCookieOptions = {
+  httpOnly: true,
+  maxAge: sessionIdleTimeoutMs,
+  sameSite: 'lax',
+  secure: config.nodeEnv === 'production'
+};
+const sessionCookieClearOptions = {
+  httpOnly: sessionCookieOptions.httpOnly,
+  sameSite: sessionCookieOptions.sameSite,
+  secure: sessionCookieOptions.secure
+};
 
 const resolveSessionSecret = () => {
   if (config.sessionSecret) {
@@ -28,17 +40,16 @@ const sessionMiddleware = session({
   name: sessionCookieName,
   secret: resolveSessionSecret(),
   resave: false,
+  rolling: true,
   saveUninitialized: false,
   unset: 'destroy',
-  cookie: {
-    httpOnly: true,
-    maxAge: 1000 * 60 * 60 * 24 * 7,
-    sameSite: 'lax',
-    secure: config.nodeEnv === 'production'
-  }
+  cookie: sessionCookieOptions
 });
 
 module.exports = {
+  sessionCookieClearOptions,
+  sessionIdleTimeoutMs,
+  sessionCookieOptions,
   sessionCookieName,
   sessionMiddleware
 };

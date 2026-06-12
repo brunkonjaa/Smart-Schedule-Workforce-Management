@@ -85,6 +85,8 @@ Examples:
 - `040` auth me success response
 - `041` logout success response
 - `042` auth me after logout unauthorized
+- `043` SCRUM-15 done and SCRUM-16 in progress
+- `044` auth security test suite passing
 
 ## Practical Reminder
 
