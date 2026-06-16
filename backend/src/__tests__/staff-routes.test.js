@@ -21,6 +21,7 @@ describe('staff routes', () => {
   const extraStaffEmail = `staff-route-extra-${Date.now()}@example.com`;
   const managerPassword = 'ManagerRoutePass123!';
   const staffPassword = 'StaffRoutePass123!';
+  const createdStaffEmail = 'created-route-staff@example.com';
   const mutationHeader = {
     [mutationProtectionHeaderName]: '1'
   };
@@ -88,12 +89,12 @@ describe('staff routes', () => {
       [managerId, staffUserId, extraStaffUserId]
     );
     await query(
-      'DELETE FROM staff_profiles WHERE full_name = $1',
-      ['Created From Route Test']
+      'DELETE FROM staff_profiles WHERE full_name IN ($1, $2)',
+      ['Created From Route Test', 'Created Validation Route Test']
     );
     await query(
-      'DELETE FROM users WHERE email = $1',
-      ['created-route-staff@example.com']
+      'DELETE FROM users WHERE email IN ($1, $2)',
+      [createdStaffEmail, 'created-validation-route-staff@example.com']
     );
     await closePool();
   });
@@ -168,11 +169,23 @@ describe('staff routes', () => {
     );
   });
 
+  test('rejects unsupported list filters', async () => {
+    const agent = await loginAsManager();
+    const response = await agent.get('/api/v1/staff?department=floor');
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      details: ['unsupported filters: department'],
+      error: 'Validation Failed',
+      message: 'The staff request contains invalid fields.'
+    });
+  });
+
   test('requires the mutation protection header on staff creation', async () => {
     const agent = await loginAsManager();
     const response = await agent.post('/api/v1/staff').send({
       contractHours: 18,
-      email: 'created-route-staff@example.com',
+      email: createdStaffEmail,
       fullName: 'Created From Route Test',
       password: 'CreatedStaffPass123!',
       phoneNumber: '0851000004',
@@ -193,7 +206,7 @@ describe('staff routes', () => {
       .set(mutationHeader)
       .send({
         contractHours: 18,
-        email: 'created-route-staff@example.com',
+        email: createdStaffEmail,
         fullName: 'Created From Route Test',
         password: 'CreatedStaffPass123!',
         phoneNumber: '0851000004',
@@ -204,13 +217,75 @@ describe('staff routes', () => {
     expect(response.body.message).toBe('Staff record created successfully.');
     expect(response.body.staff).toEqual(
       expect.objectContaining({
-        email: 'created-route-staff@example.com',
+        email: createdStaffEmail,
         fullName: 'Created From Route Test',
         isActive: true,
         primaryRole: 'FLOOR',
         role: 'STAFF'
       })
     );
+  });
+
+  test('rejects invalid create payload fields for managers', async () => {
+    const agent = await loginAsManager();
+    const response = await agent
+      .post('/api/v1/staff')
+      .set(mutationHeader)
+      .send({
+        contractHours: 18.555,
+        email: 'not-an-email',
+        fullName: 'Created Validation Route Test',
+        isActive: 'yes',
+        notes: 'unexpected',
+        password: 'weakpassword',
+        primaryRole: 'DJ'
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe('Validation Failed');
+    expect(response.body.details).toEqual(
+      expect.arrayContaining([
+        'unsupported fields: notes',
+        'email must be a valid email address',
+        'password must include an uppercase letter',
+        'primaryRole must be one of: FLOOR, BAR, KITCHEN',
+        'contractHours must use no more than 2 decimal places',
+        'isActive must be a boolean'
+      ])
+    );
+  });
+
+  test('rejects duplicate staff emails for managers', async () => {
+    const agent = await loginAsManager();
+    const response = await agent
+      .post('/api/v1/staff')
+      .set(mutationHeader)
+      .send({
+        contractHours: 18,
+        email: staffEmail,
+        fullName: 'Created Validation Route Test',
+        password: 'CreatedStaffPass123!',
+        primaryRole: 'FLOOR'
+      });
+
+    expect(response.status).toBe(409);
+    expect(response.body).toEqual({
+      error: 'Conflict',
+      message: 'A staff account with that email already exists.'
+    });
+  });
+
+  test('requires the mutation protection header on staff updates', async () => {
+    const agent = await loginAsManager();
+    const response = await agent.put(`/api/v1/staff/${staffProfileId}`).send({
+      fullName: 'Route Staff Missing Header'
+    });
+
+    expect(response.status).toBe(403);
+    expect(response.body).toEqual({
+      error: 'Forbidden',
+      message: 'This request is missing the required mutation protection header.'
+    });
   });
 
   test('updates a staff profile for managers', async () => {
@@ -238,7 +313,66 @@ describe('staff routes', () => {
         phoneNumber: '0851999999',
         primaryRole: 'FLOOR',
         role: 'STAFF'
-      })
+        })
     );
+  });
+
+  test('rejects invalid update payload fields for managers', async () => {
+    const agent = await loginAsManager();
+    const response = await agent
+      .put(`/api/v1/staff/${staffProfileId}`)
+      .set(mutationHeader)
+      .send({
+        contractHours: -1.234,
+        fullName: '',
+        notes: 'unexpected',
+        phoneNumber: 'abc',
+        primaryRole: 'HOST'
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe('Validation Failed');
+    expect(response.body.details).toEqual(
+      expect.arrayContaining([
+        'unsupported fields: notes',
+        'fullName cannot be empty',
+        'primaryRole must be one of: FLOOR, BAR, KITCHEN',
+        'contractHours must use no more than 2 decimal places',
+        'phoneNumber must contain only digits and common phone symbols'
+      ])
+    );
+  });
+
+  test('rejects invalid staff ids on update routes', async () => {
+    const agent = await loginAsManager();
+    const response = await agent
+      .put('/api/v1/staff/not-a-uuid')
+      .set(mutationHeader)
+      .send({
+        fullName: 'Route Staff Invalid Id'
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      details: ['staffId must be a valid UUID'],
+      error: 'Validation Failed',
+      message: 'The staff request contains invalid fields.'
+    });
+  });
+
+  test('returns 404 when updating a missing staff record', async () => {
+    const agent = await loginAsManager();
+    const response = await agent
+      .put(`/api/v1/staff/${crypto.randomUUID()}`)
+      .set(mutationHeader)
+      .send({
+        fullName: 'Missing Staff'
+      });
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({
+      error: 'Not Found',
+      message: 'The requested staff record could not be found.'
+    });
   });
 });

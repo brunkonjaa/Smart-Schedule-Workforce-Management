@@ -12,6 +12,7 @@ const { requireMutationProtection } = require('../middleware/request-security');
 const { loginRateLimiter } = require('../config/rate-limit');
 
 const router = express.Router();
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const asyncHandler = (handler) => {
   return (request, response, next) => {
@@ -54,6 +55,14 @@ const sendValidationError = (response, details) => {
 };
 
 const validateLoginPayload = (payload) => {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    return {
+      details: ['request body must be a JSON object'],
+      email: '',
+      password: ''
+    };
+  }
+
   const details = [];
   const email = normalizeEmail(payload?.email);
   const password =
@@ -67,7 +76,11 @@ const validateLoginPayload = (payload) => {
     details.push('password is required');
   }
 
-  if (email && !email.includes('@')) {
+  if (email.length > 255) {
+    details.push('email must be 255 characters or fewer');
+  }
+
+  if (email && !emailPattern.test(email)) {
     details.push('email must be a valid email address');
   }
 

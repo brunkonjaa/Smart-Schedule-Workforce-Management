@@ -100,6 +100,20 @@ describe('auth routes', () => {
     );
   });
 
+  test('login rejects a non-object JSON payload', async () => {
+    const response = await request(app)
+      .post('/api/v1/auth/login')
+      .set('Content-Type', 'application/json')
+      .send('[]');
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      details: ['request body must be a JSON object'],
+      error: 'Validation Failed',
+      message: 'The login request is missing required fields.'
+    });
+  });
+
   test('auth me returns the logged-in user from the session', async () => {
     const agent = request.agent(app);
 

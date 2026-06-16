@@ -4,6 +4,25 @@ const { normalizeEmail } = require('./auth-service');
 
 const allowedPrimaryRoles = ['FLOOR', 'BAR', 'KITCHEN'];
 const allowedStatusFilters = ['ALL', 'ACTIVE', 'INACTIVE'];
+const createFieldNames = [
+  'contractHours',
+  'email',
+  'fullName',
+  'isActive',
+  'password',
+  'phoneNumber',
+  'primaryRole'
+];
+const updateFieldNames = [
+  'contractHours',
+  'email',
+  'fullName',
+  'isActive',
+  'phoneNumber',
+  'primaryRole'
+];
+const listFilterNames = ['primaryRole', 'search', 'status'];
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const passwordHashRounds = 12;
 
 const mapStaffRecord = (record) => {
@@ -55,6 +74,34 @@ const normalizeContractHours = (value) => {
   return Number(parsedValue.toFixed(2));
 };
 
+const isPlainObject = (value) => {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+};
+
+const listUnexpectedFields = (payload, allowedFields) => {
+  if (!isPlainObject(payload)) {
+    return [];
+  }
+
+  return Object.keys(payload).filter((fieldName) => {
+    return !allowedFields.includes(fieldName);
+  });
+};
+
+const hasTwoDecimalPlacesOrFewer = (value) => {
+  if (value === '' || value === null || typeof value === 'undefined') {
+    return false;
+  }
+
+  const normalizedValue = String(value).trim();
+
+  if (!normalizedValue) {
+    return false;
+  }
+
+  return /^-?\d+(\.\d{1,2})?$/.test(normalizedValue);
+};
+
 const normalizeStatusFilter = (value) => {
   const normalizedValue = String(value || 'ACTIVE').trim().toUpperCase();
 
@@ -67,25 +114,52 @@ const normalizeStatusFilter = (value) => {
 
 const validateStaffCreateInput = (payload) => {
   const details = [];
+  const unexpectedFields = listUnexpectedFields(payload, createFieldNames);
+
+  if (!isPlainObject(payload)) {
+    return {
+      details: ['request body must be a JSON object'],
+      staffInput: {}
+    };
+  }
+
+  if (unexpectedFields.length > 0) {
+    details.push(`unsupported fields: ${unexpectedFields.join(', ')}`);
+  }
+
   const email = normalizeEmail(payload?.email);
-  const password = typeof payload?.password === 'string' ? payload.password.trim() : '';
+  const password = typeof payload?.password === 'string' ? payload.password : '';
   const fullName = normalizeFullName(payload?.fullName);
   const primaryRole = normalizePrimaryRole(payload?.primaryRole);
   const contractHours = normalizeContractHours(payload?.contractHours);
   const phoneNumber = normalizePhoneNumber(payload?.phoneNumber);
-  const isActive =
-    typeof payload?.isActive === 'boolean' ? payload.isActive : true;
+  const hasIsActive = Object.prototype.hasOwnProperty.call(payload, 'isActive');
+  const isActive = hasIsActive ? payload.isActive : true;
 
   if (!email) {
     details.push('email is required');
-  } else if (!email.includes('@')) {
+  } else if (email.length > 255) {
+    details.push('email must be 255 characters or fewer');
+  } else if (!emailPattern.test(email)) {
     details.push('email must be a valid email address');
   }
 
   if (!password) {
     details.push('password is required');
+  } else if (password !== password.trim()) {
+    details.push('password cannot start or end with spaces');
   } else if (password.length < 12) {
     details.push('password must be at least 12 characters long');
+  } else if (password.length > 72) {
+    details.push('password must be 72 characters or fewer');
+  } else if (!/[a-z]/.test(password)) {
+    details.push('password must include a lowercase letter');
+  } else if (!/[A-Z]/.test(password)) {
+    details.push('password must include an uppercase letter');
+  } else if (!/[0-9]/.test(password)) {
+    details.push('password must include a number');
+  } else if (!/[^A-Za-z0-9]/.test(password)) {
+    details.push('password must include a symbol');
   }
 
   if (!fullName) {
@@ -98,7 +172,9 @@ const validateStaffCreateInput = (payload) => {
     details.push(`primaryRole must be one of: ${allowedPrimaryRoles.join(', ')}`);
   }
 
-  if (contractHours === null) {
+  if (!hasTwoDecimalPlacesOrFewer(payload?.contractHours)) {
+    details.push('contractHours must use no more than 2 decimal places');
+  } else if (contractHours === null) {
     details.push('contractHours must be a valid number');
   } else if (contractHours < 0 || contractHours > 60) {
     details.push('contractHours must be between 0 and 60');
@@ -109,6 +185,10 @@ const validateStaffCreateInput = (payload) => {
     !/^[0-9+\-\s()]{7,20}$/.test(phoneNumber)
   ) {
     details.push('phoneNumber must contain only digits and common phone symbols');
+  }
+
+  if (hasIsActive && typeof isActive !== 'boolean') {
+    details.push('isActive must be a boolean');
   }
 
   return {
@@ -128,19 +208,33 @@ const validateStaffCreateInput = (payload) => {
 const validateStaffUpdateInput = (payload) => {
   const details = [];
   const candidateInput = {};
+  const unexpectedFields = listUnexpectedFields(payload, updateFieldNames);
 
-  if (Object.prototype.hasOwnProperty.call(payload || {}, 'email')) {
+  if (!isPlainObject(payload)) {
+    return {
+      details: ['request body must be a JSON object'],
+      staffInput: {}
+    };
+  }
+
+  if (unexpectedFields.length > 0) {
+    details.push(`unsupported fields: ${unexpectedFields.join(', ')}`);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(payload, 'email')) {
     const email = normalizeEmail(payload.email);
     if (!email) {
       details.push('email cannot be empty');
-    } else if (!email.includes('@')) {
+    } else if (email.length > 255) {
+      details.push('email must be 255 characters or fewer');
+    } else if (!emailPattern.test(email)) {
       details.push('email must be a valid email address');
     } else {
       candidateInput.email = email;
     }
   }
 
-  if (Object.prototype.hasOwnProperty.call(payload || {}, 'fullName')) {
+  if (Object.prototype.hasOwnProperty.call(payload, 'fullName')) {
     const fullName = normalizeFullName(payload.fullName);
     if (!fullName) {
       details.push('fullName cannot be empty');
@@ -151,7 +245,7 @@ const validateStaffUpdateInput = (payload) => {
     }
   }
 
-  if (Object.prototype.hasOwnProperty.call(payload || {}, 'primaryRole')) {
+  if (Object.prototype.hasOwnProperty.call(payload, 'primaryRole')) {
     const primaryRole = normalizePrimaryRole(payload.primaryRole);
     if (!allowedPrimaryRoles.includes(primaryRole)) {
       details.push(`primaryRole must be one of: ${allowedPrimaryRoles.join(', ')}`);
@@ -160,9 +254,11 @@ const validateStaffUpdateInput = (payload) => {
     }
   }
 
-  if (Object.prototype.hasOwnProperty.call(payload || {}, 'contractHours')) {
+  if (Object.prototype.hasOwnProperty.call(payload, 'contractHours')) {
     const contractHours = normalizeContractHours(payload.contractHours);
-    if (contractHours === null) {
+    if (!hasTwoDecimalPlacesOrFewer(payload.contractHours)) {
+      details.push('contractHours must use no more than 2 decimal places');
+    } else if (contractHours === null) {
       details.push('contractHours must be a valid number');
     } else if (contractHours < 0 || contractHours > 60) {
       details.push('contractHours must be between 0 and 60');
@@ -171,7 +267,7 @@ const validateStaffUpdateInput = (payload) => {
     }
   }
 
-  if (Object.prototype.hasOwnProperty.call(payload || {}, 'phoneNumber')) {
+  if (Object.prototype.hasOwnProperty.call(payload, 'phoneNumber')) {
     const phoneNumber = normalizePhoneNumber(payload.phoneNumber);
     if (
       phoneNumber &&
@@ -183,7 +279,7 @@ const validateStaffUpdateInput = (payload) => {
     }
   }
 
-  if (Object.prototype.hasOwnProperty.call(payload || {}, 'isActive')) {
+  if (Object.prototype.hasOwnProperty.call(payload, 'isActive')) {
     if (typeof payload.isActive !== 'boolean') {
       details.push('isActive must be a boolean');
     } else {
@@ -203,13 +299,43 @@ const validateStaffUpdateInput = (payload) => {
 
 const buildListFilters = (queryParams) => {
   const details = [];
-  const search =
-    typeof queryParams?.search === 'string' ? queryParams.search.trim() : '';
-  const primaryRole =
-    typeof queryParams?.primaryRole === 'string'
-      ? normalizePrimaryRole(queryParams.primaryRole)
-      : '';
-  const status = normalizeStatusFilter(queryParams?.status);
+  const unexpectedFilters = Object.keys(queryParams || {}).filter((fieldName) => {
+    return !listFilterNames.includes(fieldName);
+  });
+  let search = '';
+  let primaryRole = '';
+  let status = 'ACTIVE';
+
+  if (unexpectedFilters.length > 0) {
+    details.push(`unsupported filters: ${unexpectedFilters.join(', ')}`);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(queryParams || {}, 'search')) {
+    if (typeof queryParams.search !== 'string') {
+      details.push('search must be a string');
+    } else {
+      search = queryParams.search.trim();
+    }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(queryParams || {}, 'primaryRole')) {
+    if (typeof queryParams.primaryRole !== 'string') {
+      details.push('primaryRole must be a string');
+    } else {
+      primaryRole = normalizePrimaryRole(queryParams.primaryRole);
+    }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(queryParams || {}, 'status')) {
+    if (typeof queryParams.status !== 'string') {
+      details.push('status must be a string');
+      status = null;
+    } else {
+      status = normalizeStatusFilter(queryParams.status);
+    }
+  } else {
+    status = normalizeStatusFilter('ACTIVE');
+  }
 
   if (search.length > 100) {
     details.push('search must be 100 characters or fewer');
