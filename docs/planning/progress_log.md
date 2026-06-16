@@ -749,3 +749,64 @@ Each entry should answer four practical things:
 1. start the `availability_entries` schema next
 2. follow that with `leave_requests` because assignment blocking still depends on real leave data
 3. keep the next schema checkpoint separate from later shift and rota work
+
+## 2026-06-16
+
+### Snapshot
+
+- Phase: Sprint 2 workflow build
+- Sprint: Sprint 2 - Identity and Staff Base still active
+- Status: availability, leave, and shifts workflow checkpoint finished locally and evidence organized
+
+### What Changed
+
+1. I added `004_create_availability_entries_schema.sql`, `005_create_leave_requests_schema.sql`, and `006_create_shifts_schema.sql`.
+2. I added the backend route and service layers for availability, leave requests, and shifts.
+3. I added the matching frontend workflow screens so those pages stopped being shell-only.
+4. I added delete support for availability and shifts, and a withdraw path for pending leave requests.
+5. I tightened the live UI error wording so the messages are simpler for the end user.
+6. I fixed dead page buttons in the shell and made the assignments page usable as a client-side review screen.
+7. I organized screenshot evidence `058` to `070` for this checkpoint.
+8. I reran the backend test block and the suite now passes locally with `56` tests.
+
+### Why It Changed
+
+1. The project was at the point where the staff base was already stable enough, so the next real step had to be the workflow tables and the first live business screens after staff management.
+2. I kept availability first, then leave, then shifts because assignment blocking depends on real availability and leave data before it depends on rota polish.
+3. I also did not want the availability, leave, and shifts pages to stay as fake shell views for too long because that makes the project look broader on paper than it is in the repo.
+
+### Drawback Accepted
+
+1. The assignments page is only a client-side review flow right now, not the real assignment engine yet.
+2. The rota endpoint and the staff rota view still come later.
+3. This checkpoint is bigger than the earlier auth or staff slices, but splitting it again now would make the current repo state harder to explain instead of easier.
+
+### Evidence
+
+1. `database/migrations/004_create_availability_entries_schema.sql`
+2. `database/migrations/005_create_leave_requests_schema.sql`
+3. `database/migrations/006_create_shifts_schema.sql`
+4. `backend/src/routes/availability.js`
+5. `backend/src/routes/leave-requests.js`
+6. `backend/src/routes/shifts.js`
+7. `backend/src/services/availability-service.js`
+8. `backend/src/services/leave-request-service.js`
+9. `backend/src/services/shift-service.js`
+10. `backend/src/services/workflow-service-utils.js`
+11. `frontend/src/services/availability-ui.js`
+12. `frontend/src/services/leave-ui.js`
+13. `frontend/src/services/shifts-ui.js`
+14. `frontend/src/services/assignments-ui.js`
+15. `assets/screenshots/tests/frontend-workflows/058_availability-save-success.png`
+16. `assets/screenshots/tests/frontend-workflows/061_leave-request-submitted-pending.png`
+17. `assets/screenshots/tests/frontend-workflows/062_leave-request-approved-manager-view.png`
+18. `assets/screenshots/tests/frontend-workflows/068_shift-delete-success.png`
+19. `assets/screenshots/tests/frontend-workflows/069_assignments-review-shift-working.png`
+20. `assets/screenshots/tests/frontend-workflows/070_assignments-staff-assigned-success.png`
+21. `assets/screenshots/tests/backend-workflows/065_workflow-route-test-suite-passing.png`
+
+### Next Steps
+
+1. commit the current workflow checkpoint cleanly
+2. add the real `shift_assignments` data layer after that
+3. keep the rota layer after the assignment engine is real

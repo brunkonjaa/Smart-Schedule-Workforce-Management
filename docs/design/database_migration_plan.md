@@ -24,6 +24,9 @@ Keeping schema and seed data separate means an extra step during setup, but it m
 1. `database/migrations/001_create_users_schema.sql`
 2. `database/migrations/002_create_staff_profiles_schema.sql`
 3. `database/migrations/003_seed_initial_data.sql`
+4. `database/migrations/004_create_availability_entries_schema.sql`
+5. `database/migrations/005_create_leave_requests_schema.sql`
+6. `database/migrations/006_create_shifts_schema.sql`
 
 ## What Is Already Applied In The Current Build Trail
 
@@ -32,12 +35,18 @@ Already done:
 1. `001_create_users_schema.sql`
 2. `002_create_staff_profiles_schema.sql`
 3. `003_seed_initial_data.sql`
+4. `004_create_availability_entries_schema.sql`
+5. `005_create_leave_requests_schema.sql`
+6. `006_create_shifts_schema.sql`
 
 That gives the project:
 
 1. the identity table
 2. the linked staff profile table
 3. starter records for one manager and three staff users
+4. weekly availability entry storage
+5. leave request storage with manager decision fields
+6. shift storage before assignment logic
 
 ## Why The Order Was Kept This Way
 
@@ -54,35 +63,15 @@ If I had mixed staff schema and seed records together too early, the history wou
 3. use `CHECK` constraints for simple validation
 4. use `gen_random_uuid()` through `pgcrypto`
 
-## Build Order For The Next Schema Phase
+## Why The Next Three Were Added In This Order
 
-### Step 1
+I kept `availability_entries` first because the project needed real weekly availability data before I could say anything honest about coverage checks later.
 
-Create `availability_entries`
+Next I added `leave_requests` because assignment blocking makes no sense if approved leave does not exist in the database yet.
 
-Reason:
-Availability is the next real dependency for rota conflict checks.
+After that I added `shifts` because there was no point talking about assignment or rota logic before actual shift records existed.
 
-### Step 2
-
-Create `leave_requests`
-
-Reason:
-Leave decisions have to exist before assignment blocking can be enforced properly.
-
-### Step 3
-
-Create `shifts`
-
-Reason:
-Assignments cannot exist without shift records.
-
-### Step 4
-
-Create `shift_assignments`
-
-Reason:
-This is where overlap checks, role checks, and weekly rota output start becoming useful.
+That means the repo has now reached the point where the next schema step really is `shift_assignments`, not availability or leave anymore.
 
 ## Constraints Already Real
 
@@ -91,13 +80,20 @@ This is where overlap checks, role checks, and weekly rota output start becoming
 3. unique `staff_profiles.user_id`
 4. `staff_profiles.contract_hours >= 0`
 
-## Constraints Planned Next
+## Constraints Added In The Current Checkpoint
 
 1. `availability_entries.day_of_week BETWEEN 1 AND 7`
 2. `availability_entries.end_time > availability_entries.start_time`
 3. `leave_requests.end_date >= leave_requests.start_date`
 4. `shifts.end_time > shifts.start_time`
-5. `shift_assignments.shift_id` unique
+5. role and status checks on the new workflow tables
+6. non-blank checks where text fields should not accept empty trimmed values
+
+## Constraints Planned Next
+
+1. `shift_assignments.shift_id` unique
+2. foreign-key links from assignments into `shifts` and `staff_profiles`
+3. any later assignment-side checks that need to move from route logic into database rules
 
 ## Seed Data Plan
 
@@ -109,7 +105,7 @@ The current seed file already adds:
 
 I kept it small on purpose. It is enough to test identity and early staff flows without filling the repo with demo noise too early.
 
-Later sample data for availability, leave, shifts, and assignments should only be added after those tables actually exist.
+Later sample data for assignments should only be added after `shift_assignments` actually exists.
 
 ## Session Table Note
 
@@ -119,6 +115,6 @@ I left that outside the main migration chain for now because the goal of that ch
 
 ## Next Action
 
-1. add the `availability_entries` schema migration next
-2. follow that with `leave_requests` so assignment blocking can be built on top of real tables
-3. keep `shifts` after those two tables so the rota side is built on real availability and leave records
+1. add the `shift_assignments` schema migration next
+2. build the real assignment engine on top of the already-existing availability, leave, and shift tables
+3. keep the rota layer after the assignment data is real

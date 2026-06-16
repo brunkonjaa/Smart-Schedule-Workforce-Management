@@ -4,10 +4,10 @@
 
 This file mixes two things:
 
-1. the small route set that is actually live in the repo now
-2. the target contract for the next backend routes
+1. the route set that is actually live in the repo now
+2. the target contract for the parts that still come after this checkpoint
 
-I am writing it that way on purpose so the design stays honest. Right now the backend is still in foundation and identity setup, not in full feature delivery.
+I am writing it that way on purpose so the design stays honest. Right now the backend is no longer only in foundation and identity setup. Auth, staff management, availability, leave, and shifts are already live in the repo. The real assignment engine and rota endpoints still come after that.
 
 ## Current Live Backend Surface
 
@@ -129,11 +129,11 @@ That matters because the auth direction is no longer abstract. The app already h
 3. `user_sessions` store configuration
 4. production `trust proxy` handling in `backend/src/app.js`
 
-That part is no longer just planned. The session base is live now because the auth routes are using it already. What is still missing is route protection for the rest of the feature surface.
+That part is no longer just planned. The session base is live now because the auth routes are using it already. What is still missing is the real assignment route layer and the rota route layer.
 
 ## Contract Conventions For The Next Routes
 
-Once the main feature routes are added, these are the rules I am keeping:
+For the current and next routes, these are the rules I am keeping:
 
 1. base path: `/api/v1`
 2. auth style: server-side session with `express-session`
@@ -155,27 +155,27 @@ Example error payload:
 
 ## Current Build Reality
 
-The auth routes above are live now. The routes below are still target routes.
+The auth routes above are live now. Staff, availability, leave, and shift routes are live as well. The assignment and rota routes below are still target routes.
 
 That means:
 
-1. the route shapes are planned here first
-2. the repo does not yet expose most of them
-3. auth, RBAC, and ownership checks still need to be wired in backend code
+1. the route shapes here are a mix of current and next
+2. the repo already exposes most of the staff, availability, leave, and shift surface
+3. assignment and rota logic still need real backend code
 
 ## Staff Routes
 
 ### `GET /api/v1/staff`
 
 Purpose:
-List staff records. Manager only.
+List staff records. Manager only. Live now.
 
 ### `POST /api/v1/staff`
 
 Purpose:
-Create a staff user and linked profile. Manager only.
+Create a staff user and linked profile. Manager only. Live now.
 
-Planned request:
+Current request shape:
 
 ```json
 {
@@ -188,15 +188,15 @@ Planned request:
 }
 ```
 
-Planned success:
+Current success:
 `201`
 
 ### `PUT /api/v1/staff/{staffId}`
 
 Purpose:
-Update a staff profile. Manager only.
+Update a staff profile. Manager only. Live now.
 
-Planned success:
+Current success:
 `200`
 
 ## Availability Routes
@@ -204,9 +204,9 @@ Planned success:
 ### `GET /api/v1/availability`
 
 Purpose:
-View availability entries.
+View availability entries. Live now.
 
-Planned query params:
+Current query params:
 
 1. `weekStart` required date
 2. `staffProfileId` optional for manager use
@@ -214,9 +214,9 @@ Planned query params:
 ### `POST /api/v1/availability`
 
 Purpose:
-Create availability entries for the logged-in staff user.
+Create availability entries for the logged-in staff user. Live now.
 
-Planned request:
+Current request shape:
 
 ```json
 {
@@ -232,27 +232,27 @@ Planned request:
 }
 ```
 
-Planned success:
+Current success:
 `201`
 
 ### `PUT /api/v1/availability/{availabilityId}`
 
 Purpose:
-Update own future availability entry.
+Update own future availability entry. Live now.
 
 ### `DELETE /api/v1/availability/{availabilityId}`
 
 Purpose:
-Delete own future availability entry.
+Delete own future availability entry. Live now.
 
 ## Leave Request Routes
 
 ### `GET /api/v1/leave-requests`
 
 Purpose:
-View leave requests.
+View leave requests. Live now.
 
-Planned behavior:
+Current behavior:
 
 1. manager sees all
 2. staff sees only own records
@@ -260,9 +260,9 @@ Planned behavior:
 ### `POST /api/v1/leave-requests`
 
 Purpose:
-Create a leave request.
+Create a leave request. Live now.
 
-Planned request:
+Current request shape:
 
 ```json
 {
@@ -272,32 +272,37 @@ Planned request:
 }
 ```
 
-Planned success:
+Current success:
 `201`
 
 ### `PUT /api/v1/leave-requests/{leaveRequestId}/approve`
 
 Purpose:
-Approve leave. Manager only.
+Approve leave. Manager only. Live now.
 
 ### `PUT /api/v1/leave-requests/{leaveRequestId}/reject`
 
 Purpose:
-Reject leave. Manager only.
+Reject leave. Manager only. Live now.
+
+### `DELETE /api/v1/leave-requests/{leaveRequestId}`
+
+Purpose:
+Withdraw own pending leave request. Staff only. Live now.
 
 ## Shift Routes
 
 ### `GET /api/v1/shifts`
 
 Purpose:
-List shifts for a week. Manager only.
+List shifts for a week. Manager only. Live now.
 
 ### `POST /api/v1/shifts`
 
 Purpose:
-Create a shift. Manager only.
+Create a shift. Manager only. Live now.
 
-Planned request:
+Current request shape:
 
 ```json
 {
@@ -312,7 +317,12 @@ Planned request:
 ### `PUT /api/v1/shifts/{shiftId}`
 
 Purpose:
-Update a shift. Manager only.
+Update a shift. Manager only. Live now.
+
+### `DELETE /api/v1/shifts/{shiftId}`
+
+Purpose:
+Delete a current or future shift. Manager only. Live now.
 
 ## Assignment Route
 

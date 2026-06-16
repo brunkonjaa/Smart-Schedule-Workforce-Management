@@ -487,6 +487,11 @@ table {
   flex-wrap: wrap;
 }
 
+.action-button--compact {
+  min-height: 0;
+  padding: 8px 12px;
+}
+
 .action-button {
   min-height: 42px;
   padding: 10px 16px;

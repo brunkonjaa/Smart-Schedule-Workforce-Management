@@ -2,9 +2,9 @@
 
 ## What This Matrix Is
 
-This matrix shows the intended backend access rules for the MVP routes.
+This matrix shows the backend access rules for the MVP routes.
 
-It is important to say this clearly: the route protection below is the target behavior. The repo has not wired the auth and RBAC middleware yet, so this file is the contract for the next backend step, not proof that the checks already run.
+It is important to say this clearly as well. A lot of this matrix is already wired now for auth, staff, availability, leave, and shifts. The part that is still mainly a target is the assignment and rota side.
 
 ## Roles
 
@@ -29,9 +29,11 @@ It is important to say this clearly: the route protection below is the target be
 | `POST /api/v1/leave-requests` | Deny | Allow own | Deny | Staff creates own request |
 | `PUT /api/v1/leave-requests/{id}/approve` | Deny | Deny | Allow | Manager only |
 | `PUT /api/v1/leave-requests/{id}/reject` | Deny | Deny | Allow | Manager only |
+| `DELETE /api/v1/leave-requests/{id}` | Deny | Allow own pending | Deny | Staff can withdraw own pending request |
 | `GET /api/v1/shifts?weekStart=...` | Deny | Deny | Allow | Manager only |
 | `POST /api/v1/shifts` | Deny | Deny | Allow | Manager only |
 | `PUT /api/v1/shifts/{shiftId}` | Deny | Deny | Allow | Manager only |
+| `DELETE /api/v1/shifts/{shiftId}` | Deny | Deny | Allow | Manager only |
 | `POST /api/v1/assignments` | Deny | Deny | Allow | Manager only |
 | `GET /api/v1/rota?weekStart=...` | Deny | Allow own | Allow all | Staff sees only own assignments |
 
@@ -39,15 +41,15 @@ It is important to say this clearly: the route protection below is the target be
 
 1. a staff user can only create, update, or delete their own availability entries
 2. a staff user can only create leave requests for themselves
-3. a staff user can only view their own leave records
+3. a staff user can only view and withdraw their own pending leave records
 4. a staff user can only view their own rota records
 5. a staff user cannot create shifts or assignments
 
 ## Current Repo Note
 
-The current repo already has the role idea in the frontend shell and in the database direction, but not in route middleware yet.
+The current repo now has the route middleware and ownership checks for the live auth, staff, availability, leave, and shift surface.
 
-That means this matrix is mainly here to stop the auth build from becoming vague later.
+What still is not real yet is the backend assignment route and the rota route.
 
 ## Security Test Expectations
 

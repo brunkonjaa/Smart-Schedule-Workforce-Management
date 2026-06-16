@@ -5,6 +5,10 @@
   const layout = shell.layout;
   const sessionUi = shell.sessionUi;
   const staffManager = shell.staffManager;
+  const availabilityUi = shell.availabilityUi;
+  const leaveUi = shell.leaveUi;
+  const shiftsUi = shell.shiftsUi;
+  const assignmentsUi = shell.assignmentsUi;
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
   const navElement = document.querySelector('.top-nav');
@@ -82,6 +86,42 @@
 
     if (staffManager) {
       await staffManager.mount({
+        page,
+        renderToken,
+        role: state.role,
+        workspaceElement
+      });
+    }
+
+    if (availabilityUi) {
+      await availabilityUi.mount({
+        page,
+        renderToken,
+        role: state.role,
+        workspaceElement
+      });
+    }
+
+    if (leaveUi) {
+      await leaveUi.mount({
+        page,
+        renderToken,
+        role: state.role,
+        workspaceElement
+      });
+    }
+
+    if (shiftsUi) {
+      await shiftsUi.mount({
+        page,
+        renderToken,
+        role: state.role,
+        workspaceElement
+      });
+    }
+
+    if (assignmentsUi) {
+      await assignmentsUi.mount({
         page,
         renderToken,
         role: state.role,
@@ -176,6 +216,20 @@
     return renderQueue;
   }
 
+  function navigateToPage(nextPage, shouldAnimate = true) {
+    const currentState = stateStore.get();
+    const allowedPageIds = pagesForRole(currentState.role).map((page) => page.id);
+
+    if (!allowedPageIds.includes(nextPage) || nextPage === currentState.page) {
+      return;
+    }
+
+    suppressNextHashChange = true;
+    nextState({ page: nextPage });
+    window.location.hash = nextPage;
+    queueRender(shouldAnimate);
+  }
+
   navElement.addEventListener('click', (event) => {
     const link = event.target.closest('a[href^="#"]');
     if (!link) {
@@ -185,15 +239,22 @@
     event.preventDefault();
 
     const nextPage = link.getAttribute('href').replace('#', '');
-    const currentState = stateStore.get();
-    if (nextPage === currentState.page) {
+    navigateToPage(nextPage);
+  });
+
+  workspaceElement.addEventListener('click', (event) => {
+    const targetButton = event.target.closest('button[data-target-page]');
+
+    if (!targetButton) {
       return;
     }
 
-    suppressNextHashChange = true;
-    nextState({ page: nextPage });
-    window.location.hash = nextPage;
-    queueRender(true);
+    const nextPage = targetButton.dataset.targetPage;
+    if (!nextPage) {
+      return;
+    }
+
+    navigateToPage(nextPage);
   });
 
   roleSwitcherElement.addEventListener('click', (event) => {

@@ -21,8 +21,8 @@ window.SmartSchedule.pageConfig = {
           title: 'This week',
           controls: [
             { type: 'date', label: 'Week start', value: '2026-06-08' },
-            { type: 'button', label: 'Review rota', tone: 'primary' },
-            { type: 'button', label: 'Add shift', tone: 'secondary' }
+            { type: 'button', label: 'Review rota', tone: 'primary', targetPage: 'rota' },
+            { type: 'button', label: 'Add shift', tone: 'secondary', targetPage: 'shifts' }
           ]
         },
         {
@@ -54,7 +54,7 @@ window.SmartSchedule.pageConfig = {
           spanClass: 'content-panel--span-16',
           title: 'No urgent coverage issues flagged for this week',
           body: 'Current rota checks show no high-priority conflicts that need immediate action.',
-          action: { label: 'Open assignments', tone: 'secondary' }
+          action: { label: 'Open assignments', tone: 'secondary', targetPage: 'assignments' }
         }
       ]
     },

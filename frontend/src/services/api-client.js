@@ -66,6 +66,11 @@ window.SmartSchedule.apiClient = (function createApiClient() {
         body,
         method: 'PUT'
       });
+    },
+    delete(path) {
+      return request(path, {
+        method: 'DELETE'
+      });
     }
   };
 })();

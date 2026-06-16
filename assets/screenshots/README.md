@@ -14,10 +14,12 @@ Current folders in use:
 
 1. `backend-setup`
 2. `backend-auth`
-3. `database-setup`
-4. `frontend-shell`
-5. `jira`
-6. `migrations`
+3. `backend-workflows`
+4. `database-setup`
+5. `frontend-shell`
+6. `frontend-workflows`
+7. `jira`
+8. `migrations`
 
 If a new type of evidence is needed later, add another clear folder instead of dumping everything into one place.
 
@@ -100,6 +102,19 @@ Examples:
 - `055` staff list with inactive record
 - `056` staff filter floor
 - `057` staff filter bar
+- `058` availability save success
+- `059` availability validation end time before start
+- `060` leave request validation missing reason
+- `061` leave request submitted pending
+- `062` leave request approved manager view
+- `063` shift validation end time before start
+- `064` staff blocked from manager shifts page
+- `065` workflow route test suite passing
+- `066` shift delete button visible
+- `067` availability entry delete success
+- `068` shift delete success
+- `069` assignments review shift working
+- `070` assignments staff assigned success
 
 ## Practical Reminder
 

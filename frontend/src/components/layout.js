@@ -20,7 +20,10 @@ window.SmartSchedule.layout = (function createLayout() {
 
   function renderButton(button) {
     const toneClass = button.tone ? ` button-${button.tone}` : '';
-    return `<button class="action-button${toneClass}" type="button">${button.label}</button>`;
+    const targetPageAttribute = button.targetPage
+      ? ` data-target-page="${button.targetPage}"`
+      : '';
+    return `<button class="action-button${toneClass}" type="button"${targetPageAttribute}>${button.label}</button>`;
   }
 
   function renderToolbarControl(control) {
