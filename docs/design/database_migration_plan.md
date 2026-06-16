@@ -119,6 +119,6 @@ I left that outside the main migration chain for now because the goal of that ch
 
 ## Next Action
 
-1. add authentication middleware
-2. add role-based access middleware
-3. start the availability schema only after the auth base is usable across more than the auth routes
+1. add the `availability_entries` schema migration next
+2. follow that with `leave_requests` so assignment blocking can be built on top of real tables
+3. keep `shifts` after those two tables so the rota side is built on real availability and leave records

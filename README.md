@@ -6,7 +6,7 @@ Smart Schedule is a rota and staff coordination project for small hospitality te
 
 The idea is simple enough. Managers need one place to keep staff records, check availability, review leave, build weekly shifts, and see the rota without chasing messages or patching things together in spreadsheets. Staff need the smaller side of that, which is mainly login, availability, leave requests, and their own assigned shifts.
 
-Right now this repo is not the full finished system yet. The frontend shell is built, the backend foundation is in place, the Neon database connection is working, the first schema and seed migrations are in the repo, and the PostgreSQL-backed session layer is wired. Most of the real business routes still come after this checkpoint.
+Right now this repo is not the full finished system yet. The frontend shell is built, the backend foundation is in place, the Neon database connection is working, the first schema and seed migrations are in the repo, the PostgreSQL-backed session layer is wired, and the manager staff workflow is now the main completed business slice. Availability, leave, shifts, assignments, and rota logic still come after this checkpoint.
 
 ## Why The Scope Was Tightened
 
@@ -42,18 +42,24 @@ Built now:
 10. initial seed data migration
 11. login, logout, and authenticated-session routes under `/api/v1/auth`
 12. backend auth service for credential checks and public user shaping
-13. Jest and Supertest auth route tests
-14. exported SRS diagrams under `docs/SRS/diagrams/`
+13. shared authentication middleware for protected routes
+14. security hardening around TLS, `helmet`, login rate limiting, and session timeout configuration
+15. role-based access middleware for manager-only backend routes
+16. manager staff routes for create, list, and edit under `/api/v1/staff`
+17. live frontend login flow using the real session-backed auth routes
+18. live manager staff page wired to backend staff data and update flows
+19. mutation-protection headers for logout and state-changing staff requests
+20. Jest and Supertest coverage for auth, security, role, and staff route flows
+21. exported SRS diagrams under `docs/SRS/diagrams/`
 
 Not built yet:
 
-1. authentication middleware for the rest of the protected routes
-2. staff CRUD routes
-3. availability routes
-4. leave request routes
-5. shift routes
-6. assignment logic
-7. broader automated backend coverage beyond auth
+1. availability routes and persistence
+2. leave request routes
+3. shift routes
+4. assignment logic
+5. rota endpoints and role-scoped rota views
+6. broader workflow automation beyond auth and staff-management coverage
 
 That distinction matters because a lot of the docs describe the target build shape, not just the already-running code.
 

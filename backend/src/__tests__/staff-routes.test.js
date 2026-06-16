@@ -1,0 +1,244 @@
+const crypto = require('crypto');
+const bcrypt = require('bcrypt');
+const request = require('supertest');
+const app = require('../app');
+const { closePool, query } = require('../config/db');
+const {
+  mutationProtectionHeaderName
+} = require('../middleware/request-security');
+
+jest.setTimeout(20000);
+
+describe('staff routes', () => {
+  const managerId = crypto.randomUUID();
+  const managerStaffProfileId = crypto.randomUUID();
+  const staffUserId = crypto.randomUUID();
+  const staffProfileId = crypto.randomUUID();
+  const extraStaffUserId = crypto.randomUUID();
+  const extraStaffProfileId = crypto.randomUUID();
+  const managerEmail = `staff-manager-${Date.now()}@example.com`;
+  const staffEmail = `staff-route-staff-${Date.now()}@example.com`;
+  const extraStaffEmail = `staff-route-extra-${Date.now()}@example.com`;
+  const managerPassword = 'ManagerRoutePass123!';
+  const staffPassword = 'StaffRoutePass123!';
+  const mutationHeader = {
+    [mutationProtectionHeaderName]: '1'
+  };
+
+  beforeAll(async () => {
+    const managerPasswordHash = await bcrypt.hash(managerPassword, 10);
+    const staffPasswordHash = await bcrypt.hash(staffPassword, 10);
+
+    await query(
+      `
+        INSERT INTO users (id, email, password_hash, role, is_active, created_at, updated_at)
+        VALUES
+          ($1, $2, $3, 'MANAGER', TRUE, NOW(), NOW()),
+          ($4, $5, $6, 'STAFF', TRUE, NOW(), NOW()),
+          ($7, $8, $6, 'STAFF', TRUE, NOW(), NOW())
+      `,
+      [
+        managerId,
+        managerEmail,
+        managerPasswordHash,
+        staffUserId,
+        staffEmail,
+        staffPasswordHash,
+        extraStaffUserId,
+        extraStaffEmail
+      ]
+    );
+
+    await query(
+      `
+        INSERT INTO staff_profiles (
+          id,
+          user_id,
+          full_name,
+          primary_role,
+          contract_hours,
+          phone_number,
+          is_active,
+          created_at,
+          updated_at
+        )
+        VALUES
+          ($1, $2, 'Route Manager', 'FLOOR', 40.00, '0851000001', TRUE, NOW(), NOW()),
+          ($3, $4, 'Route Staff', 'BAR', 28.00, '0851000002', TRUE, NOW(), NOW()),
+          ($5, $6, 'Route Extra', 'KITCHEN', 30.00, '0851000003', TRUE, NOW(), NOW())
+      `,
+      [
+        managerStaffProfileId,
+        managerId,
+        staffProfileId,
+        staffUserId,
+        extraStaffProfileId,
+        extraStaffUserId
+      ]
+    );
+  });
+
+  afterAll(async () => {
+    await query(
+      'DELETE FROM staff_profiles WHERE id IN ($1, $2, $3)',
+      [managerStaffProfileId, staffProfileId, extraStaffProfileId]
+    );
+    await query(
+      'DELETE FROM users WHERE id IN ($1, $2, $3)',
+      [managerId, staffUserId, extraStaffUserId]
+    );
+    await query(
+      'DELETE FROM staff_profiles WHERE full_name = $1',
+      ['Created From Route Test']
+    );
+    await query(
+      'DELETE FROM users WHERE email = $1',
+      ['created-route-staff@example.com']
+    );
+    await closePool();
+  });
+
+  const loginAsManager = async () => {
+    const agent = request.agent(app);
+    const response = await agent.post('/api/v1/auth/login').send({
+      email: managerEmail,
+      password: managerPassword
+    });
+
+    expect(response.status).toBe(200);
+    return agent;
+  };
+
+  const loginAsStaff = async () => {
+    const agent = request.agent(app);
+    const response = await agent.post('/api/v1/auth/login').send({
+      email: staffEmail,
+      password: staffPassword
+    });
+
+    expect(response.status).toBe(200);
+    return agent;
+  };
+
+  test('rejects unauthenticated staff list requests', async () => {
+    const response = await request(app).get('/api/v1/staff');
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      error: 'Authentication Required',
+      message: 'You must be logged in to access this route.'
+    });
+  });
+
+  test('rejects staff users on manager-only list routes', async () => {
+    const agent = await loginAsStaff();
+    const response = await agent.get('/api/v1/staff');
+
+    expect(response.status).toBe(403);
+    expect(response.body).toEqual({
+      error: 'Forbidden',
+      message: 'You do not have permission to access this route.'
+    });
+  });
+
+  test('lists staff records for managers', async () => {
+    const agent = await loginAsManager();
+    const response = await agent.get('/api/v1/staff');
+
+    expect(response.status).toBe(200);
+    expect(response.body.staff).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          email: extraStaffEmail,
+          fullName: 'Route Extra',
+          id: extraStaffProfileId,
+          isActive: true,
+          primaryRole: 'KITCHEN',
+          role: 'STAFF'
+        }),
+        expect.objectContaining({
+          email: staffEmail,
+          fullName: 'Route Staff',
+          id: staffProfileId,
+          isActive: true,
+          primaryRole: 'BAR',
+          role: 'STAFF'
+        })
+      ])
+    );
+  });
+
+  test('requires the mutation protection header on staff creation', async () => {
+    const agent = await loginAsManager();
+    const response = await agent.post('/api/v1/staff').send({
+      contractHours: 18,
+      email: 'created-route-staff@example.com',
+      fullName: 'Created From Route Test',
+      password: 'CreatedStaffPass123!',
+      phoneNumber: '0851000004',
+      primaryRole: 'FLOOR'
+    });
+
+    expect(response.status).toBe(403);
+    expect(response.body).toEqual({
+      error: 'Forbidden',
+      message: 'This request is missing the required mutation protection header.'
+    });
+  });
+
+  test('creates a staff user and linked staff profile for managers', async () => {
+    const agent = await loginAsManager();
+    const response = await agent
+      .post('/api/v1/staff')
+      .set(mutationHeader)
+      .send({
+        contractHours: 18,
+        email: 'created-route-staff@example.com',
+        fullName: 'Created From Route Test',
+        password: 'CreatedStaffPass123!',
+        phoneNumber: '0851000004',
+        primaryRole: 'FLOOR'
+      });
+
+    expect(response.status).toBe(201);
+    expect(response.body.message).toBe('Staff record created successfully.');
+    expect(response.body.staff).toEqual(
+      expect.objectContaining({
+        email: 'created-route-staff@example.com',
+        fullName: 'Created From Route Test',
+        isActive: true,
+        primaryRole: 'FLOOR',
+        role: 'STAFF'
+      })
+    );
+  });
+
+  test('updates a staff profile for managers', async () => {
+    const agent = await loginAsManager();
+    const response = await agent
+      .put(`/api/v1/staff/${staffProfileId}`)
+      .set(mutationHeader)
+      .send({
+        contractHours: 32,
+        fullName: 'Route Staff Updated',
+        isActive: false,
+        phoneNumber: '0851999999',
+        primaryRole: 'FLOOR'
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.message).toBe('Staff record updated successfully.');
+    expect(response.body.staff).toEqual(
+      expect.objectContaining({
+        contractHours: 32,
+        email: staffEmail,
+        fullName: 'Route Staff Updated',
+        id: staffProfileId,
+        isActive: false,
+        phoneNumber: '0851999999',
+        primaryRole: 'FLOOR',
+        role: 'STAFF'
+      })
+    );
+  });
+});

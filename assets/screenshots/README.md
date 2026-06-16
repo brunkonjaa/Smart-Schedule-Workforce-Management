@@ -89,6 +89,17 @@ Examples:
 - `044` auth security test suite passing
 - `045` SCRUM-16 done
 - `046` role middleware test suite passing
+- `047` SCRUM-17, SCRUM-18, and SCRUM-19 in progress
+- `048` staff management test suite passing
+- `049` SCRUM-17, SCRUM-18, and SCRUM-19 done
+- `050` login invalid credentials
+- `051` staff records manager view light
+- `052` staff create form filled
+- `053` staff duplicate email error
+- `054` staff update saved
+- `055` staff list with inactive record
+- `056` staff filter floor
+- `057` staff filter bar
 
 ## Practical Reminder
 

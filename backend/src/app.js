@@ -1,20 +1,46 @@
 const express = require('express');
+const path = require('path');
 const helmet = require('helmet');
 const config = require('./config/env');
 const { checkDatabaseConnection } = require('./config/db');
 const { sessionMiddleware } = require('./config/session');
 const authRoutes = require('./routes/auth');
+const staffRoutes = require('./routes/staff');
+
+const frontendPublicDirectory = path.resolve(__dirname, '../../frontend/public');
+const frontendSourceDirectory = path.resolve(__dirname, '../../frontend/src');
 
 const app = express();
+
+app.disable('x-powered-by');
 
 if (config.nodeEnv === 'production') {
   app.set('trust proxy', 1);
 }
 
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        baseUri: ["'self'"],
+        connectSrc: ["'self'"],
+        defaultSrc: ["'self'"],
+        formAction: ["'self'"],
+        imgSrc: ["'self'", 'data:'],
+        objectSrc: ["'none'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'"]
+      }
+    }
+  })
+);
 app.use(sessionMiddleware);
-app.use(express.json());
+app.use(express.json({ limit: '32kb' }));
+app.use(express.urlencoded({ extended: false, limit: '10kb', parameterLimit: 25 }));
+app.use('/src', express.static(frontendSourceDirectory));
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/staff', staffRoutes);
+app.use(express.static(frontendPublicDirectory));
 
 app.get('/health', async (request, response) => {
   try {

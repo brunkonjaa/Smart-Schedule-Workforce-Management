@@ -583,7 +583,7 @@ Each entry should answer four practical things:
 
 - Phase: Sprint 2 auth route build
 - Sprint: Sprint 2 - Identity and Staff Base
-- Status: login and logout route checkpoint completed locally, evidence captured, commit still pending
+- Status: login and logout route checkpoint committed and Jira evidence closed
 
 ### What Changed
 
@@ -591,17 +591,17 @@ Each entry should answer four practical things:
 2. I added `backend/src/services/auth-service.js` so the route layer does not keep all the database and password logic inside one file.
 3. I updated the app so the auth routes are mounted under `/api/v1/auth` and added a simple fallback `500` handler.
 4. I added backend auth tests under `backend/src/__tests__/auth-routes.test.js`.
-5. I captured the Jira and PowerShell evidence screenshots for the full `SCRUM-14` checkpoint.
+5. I committed the Jira and PowerShell evidence screenshots for the full `SCRUM-14` checkpoint.
 
 ### Why It Changed
 
 1. The session base was already in place, so this was the first point where identity became a real working backend feature instead of only setup.
-2. I kept this checkpoint narrow on purpose. First I wanted login, logout, session lookup, and test proof. The stronger route protection still comes after that.
+2. I kept this checkpoint narrow on purpose. First I wanted login, logout, session lookup, and test proof. The stronger route protection still came after that.
 
 ### Drawback Accepted
 
-1. This still does not protect the rest of the business routes because auth middleware and RBAC middleware are still separate checkpoints.
-2. The current evidence is mostly backend JSON and Jira proof, not a finished frontend login flow yet.
+1. This still did not protect the rest of the business routes because auth middleware and RBAC middleware were still separate checkpoints at that stage.
+2. The evidence was mostly backend JSON and Jira proof, not a finished frontend login flow yet.
 
 ### Evidence
 
@@ -614,10 +614,138 @@ Each entry should answer four practical things:
 7. `assets/screenshots/tests/backend-auth/040_auth-me-success-response.png`
 8. `assets/screenshots/tests/backend-auth/041_logout-success-response.png`
 9. `assets/screenshots/tests/backend-auth/042_auth-me-after-logout-unauthorized.png`
-10. local `npm test` run with the auth route test block passing
+10. commit `42fa6aa`
 
 ### Next Steps
 
 1. add authentication middleware for protected non-auth routes
-2. add role-based access middleware after that
-3. move into staff CRUD only when route protection is stable
+2. harden the auth entry points before WAN-facing use
+3. add role-based access middleware after that
+
+## 2026-06-12
+
+### Snapshot
+
+- Phase: Sprint 2 auth protection build
+- Sprint: Sprint 2 - Identity and Staff Base
+- Status: authentication middleware and security hardening committed
+
+### What Changed
+
+1. I added shared auth middleware so protected routes can validate the current session user consistently.
+2. I tightened remote PostgreSQL security with strict TLS verification and channel binding.
+3. I added `helmet()` to the Express app and rate limiting around login.
+4. I reduced the session settings to a more moderate idle timeout that still fits usability.
+5. I added backend tests for the DB security config and login rate limiting.
+
+### Why It Changed
+
+1. Login routes alone were not enough because the app still needed shared access checks before business routes could be added safely.
+2. It was better to harden the auth entry points before I started building more manager-only CRUD features.
+
+### Evidence
+
+1. `backend/src/middleware/auth.js`
+2. `backend/src/config/db.js`
+3. `backend/src/app.js`
+4. `backend/src/__tests__/auth-middleware.test.js`
+5. `backend/src/__tests__/db-config.test.js`
+6. `backend/src/__tests__/rate-limit.test.js`
+7. `assets/screenshots/tests/jira/043_scrum-15-done-and-scrum-16-in-progress.png`
+8. `assets/screenshots/tests/backend-auth/044_auth-security-test-suite-passing.png`
+9. commit `5d6e371`
+
+### Next Steps
+
+1. add role-based access middleware
+2. keep the next checkpoint focused on manager-only access control
+3. move into staff CRUD only after that access layer is stable
+
+## 2026-06-12
+
+### Snapshot
+
+- Phase: Sprint 2 access control build
+- Sprint: Sprint 2 - Identity and Staff Base
+- Status: role-based access middleware committed and Jira updated
+
+### What Changed
+
+1. I added shared role-check middleware for manager-only access control.
+2. I expanded the auth middleware tests to cover role rejection and allow paths.
+3. I closed the Jira checkpoint for `SCRUM-16`.
+
+### Why It Changed
+
+1. The staff routes were the first real business routes that needed a clean manager-only guard.
+2. I wanted one reusable RBAC layer before duplicating role checks inside each route file.
+
+### Evidence
+
+1. `backend/src/middleware/rbac.js`
+2. `backend/src/__tests__/auth-middleware.test.js`
+3. `assets/screenshots/tests/jira/045_scrum-16-done.png`
+4. `assets/screenshots/tests/backend-auth/046_role-middleware-test-suite-passing.png`
+5. commit `457ea13`
+
+### Next Steps
+
+1. build the manager staff routes
+2. wire the frontend login page into the real auth flow
+3. capture the staff-management evidence as one clean checkpoint
+
+## 2026-06-12
+
+### Snapshot
+
+- Phase: Sprint 2 manager staff workflow build
+- Sprint: Sprint 2 - Identity and Staff Base
+- Status: staff management checkpoint completed and evidence organized
+
+### What Changed
+
+1. I added manager-only `GET`, `POST`, and `PUT` staff routes under `/api/v1/staff`.
+2. I added a staff service layer so route validation and transaction logic stay out of the route file.
+3. I added a mutation-protection header check for state-changing staff actions and for logout.
+4. I wired the login page to the real backend auth routes instead of shell-only state.
+5. I wired the manager staff page to the real backend list, create, filter, and edit flows.
+6. I added the staff route test suite and kept the broader backend test block green.
+7. I organized Jira, frontend, and backend screenshot evidence through `057`.
+
+### Why It Changed
+
+1. Sprint 2 needed one real business slice after the auth and RBAC layers were stable.
+2. I kept create, list, edit, and the matching frontend together because splitting them further would have made the current tree less believable and harder to explain.
+
+### Drawback Accepted
+
+1. This checkpoint still leaves availability, leave, shifts, and rota logic for later phases.
+2. The current mutation-protection approach is lightweight and intentionally practical for this stage rather than a full CSRF token framework.
+
+### Evidence
+
+1. `backend/src/routes/staff.js`
+2. `backend/src/services/staff-service.js`
+3. `backend/src/middleware/request-security.js`
+4. `backend/src/__tests__/staff-routes.test.js`
+5. `frontend/src/services/api-client.js`
+6. `frontend/src/services/session-ui.js`
+7. `frontend/src/services/staff-manager.js`
+8. `assets/screenshots/tests/jira/047_scrum-17-18-19-in-progress.png`
+9. `assets/screenshots/tests/backend-auth/048_staff-management-test-suite-passing.png`
+10. `assets/screenshots/tests/jira/049_scrum-17-18-19-done.png`
+11. `assets/screenshots/tests/frontend-shell/050_login-invalid-credentials.png`
+12. `assets/screenshots/tests/frontend-shell/051_staff-records-manager-view-light.png`
+13. `assets/screenshots/tests/frontend-shell/052_staff-create-form-filled.png`
+14. `assets/screenshots/tests/frontend-shell/053_staff-duplicate-email-error.png`
+15. `assets/screenshots/tests/frontend-shell/054_staff-update-saved.png`
+16. `assets/screenshots/tests/frontend-shell/055_staff-list-with-inactive-record.png`
+17. `assets/screenshots/tests/frontend-shell/056_staff-filter-floor.png`
+18. `assets/screenshots/tests/frontend-shell/057_staff-filter-bar.png`
+19. local `npm test` run with 5 suites and 21 tests passing
+
+### Next Steps
+
+1. start the `availability_entries` schema next
+2. follow that with `leave_requests` because assignment blocking still depends on real leave data
+3. keep the next schema checkpoint separate from later shift and rota work

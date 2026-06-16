@@ -8,6 +8,7 @@ const {
   destroySession,
   requireAuth
 } = require('../middleware/auth');
+const { requireMutationProtection } = require('../middleware/request-security');
 const { loginRateLimiter } = require('../config/rate-limit');
 
 const router = express.Router();
@@ -129,6 +130,7 @@ router.get(
 
 router.post(
   '/logout',
+  requireMutationProtection,
   asyncHandler(async (request, response) => {
     if (!request.session) {
       clearSessionCookie(response);

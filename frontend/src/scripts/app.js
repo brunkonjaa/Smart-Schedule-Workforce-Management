@@ -3,6 +3,8 @@
   const allPages = shell.pageConfig.pages;
   const stateStore = shell.previewState;
   const layout = shell.layout;
+  const sessionUi = shell.sessionUi;
+  const staffManager = shell.staffManager;
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
   const navElement = document.querySelector('.top-nav');
@@ -70,10 +72,30 @@
       .join('');
   }
 
-  function renderPage(state) {
+  async function renderPage(state) {
     const page = allPages.find((entry) => entry.id === state.page);
     pageIntroElement.innerHTML = layout.renderPageIntro(page, state.role);
     workspaceElement.innerHTML = layout.renderWorkspace(page);
+
+    const renderToken = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    workspaceElement.dataset.renderToken = renderToken;
+
+    if (staffManager) {
+      await staffManager.mount({
+        page,
+        renderToken,
+        role: state.role,
+        workspaceElement
+      });
+    }
+
+    if (sessionUi) {
+      await sessionUi.mount({
+        page,
+        renderToken,
+        workspaceElement
+      });
+    }
   }
 
   function animateStageOut() {
@@ -142,7 +164,7 @@
     applyTheme(state.theme);
     renderRoleSwitcher(state);
     renderNavigation(state);
-    renderPage(state);
+    await renderPage(state);
 
     if (shouldAnimate) {
       await animateStageIn();

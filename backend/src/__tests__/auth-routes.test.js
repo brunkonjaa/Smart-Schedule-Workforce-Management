@@ -3,6 +3,9 @@ const bcrypt = require('bcrypt');
 const request = require('supertest');
 const app = require('../app');
 const { closePool, query } = require('../config/db');
+const {
+  mutationProtectionHeaderName
+} = require('../middleware/request-security');
 
 jest.setTimeout(20000);
 
@@ -128,7 +131,9 @@ describe('auth routes', () => {
       password: testPassword
     });
 
-    const logoutResponse = await agent.post('/api/v1/auth/logout');
+    const logoutResponse = await agent
+      .post('/api/v1/auth/logout')
+      .set(mutationProtectionHeaderName, '1');
 
     expect(logoutResponse.status).toBe(204);
 

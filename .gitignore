@@ -5,3 +5,13 @@
 node_modules/
 coverage/
 dist/
+
+# OS junk
+Thumbs.db
+.DS_Store
+
+# Office temp files
+~$*.docx
+
+# Visual Paradigm backup artifacts
+Visual Diagram/*.vpp.bak_*
