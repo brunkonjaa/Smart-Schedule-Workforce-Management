@@ -4,7 +4,7 @@
 
 This matrix shows the backend access rules for the MVP routes.
 
-It is important to say this clearly as well. A lot of this matrix is already wired now for auth, staff, availability, leave, and shifts. The part that is still mainly a target is the assignment and rota side.
+It is important to say this clearly as well. A lot of this matrix is already wired now for auth, staff, availability, leave, shifts, and the first assignment save route. The part that is still mainly a target is the rota side and the deeper assignment conflict rules.
 
 ## Roles
 
@@ -47,9 +47,9 @@ It is important to say this clearly as well. A lot of this matrix is already wir
 
 ## Current Repo Note
 
-The current repo now has the route middleware and ownership checks for the live auth, staff, availability, leave, and shift surface.
+The current repo now has the route middleware and ownership checks for the live auth, staff, availability, leave, shift, and basic assignment save surface.
 
-What still is not real yet is the backend assignment route and the rota route.
+What still is not real yet is the assignment conflict engine and the rota route.
 
 ## Security Test Expectations
 

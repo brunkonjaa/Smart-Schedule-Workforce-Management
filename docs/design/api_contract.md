@@ -7,7 +7,7 @@ This file mixes two things:
 1. the route set that is actually live in the repo now
 2. the target contract for the parts that still come after this checkpoint
 
-I am writing it that way on purpose so the design stays honest. Right now the backend is no longer only in foundation and identity setup. Auth, staff management, availability, leave, and shifts are already live in the repo. The real assignment engine and rota endpoints still come after that.
+I am writing it that way on purpose so the design stays honest. Right now the backend is no longer only in foundation and identity setup. Auth, staff management, availability, leave, shifts, and the first assignment route are already live in the repo. The assignment conflict engine and rota endpoints still come after that.
 
 ## Current Live Backend Surface
 
@@ -129,7 +129,7 @@ That matters because the auth direction is no longer abstract. The app already h
 3. `user_sessions` store configuration
 4. production `trust proxy` handling in `backend/src/app.js`
 
-That part is no longer just planned. The session base is live now because the auth routes are using it already. What is still missing is the real assignment route layer and the rota route layer.
+That part is no longer just planned. The session base is live now because the auth routes are using it already. What is still missing is the real assignment conflict layer and the rota route layer.
 
 ## Contract Conventions For The Next Routes
 
@@ -155,13 +155,13 @@ Example error payload:
 
 ## Current Build Reality
 
-The auth routes above are live now. Staff, availability, leave, and shift routes are live as well. The assignment and rota routes below are still target routes.
+The auth routes above are live now. Staff, availability, leave, shift, and basic assignment routes are live as well. The rota route below is still a target route.
 
 That means:
 
 1. the route shapes here are a mix of current and next
-2. the repo already exposes most of the staff, availability, leave, and shift surface
-3. assignment and rota logic still need real backend code
+2. the repo already exposes most of the staff, availability, leave, shift, and assignment save surface
+3. assignment conflict checks and rota logic still need real backend code
 
 ## Staff Routes
 
@@ -329,9 +329,9 @@ Delete a current or future shift. Manager only. Live now.
 ### `POST /api/v1/assignments`
 
 Purpose:
-Assign a staff member to a shift. Manager only.
+Assign a staff member to a shift. Manager only. Live now as a basic save route.
 
-Planned request:
+Current request:
 
 ```json
 {
@@ -340,16 +340,23 @@ Planned request:
 }
 ```
 
-Planned success:
+Current success:
 `201`
+
+Current duplicate-shift conflict:
+`409`
+
+Current limitation:
+This route stores the assignment and rejects assigning the same shift twice. It does not yet enforce leave, overlap, availability, role, or contract-hours rules.
 
 Possible business-rule errors:
 
-1. `409` leave conflict
-2. `409` overlap conflict
-3. `409` availability conflict
-4. `409` role conflict
-5. `404` unknown shift or staff record
+1. `409` duplicate assignment conflict - live now
+2. `404` unknown shift or staff record - live now
+3. `409` leave conflict - planned next
+4. `409` overlap conflict - planned next
+5. `409` availability conflict - planned next
+6. `409` role conflict - planned next
 
 ## Rota Route
 

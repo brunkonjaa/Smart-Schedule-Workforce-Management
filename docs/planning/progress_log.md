@@ -853,3 +853,51 @@ Each entry should answer four practical things:
 1. add the assignment route and service layer
 2. add backend conflict checks before wiring the frontend assignment screen
 3. keep rota work after saved assignments can be created through the API
+
+## 2026-06-17
+
+### Snapshot
+
+- Phase: Assignment API foundation
+- Sprint: Sprint 2 - Identity and Staff Base still active
+- Status: basic backend assignment save route added
+
+### What Changed
+
+1. I added `backend/src/services/assignment-service.js`.
+2. I added `backend/src/routes/assignments.js`.
+3. I mounted the route under `/api/v1/assignments`.
+4. A manager can now save one staff assignment for one shift.
+5. The route rejects unauthenticated users, staff users, missing mutation-protection headers, invalid UUIDs, and duplicate assignments for the same shift.
+6. I added backend tests for the new assignment route.
+
+### Why It Changed
+
+1. The previous checkpoint only added the `shift_assignments` table.
+2. This step proves the backend can now write a real assignment record instead of only showing a client-side assignment screen.
+3. I kept the conflict rules out of this checkpoint because leave, overlap, availability, role, and contract-hour checks need their own focused tests.
+
+### Drawback Accepted
+
+1. Assignment is still not wired into the frontend screen.
+2. The route currently saves an assignment and blocks duplicates, but it does not yet enforce the full scheduling conflict rules.
+
+### Evidence
+
+1. `backend/src/services/assignment-service.js`
+2. `backend/src/routes/assignments.js`
+3. `backend/src/__tests__/assignment-routes.test.js`
+4. `npm test -- assignment-routes.test.js`
+5. `npm test`
+6. `assets/screenshots/tests/backend-workflows/074_assignment-route-test-suite-passing.png`
+7. `assets/screenshots/tests/backend-workflows/075_assignment-api-manager-login-success.png`
+8. `assets/screenshots/tests/backend-workflows/076_assignment-api-shift-created.png`
+9. `assets/screenshots/tests/backend-workflows/077_assignment-api-create-success.png`
+10. `assets/screenshots/tests/backend-workflows/078_assignment-api-duplicate-conflict.png`
+11. `assets/screenshots/tests/backend-workflows/079_assignment-route-test-suite-passing.png`
+
+### Next Steps
+
+1. add leave and overlap conflict checks
+2. add availability and role conflict checks after that
+3. keep frontend assignment wiring after the backend conflict responses are real

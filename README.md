@@ -6,7 +6,7 @@ Smart Schedule is a rota and staff coordination project for small hospitality te
 
 The idea is simple enough. Managers need one place to keep staff records, check availability, review leave, build weekly shifts, and see the rota without chasing messages or patching things together in spreadsheets. Staff need the smaller side of that, which is mainly login, availability, leave requests, and their own assigned shifts.
 
-Right now this repo is still not the full finished system yet, but it is not only the auth and staff base anymore either. The frontend shell is built, the backend foundation is in place, the Neon database connection is working, the PostgreSQL-backed session layer is wired, the manager staff workflow is committed, and the availability, leave, and shifts workflows now exist in the current checkpoint. The real assignment engine and the rota layer still come after this checkpoint.
+Right now this repo is still not the full finished system yet, but it is not only the auth and staff base anymore either. The frontend shell is built, the backend foundation is in place, the Neon database connection is working, the PostgreSQL-backed session layer is wired, the manager staff workflow is committed, and the availability, leave, shifts, and first assignment API foundation now exist in the current checkpoint. The conflict-check layer and the rota layer still come after this checkpoint.
 
 ## Why The Scope Was Tightened
 
@@ -54,14 +54,15 @@ Built now:
 22. live leave routes and UI for submit, approve, reject, list, and staff-side withdraw
 23. live shift routes and UI for create, edit, list, and delete
 24. `shift_assignments` schema migration for the next assignment engine step
-25. shared workflow helper logic for the new route layer
-26. screenshot evidence through `070`
-27. Jest and Supertest coverage now including availability, leave, and shift route flows
-28. exported SRS diagrams under `docs/SRS/diagrams/`
+25. backend assignment route foundation for saving one staff assignment per shift
+26. shared workflow helper logic for the new route layer
+27. screenshot evidence through `079`
+28. Jest and Supertest coverage now including availability, leave, shift, and assignment route flows
+29. exported SRS diagrams under `docs/SRS/diagrams/`
 
 Not built yet:
 
-1. backend assignment routes and service logic
+1. assignment frontend wired to the real backend route
 2. overlap, leave, availability, and role blocking enforced by a real assignment engine
 3. rota endpoints and role-scoped rota views
 4. broader workflow automation beyond the current availability, leave, and shift layer
@@ -82,7 +83,7 @@ These are still the active MVP features I am building toward:
 8. staff rota view
 9. basic conflict checks
 
-What matters here is that items `4`, `5`, and `6` now exist in the current checkpoint. Item `7` is only partly there because the assignments page is usable as a client-side review screen, but the real backend assignment engine is still not built yet.
+What matters here is that items `4`, `5`, and `6` now exist in the current checkpoint. Item `7` is partly there because the backend can now save a basic assignment, but the frontend is still not wired to that route and the real conflict checks still come next.
 
 ## Current Stack
 

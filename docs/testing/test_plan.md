@@ -10,9 +10,9 @@ It also needs one honest note at the start. Most of the cases below are planned 
 2. manual Neon and pgAdmin database checks
 3. backend health-route verification
 4. migration status and migration apply checks
-5. automated auth route tests with `Jest` and `Supertest`
+5. automated auth, staff, availability, leave, shift, and basic assignment route tests with `Jest` and `Supertest`
 
-That still is not broad test coverage. It is just the first real backend test block.
+That still is not full MVP test coverage. The missing part is mainly the assignment conflict rules and rota workflow.
 
 ## Test Strategy
 
@@ -51,6 +51,9 @@ At the current checkpoint I can already verify:
 7. valid login creates a session
 8. `GET /api/v1/auth/me` returns the current session user
 9. logout destroys the session
+10. a manager can create a basic saved shift assignment through the backend
+11. staff users are rejected from the assignment route
+12. duplicate assignment for the same shift returns a conflict
 
 ## Unit Test Coverage Planned
 

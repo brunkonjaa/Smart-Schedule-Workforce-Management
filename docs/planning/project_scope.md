@@ -56,14 +56,15 @@ Parts already visible in the repo:
 11. login, logout, and current-session auth routes
 12. role checks and manager-only staff routes
 13. live availability, leave, and shift routes
-14. backend route tests for auth, staff, availability, leave, and shifts
-15. SRS diagram exports under `docs/SRS/diagrams/`
+14. basic backend assignment save route
+15. backend route tests for auth, staff, availability, leave, shifts, and assignments
+16. SRS diagram exports under `docs/SRS/diagrams/`
 
 Parts still not built yet:
 
-1. assignment routes and service logic
-2. leave, overlap, availability, and role conflict checks for assignment
-3. contract-hours warning logic
+1. leave, overlap, availability, and role conflict checks for assignment
+2. contract-hours warning logic
+3. assignment frontend wired to the backend route
 4. rota endpoint
 5. staff and manager rota views backed by assignment data
 
