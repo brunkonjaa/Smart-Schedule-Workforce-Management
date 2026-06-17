@@ -7,7 +7,7 @@ This file describes the current PostgreSQL schema direction for the MVP.
 Two things matter here:
 
 1. not every table in this file already exists in the live database
-2. the first part of the design is already real, because `users` and `staff_profiles` are migrated now
+2. the core MVP tables are now represented by migration files, but the route logic on top of every table is not finished yet
 
 That distinction is important. I do not want the schema notes to read like the whole project is already built when it is not.
 
@@ -33,15 +33,22 @@ These are already represented by real migration files:
 
 1. `users`
 2. `staff_profiles`
+3. `availability_entries`
+4. `leave_requests`
+5. `shifts`
+6. `shift_assignments`
 
-## Tables Still Planned Next
+## Main Backend Work Still Not Finished
 
-These are still design targets, not migrated tables yet:
+The table structure is now ahead of the assignment feature.
 
-1. `availability_entries`
-2. `leave_requests`
-3. `shifts`
-4. `shift_assignments`
+Still not built yet:
+
+1. assignment API routes
+2. assignment service logic
+3. leave, overlap, availability, and role conflict checks
+4. contract-hours warning
+5. rota endpoint and role-scoped rota views
 
 ## Deferred Tables From Older Drafts
 
@@ -128,7 +135,7 @@ Purpose:
 Weekly availability windows submitted by staff.
 
 Current repo note:
-Still planned. No migration file yet.
+This table already exists through `004_create_availability_entries_schema.sql`.
 
 | Column | Type | Constraints |
 | --- | --- | --- |
@@ -154,7 +161,7 @@ Purpose:
 Staff leave workflow with manager decision tracking.
 
 Current repo note:
-Still planned. No migration file yet.
+This table already exists through `005_create_leave_requests_schema.sql`.
 
 | Column | Type | Constraints |
 | --- | --- | --- |
@@ -181,7 +188,7 @@ Purpose:
 Shift records for the weekly rota.
 
 Current repo note:
-Still planned. No migration file yet.
+This table already exists through `006_create_shifts_schema.sql`.
 
 | Column | Type | Constraints |
 | --- | --- | --- |
@@ -190,8 +197,8 @@ Still planned. No migration file yet.
 | `start_time` | TIME | NOT NULL |
 | `end_time` | TIME | NOT NULL |
 | `required_role` | VARCHAR(50) | NOT NULL |
+| `status` | VARCHAR(20) | NOT NULL DEFAULT `OPEN` |
 | `notes` | VARCHAR(500) | NULL |
-| `created_by_user_id` | UUID | FK -> `users.id`, NOT NULL |
 | `created_at` | TIMESTAMPTZ | NOT NULL |
 | `updated_at` | TIMESTAMPTZ | NOT NULL |
 
@@ -199,6 +206,7 @@ Rules:
 
 1. `end_time` must be greater than `start_time`
 2. the first version supports same-day shifts only
+3. `status` is `DRAFT`, `OPEN`, or `CANCELLED`
 
 ### `shift_assignments`
 
@@ -206,7 +214,7 @@ Purpose:
 Link one staff member to one shift.
 
 Current repo note:
-Still planned. No migration file yet.
+This table already exists through `007_create_shift_assignments_schema.sql`.
 
 | Column | Type | Constraints |
 | --- | --- | --- |
@@ -215,6 +223,7 @@ Still planned. No migration file yet.
 | `staff_profile_id` | UUID | FK -> `staff_profiles.id`, NOT NULL |
 | `assigned_by_user_id` | UUID | FK -> `users.id`, NOT NULL |
 | `assigned_at` | TIMESTAMPTZ | NOT NULL |
+| `created_at` | TIMESTAMPTZ | NOT NULL |
 | `updated_at` | TIMESTAMPTZ | NOT NULL |
 
 Notes:
@@ -228,13 +237,14 @@ Indexes already real:
 
 1. unique index on `users(email)`
 2. index on `staff_profiles(is_active)`
-
-Indexes planned next:
-
-1. index on `availability_entries(staff_profile_id, week_start, day_of_week)`
-2. index on `leave_requests(staff_profile_id, start_date, end_date, status)`
-3. index on `shifts(shift_date)`
-4. index on `shift_assignments(staff_profile_id)`
+3. index on `availability_entries(staff_profile_id, week_start, day_of_week)`
+4. index on `availability_entries(week_start, status)`
+5. index on `leave_requests(staff_profile_id, start_date, end_date)`
+6. index on `leave_requests(status)`
+7. index on `shifts(shift_date)`
+8. index on `shifts(required_role, shift_date)`
+9. index on `shift_assignments(staff_profile_id)`
+10. index on `shift_assignments(assigned_at)`
 
 ## Conflict Logic The Schema Is Meant To Support
 

@@ -4,7 +4,7 @@
 
 These are the active MVP requirements for the project.
 
-They are not a claim that every requirement is already implemented in the current repo state. Right now the repo has the frontend shell, backend foundation, migrations, seed setup, and the first working auth routes. Most of the workflow-level requirements still come after that.
+They are not a claim that every requirement is already implemented in the current repo state. Right now the repo has the frontend shell, backend foundation, migrations, seed setup, auth, staff management, availability, leave, and shift routes. The assignment and rota requirements are still the main unfinished backend work.
 
 ## User Roles
 
@@ -164,13 +164,22 @@ Right now the repo already supports or partially supports:
 5. login with server-side session creation
 6. logout with session destroy
 7. current-user lookup through `GET /api/v1/auth/me`
-8. first backend auth route tests
+8. role-based access checks for manager-only routes
+9. staff record management
+10. availability create, list, edit, and delete workflows
+11. leave submit, approve, reject, list, and withdraw workflows
+12. shift create, list, edit, and delete workflows
+13. `shift_assignments` storage schema
+14. backend route tests for the completed route layers
 
 It does not yet fully support:
 
-1. RBAC route enforcement
-2. availability, leave, shifts, or assignment endpoints
-3. broader automated requirement-level test coverage
+1. assignment endpoints
+2. backend assignment conflict checks
+3. contract-hours warnings
+4. rota endpoint
+5. manager and staff rota views backed by saved assignments
+6. broader automated requirement-level test coverage for assignment and rota
 
 ## Traceability Rule
 

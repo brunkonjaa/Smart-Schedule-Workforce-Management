@@ -53,14 +53,15 @@ Built now:
 21. live availability routes and UI for create, edit, list, and delete
 22. live leave routes and UI for submit, approve, reject, list, and staff-side withdraw
 23. live shift routes and UI for create, edit, list, and delete
-24. shared workflow helper logic for the new route layer
-25. screenshot evidence through `070`
-26. Jest and Supertest coverage now including availability, leave, and shift route flows
-27. exported SRS diagrams under `docs/SRS/diagrams/`
+24. `shift_assignments` schema migration for the next assignment engine step
+25. shared workflow helper logic for the new route layer
+26. screenshot evidence through `070`
+27. Jest and Supertest coverage now including availability, leave, and shift route flows
+28. exported SRS diagrams under `docs/SRS/diagrams/`
 
 Not built yet:
 
-1. real assignment persistence and backend assignment routes
+1. backend assignment routes and service logic
 2. overlap, leave, availability, and role blocking enforced by a real assignment engine
 3. rota endpoints and role-scoped rota views
 4. broader workflow automation beyond the current availability, leave, and shift layer

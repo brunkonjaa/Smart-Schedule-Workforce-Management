@@ -810,3 +810,46 @@ Each entry should answer four practical things:
 1. commit the current workflow checkpoint cleanly
 2. add the real `shift_assignments` data layer after that
 3. keep the rota layer after the assignment engine is real
+
+## 2026-06-17
+
+### Snapshot
+
+- Phase: Assignment data layer
+- Sprint: Sprint 2 - Identity and Staff Base still active
+- Status: shift assignment schema added and applied before assignment routes
+
+### What Changed
+
+1. I added `007_create_shift_assignments_schema.sql`.
+2. The new table links a shift to one staff profile for the MVP.
+3. The table also stores the manager user who made the assignment and the assignment timestamp.
+4. I updated the database and scope notes so they stop saying the assignment table is only planned.
+5. I applied the migration through the backend migration runner and confirmed it shows as applied.
+
+### Why It Changed
+
+1. The assignment screen was still only a client-side review flow.
+2. Before adding assignment routes or conflict checks, the project needed a real table where saved assignments can live.
+3. I kept this checkpoint narrow because assignment is the main business layer, and it will be easier to test the API after the schema is stable.
+
+### Drawback Accepted
+
+1. This checkpoint still does not make assignment work from the UI.
+2. Leave, overlap, availability, role, and contract-hours rules still need service logic in the next checkpoints.
+
+### Evidence
+
+1. `database/migrations/007_create_shift_assignments_schema.sql`
+2. `database/migrations/README.md`
+3. `docs/design/database_migration_plan.md`
+4. `docs/design/database_design.md`
+5. `npm run db:migrate`
+6. `npm run db:migrate:status`
+7. `npm test`
+
+### Next Steps
+
+1. add the assignment route and service layer
+2. add backend conflict checks before wiring the frontend assignment screen
+3. keep rota work after saved assignments can be created through the API

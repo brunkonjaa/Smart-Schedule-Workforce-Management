@@ -48,18 +48,24 @@ Parts already visible in the repo:
 3. `users` schema migration
 4. `staff_profiles` schema migration
 5. initial seed data migration
-6. PostgreSQL-backed session configuration
-7. login, logout, and current-session auth routes
-8. first backend auth tests
-9. SRS diagram exports under `docs/SRS/diagrams/`
+6. `availability_entries` schema migration
+7. `leave_requests` schema migration
+8. `shifts` schema migration
+9. `shift_assignments` schema migration
+10. PostgreSQL-backed session configuration
+11. login, logout, and current-session auth routes
+12. role checks and manager-only staff routes
+13. live availability, leave, and shift routes
+14. backend route tests for auth, staff, availability, leave, and shifts
+15. SRS diagram exports under `docs/SRS/diagrams/`
 
 Parts still not built yet:
 
-1. authentication and role middleware for the rest of the route surface
-2. availability routes
-3. leave routes
-4. shifts and assignments routes
-5. conflict-check service logic
+1. assignment routes and service logic
+2. leave, overlap, availability, and role conflict checks for assignment
+3. contract-hours warning logic
+4. rota endpoint
+5. staff and manager rota views backed by assignment data
 
 ## Deferred From The Older Draft
 

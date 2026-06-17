@@ -9,6 +9,10 @@ At this checkpoint the folder contains:
 1. `001_create_users_schema.sql`
 2. `002_create_staff_profiles_schema.sql`
 3. `003_seed_initial_data.sql`
+4. `004_create_availability_entries_schema.sql`
+5. `005_create_leave_requests_schema.sql`
+6. `006_create_shifts_schema.sql`
+7. `007_create_shift_assignments_schema.sql`
 
 The order matters. I kept the schema work first and the sample data after that because it is much easier to explain and debug that way.
 
@@ -25,6 +29,7 @@ Examples:
 1. `001_create_users_schema.sql`
 2. `002_create_staff_profiles_schema.sql`
 3. `004_create_availability_entries_schema.sql`
+4. `007_create_shift_assignments_schema.sql`
 
 ## Run Commands
 

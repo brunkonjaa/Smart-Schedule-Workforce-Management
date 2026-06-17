@@ -27,6 +27,7 @@ Keeping schema and seed data separate means an extra step during setup, but it m
 4. `database/migrations/004_create_availability_entries_schema.sql`
 5. `database/migrations/005_create_leave_requests_schema.sql`
 6. `database/migrations/006_create_shifts_schema.sql`
+7. `database/migrations/007_create_shift_assignments_schema.sql`
 
 ## What Is Already Applied In The Current Build Trail
 
@@ -38,6 +39,7 @@ Already done:
 4. `004_create_availability_entries_schema.sql`
 5. `005_create_leave_requests_schema.sql`
 6. `006_create_shifts_schema.sql`
+7. `007_create_shift_assignments_schema.sql`
 
 That gives the project:
 
@@ -47,6 +49,7 @@ That gives the project:
 4. weekly availability entry storage
 5. leave request storage with manager decision fields
 6. shift storage before assignment logic
+7. saved shift assignment storage for one staff member per shift
 
 ## Why The Order Was Kept This Way
 
@@ -73,6 +76,8 @@ After that I added `shifts` because there was no point talking about assignment 
 
 That means the repo has now reached the point where the next schema step really is `shift_assignments`, not availability or leave anymore.
 
+I added `shift_assignments` after `shifts` because assignment records need both a real shift and a real staff profile before they can mean anything. This migration still does not make the assignment engine complete by itself. It only gives the next route and conflict-check work a proper table to write to.
+
 ## Constraints Already Real
 
 1. lowercase email check on `users.email`
@@ -91,8 +96,8 @@ That means the repo has now reached the point where the next schema step really 
 
 ## Constraints Planned Next
 
-1. `shift_assignments.shift_id` unique
-2. foreign-key links from assignments into `shifts` and `staff_profiles`
+1. assignment route validation
+2. leave, overlap, availability, and role checks in service logic
 3. any later assignment-side checks that need to move from route logic into database rules
 
 ## Seed Data Plan
@@ -115,6 +120,6 @@ I left that outside the main migration chain for now because the goal of that ch
 
 ## Next Action
 
-1. add the `shift_assignments` schema migration next
-2. build the real assignment engine on top of the already-existing availability, leave, and shift tables
-3. keep the rota layer after the assignment data is real
+1. build the real assignment route and service layer on top of `shift_assignments`
+2. add leave, overlap, availability, and role conflict checks
+3. keep the rota layer after saved assignments are real
