@@ -33,7 +33,14 @@ describe('assignment routes', () => {
   const staffPassword = 'AssignmentStaff123!';
   const assignableShiftId = crypto.randomUUID();
   const duplicateShiftId = crypto.randomUUID();
+  const roleMismatchShiftId = crypto.randomUUID();
+  const leaveConflictShiftId = crypto.randomUUID();
+  const overlapConflictShiftId = crypto.randomUUID();
+  const availabilityConflictShiftId = crypto.randomUUID();
   const nextWeekStart = getMondayOffset(2);
+  const roleMismatchShiftDate = getDateFromWeek(nextWeekStart, 0);
+  const leaveConflictShiftDate = getDateFromWeek(nextWeekStart, 1);
+  const availabilityConflictShiftDate = getDateFromWeek(nextWeekStart, 2);
   const assignableShiftDate = getDateFromWeek(nextWeekStart, 4);
   const duplicateShiftDate = getDateFromWeek(nextWeekStart, 5);
   const mutationHeader = {
@@ -89,9 +96,64 @@ describe('assignment routes', () => {
         )
         VALUES
           ($1, $2, '14:00', '22:00', 'BAR', 'OPEN', 'Assignment route test', NOW(), NOW()),
-          ($3, $4, '09:00', '17:00', 'BAR', 'OPEN', 'Duplicate assignment route test', NOW(), NOW())
+          ($3, $4, '09:00', '17:00', 'BAR', 'OPEN', 'Duplicate assignment route test', NOW(), NOW()),
+          ($5, $6, '12:00', '20:00', 'FLOOR', 'OPEN', 'Role mismatch assignment route test', NOW(), NOW()),
+          ($7, $8, '11:00', '19:00', 'BAR', 'OPEN', 'Leave conflict assignment route test', NOW(), NOW()),
+          ($9, $4, '10:00', '18:00', 'BAR', 'OPEN', 'Overlap assignment route test', NOW(), NOW()),
+          ($10, $11, '15:00', '21:00', 'BAR', 'OPEN', 'Availability conflict assignment route test', NOW(), NOW())
       `,
-      [assignableShiftId, assignableShiftDate, duplicateShiftId, duplicateShiftDate]
+      [
+        assignableShiftId,
+        assignableShiftDate,
+        duplicateShiftId,
+        duplicateShiftDate,
+        roleMismatchShiftId,
+        roleMismatchShiftDate,
+        leaveConflictShiftId,
+        leaveConflictShiftDate,
+        overlapConflictShiftId,
+        availabilityConflictShiftId,
+        availabilityConflictShiftDate
+      ]
+    );
+
+    await query(
+      `
+        INSERT INTO availability_entries (
+          staff_profile_id,
+          week_start,
+          day_of_week,
+          start_time,
+          end_time,
+          status,
+          created_at,
+          updated_at
+        )
+        VALUES
+          ($1, $2, 2, '10:00', '20:00', 'AVAILABLE', NOW(), NOW()),
+          ($1, $2, 5, '13:00', '23:00', 'AVAILABLE', NOW(), NOW()),
+          ($1, $2, 6, '08:00', '18:00', 'AVAILABLE', NOW(), NOW())
+      `,
+      [staffProfileId, nextWeekStart]
+    );
+
+    await query(
+      `
+        INSERT INTO leave_requests (
+          staff_profile_id,
+          start_date,
+          end_date,
+          reason,
+          status,
+          manager_comment,
+          decided_by_user_id,
+          decided_at,
+          created_at,
+          updated_at
+        )
+        VALUES ($1, $2, $2, 'Approved leave conflict test', 'APPROVED', 'Approved for route test', $3, NOW(), NOW(), NOW())
+      `,
+      [staffProfileId, leaveConflictShiftDate, managerId]
     );
 
     await query(
@@ -112,12 +174,34 @@ describe('assignment routes', () => {
 
   afterAll(async () => {
     await query(
-      'DELETE FROM shift_assignments WHERE shift_id IN ($1, $2)',
-      [assignableShiftId, duplicateShiftId]
+      'DELETE FROM shift_assignments WHERE shift_id IN ($1, $2, $3, $4, $5, $6)',
+      [
+        assignableShiftId,
+        duplicateShiftId,
+        roleMismatchShiftId,
+        leaveConflictShiftId,
+        overlapConflictShiftId,
+        availabilityConflictShiftId
+      ]
     );
     await query(
-      'DELETE FROM shifts WHERE id IN ($1, $2)',
-      [assignableShiftId, duplicateShiftId]
+      'DELETE FROM leave_requests WHERE staff_profile_id IN ($1, $2)',
+      [managerStaffProfileId, staffProfileId]
+    );
+    await query(
+      'DELETE FROM availability_entries WHERE staff_profile_id IN ($1, $2)',
+      [managerStaffProfileId, staffProfileId]
+    );
+    await query(
+      'DELETE FROM shifts WHERE id IN ($1, $2, $3, $4, $5, $6)',
+      [
+        assignableShiftId,
+        duplicateShiftId,
+        roleMismatchShiftId,
+        leaveConflictShiftId,
+        overlapConflictShiftId,
+        availabilityConflictShiftId
+      ]
     );
     await query(
       'DELETE FROM staff_profiles WHERE id IN ($1, $2)',
@@ -174,6 +258,38 @@ describe('assignment routes', () => {
     expect(response.status).toBe(403);
   });
 
+  test('lists assignments for the selected week for managers', async () => {
+    const agent = await loginAsManager();
+    const response = await agent.get(`/api/v1/assignments?weekStart=${nextWeekStart}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.assignments).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          fullName: 'Assignment Staff',
+          requiredRole: 'BAR',
+          shiftDate: duplicateShiftDate,
+          shiftId: duplicateShiftId,
+          staffProfileId,
+          startTime: '09:00:00'
+        })
+      ])
+    );
+  });
+
+  test('rejects invalid assignment list filters', async () => {
+    const agent = await loginAsManager();
+    const response = await agent.get('/api/v1/assignments?weekStart=2026-06-10&extra=true');
+
+    expect(response.status).toBe(400);
+    expect(response.body.details).toEqual(
+      expect.arrayContaining([
+        'unsupported filters: extra',
+        'weekStart must be a Monday date'
+      ])
+    );
+  });
+
   test('requires the mutation protection header on assignment creation', async () => {
     const agent = await loginAsManager();
     const response = await agent.post('/api/v1/assignments').send({
@@ -228,6 +344,74 @@ describe('assignment routes', () => {
     expect(response.body).toEqual({
       error: 'Conflict',
       message: 'This shift already has an assignment.'
+    });
+  });
+
+  test('rejects assignment when staff role does not match the shift role', async () => {
+    const agent = await loginAsManager();
+    const response = await agent
+      .post('/api/v1/assignments')
+      .set(mutationHeader)
+      .send({
+        shiftId: roleMismatchShiftId,
+        staffProfileId
+      });
+
+    expect(response.status).toBe(409);
+    expect(response.body).toEqual({
+      error: 'Conflict',
+      message: 'This staff member role does not match the shift role.'
+    });
+  });
+
+  test('rejects assignment when staff has approved leave on the shift date', async () => {
+    const agent = await loginAsManager();
+    const response = await agent
+      .post('/api/v1/assignments')
+      .set(mutationHeader)
+      .send({
+        shiftId: leaveConflictShiftId,
+        staffProfileId
+      });
+
+    expect(response.status).toBe(409);
+    expect(response.body).toEqual({
+      error: 'Conflict',
+      message: 'This staff member has approved leave on this shift date.'
+    });
+  });
+
+  test('rejects assignment when staff already has an overlapping shift', async () => {
+    const agent = await loginAsManager();
+    const response = await agent
+      .post('/api/v1/assignments')
+      .set(mutationHeader)
+      .send({
+        shiftId: overlapConflictShiftId,
+        staffProfileId
+      });
+
+    expect(response.status).toBe(409);
+    expect(response.body).toEqual({
+      error: 'Conflict',
+      message: 'This staff member already has an overlapping shift assignment.'
+    });
+  });
+
+  test('rejects assignment when availability does not cover the shift time', async () => {
+    const agent = await loginAsManager();
+    const response = await agent
+      .post('/api/v1/assignments')
+      .set(mutationHeader)
+      .send({
+        shiftId: availabilityConflictShiftId,
+        staffProfileId
+      });
+
+    expect(response.status).toBe(409);
+    expect(response.body).toEqual({
+      error: 'Conflict',
+      message: 'This staff member does not have availability covering this shift time.'
     });
   });
 

@@ -100,7 +100,7 @@ window.SmartSchedule.layout = (function createLayout() {
               ${block.rows
                 .map(
                   (row) => `
-                    <tr>${row.map((cell) => `<td>${renderCell(cell)}</td>`).join('')}</tr>
+                    <tr>${row.map((cell, index) => `<td data-label="${block.columns[index]}">${renderCell(cell)}</td>`).join('')}</tr>
                   `
                 )
                 .join('')}

@@ -19,6 +19,7 @@ window.SmartSchedule.shiftsUi = (function createShiftsUi() {
         startTime: '14:00',
         status: 'OPEN'
       },
+      formStep: 1,
       loading: true,
       records: [],
       selectedShiftId: null,
@@ -48,6 +49,7 @@ window.SmartSchedule.shiftsUi = (function createShiftsUi() {
       startTime: '14:00',
       status: 'OPEN'
     };
+    state.formStep = 1;
     state.selectedShiftId = null;
   };
 
@@ -60,6 +62,7 @@ window.SmartSchedule.shiftsUi = (function createShiftsUi() {
       startTime: record.startTime.slice(0, 5),
       status: record.status
     };
+    state.formStep = 1;
     state.selectedShiftId = record.id;
   };
 
@@ -69,7 +72,7 @@ window.SmartSchedule.shiftsUi = (function createShiftsUi() {
     });
     const toolbarRow = uiHelpers.createElement('div', { className: 'toolbar-row' });
     const toolbarTitle = uiHelpers.createElement('div', { className: 'toolbar-title' });
-    toolbarTitle.appendChild(uiHelpers.createElement('h3', { text: 'Shift filters' }));
+    toolbarTitle.appendChild(uiHelpers.createElement('h3', { text: 'Choose shifts to show' }));
     toolbarRow.appendChild(toolbarTitle);
 
     const controls = uiHelpers.createElement('div', { className: 'toolbar-controls' });
@@ -87,7 +90,7 @@ window.SmartSchedule.shiftsUi = (function createShiftsUi() {
     roleLabel.appendChild(uiHelpers.createElement('span', { text: 'Role' }));
     const roleSelect = uiHelpers.createElement('select', { className: 'input-control' });
     ['ALL', 'FLOOR', 'BAR', 'KITCHEN'].forEach((role) => {
-      const option = uiHelpers.createElement('option', { text: role });
+      const option = uiHelpers.createElement('option', { text: uiHelpers.formatRole(role) });
       option.value = role;
       option.selected = state.filters.requiredRole === role;
       roleSelect.appendChild(option);
@@ -127,7 +130,7 @@ window.SmartSchedule.shiftsUi = (function createShiftsUi() {
     const panel = uiHelpers.createElement('section', {
       className: 'content-panel content-panel--table content-panel--span-10'
     });
-    panel.appendChild(uiHelpers.createPanelHeading('Shift list', 'Managers create and update the live shift records for the selected week.'));
+    panel.appendChild(uiHelpers.createPanelHeading('Shifts this week', 'Create the shift times first, then assign staff afterwards.'));
 
     if (state.loading) {
       panel.appendChild(uiHelpers.createElement('p', { className: 'panel-copy', text: 'Loading shifts...' }));
@@ -135,8 +138,20 @@ window.SmartSchedule.shiftsUi = (function createShiftsUi() {
     }
 
     if (state.records.length === 0) {
-      panel.appendChild(uiHelpers.createElement('p', { className: 'panel-copy', text: 'No shifts match the current week and filters.' }));
-      return panel;
+      return uiHelpers.createEmptyPanel(
+        'No shifts found for this week',
+        'Create the first shift for this week, or change the role filter if you were looking for an existing shift.',
+        'content-panel--span-10',
+        {
+          label: 'Create shift',
+          onClick: () => {
+            resetForm(state);
+            setFlash(state, 'info', 'Use the form to create the first shift for this week.');
+            actions.render();
+          },
+          tone: 'primary'
+        }
+      );
     }
 
     const tableWrap = uiHelpers.createElement('div', { className: 'table-wrap' });
@@ -154,21 +169,30 @@ window.SmartSchedule.shiftsUi = (function createShiftsUi() {
       const row = uiHelpers.createElement('tr', {
         className: record.id === state.selectedShiftId ? 'table-row-selected' : ''
       });
-      row.appendChild(uiHelpers.createElement('td', { text: record.shiftDate }));
-      row.appendChild(uiHelpers.createElement('td', { text: `${record.startTime.slice(0, 5)} - ${record.endTime.slice(0, 5)}` }));
-      row.appendChild(uiHelpers.createElement('td', { text: record.requiredRole }));
-      const statusCell = uiHelpers.createElement('td');
+      row.appendChild(uiHelpers.createTableCell('Date', record.shiftDate));
+      row.appendChild(
+        uiHelpers.createTableCell(
+          'Time',
+          `${record.startTime.slice(0, 5)} - ${record.endTime.slice(0, 5)}`
+        )
+      );
+      row.appendChild(uiHelpers.createTableCell('Role', uiHelpers.formatRole(record.requiredRole)));
+      const statusCell = uiHelpers.createElement('td', {
+        attributes: { 'data-label': 'Status' }
+      });
       statusCell.appendChild(
         uiHelpers.createElement('span', {
           className: `status-tag status-tag--${
             record.status === 'OPEN' ? 'info' : record.status === 'DRAFT' ? 'muted' : 'warning'
           }`,
-          text: record.status
+          text: uiHelpers.formatStatus(record.status)
         })
       );
       row.appendChild(statusCell);
 
-      const actionCell = uiHelpers.createElement('td');
+      const actionCell = uiHelpers.createElement('td', {
+        attributes: { 'data-label': 'Action' }
+      });
       const editButton = uiHelpers.createElement('button', {
         className: 'action-button button-ghost action-button--compact',
         text: 'Edit',
@@ -198,7 +222,7 @@ window.SmartSchedule.shiftsUi = (function createShiftsUi() {
     panel.appendChild(
       uiHelpers.createPanelHeading(
         state.selectedShiftId ? 'Edit shift' : 'Create shift',
-        'Shift times, required role, and status are all stored in the backend now.'
+        'Add the date, time, role needed, and a short note if it helps.'
       )
     );
 
@@ -207,6 +231,7 @@ window.SmartSchedule.shiftsUi = (function createShiftsUi() {
       attributes: { novalidate: true }
     });
     const grid = uiHelpers.createElement('div', { className: 'form-grid' });
+    form.appendChild(uiHelpers.createWizardProgress(['Basics', 'Details', 'Review'], state.formStep));
 
     const appendField = (label, inputElement, spanClass = 'form-field--span-12') => {
       const field = uiHelpers.createElement('label', {
@@ -217,58 +242,160 @@ window.SmartSchedule.shiftsUi = (function createShiftsUi() {
       grid.appendChild(field);
     };
 
-    const dateInput = uiHelpers.createElement('input', {
-      className: 'input-control',
-      attributes: { type: 'date', value: state.form.shiftDate }
-    });
-    appendField('Shift date', dateInput);
+    let dateInput = null;
+    let startInput = null;
+    let endInput = null;
+    let roleSelect = null;
+    let statusSelect = null;
+    let notesInput = null;
 
-    const startInput = uiHelpers.createElement('input', {
-      className: 'input-control',
-      attributes: { type: 'time', value: state.form.startTime }
-    });
-    appendField('Start time', startInput, 'form-field--span-6');
+    const syncVisibleFields = () => {
+      if (dateInput) {
+        state.form.shiftDate = dateInput.value;
+      }
 
-    const endInput = uiHelpers.createElement('input', {
-      className: 'input-control',
-      attributes: { type: 'time', value: state.form.endTime }
-    });
-    appendField('End time', endInput, 'form-field--span-6');
+      if (roleSelect) {
+        state.form.requiredRole = roleSelect.value;
+      }
 
-    const roleSelect = uiHelpers.createElement('select', { className: 'input-control' });
-    ['FLOOR', 'BAR', 'KITCHEN'].forEach((role) => {
-      const option = uiHelpers.createElement('option', { text: role });
-      option.value = role;
-      option.selected = state.form.requiredRole === role;
-      roleSelect.appendChild(option);
-    });
-    appendField('Required role', roleSelect);
+      if (startInput) {
+        state.form.startTime = startInput.value;
+      }
 
-    const statusSelect = uiHelpers.createElement('select', { className: 'input-control' });
-    ['OPEN', 'DRAFT', 'CANCELLED'].forEach((status) => {
-      const option = uiHelpers.createElement('option', { text: status });
-      option.value = status;
-      option.selected = state.form.status === status;
-      statusSelect.appendChild(option);
-    });
-    appendField('Status', statusSelect);
+      if (endInput) {
+        state.form.endTime = endInput.value;
+      }
 
-    const notesInput = uiHelpers.createElement('textarea', {
-      className: 'input-control',
-      text: state.form.notes,
-      attributes: { rows: 4 }
-    });
-    appendField('Notes', notesInput);
+      if (statusSelect) {
+        state.form.status = statusSelect.value;
+      }
+
+      if (notesInput) {
+        state.form.notes = notesInput.value.trim();
+      }
+    };
+
+    if (state.formStep === 1) {
+      form.appendChild(
+        uiHelpers.createElement('p', {
+          className: 'wizard-step-copy',
+          text: 'First choose the shift date and role needed.'
+        })
+      );
+
+      dateInput = uiHelpers.createElement('input', {
+        className: 'input-control',
+        attributes: { type: 'date', value: state.form.shiftDate }
+      });
+      appendField('Shift date', dateInput);
+
+      roleSelect = uiHelpers.createElement('select', { className: 'input-control' });
+      ['FLOOR', 'BAR', 'KITCHEN'].forEach((role) => {
+        const option = uiHelpers.createElement('option', { text: uiHelpers.formatRole(role) });
+        option.value = role;
+        option.selected = state.form.requiredRole === role;
+        roleSelect.appendChild(option);
+      });
+      appendField('Required role', roleSelect);
+    }
+
+    if (state.formStep === 2) {
+      form.appendChild(
+        uiHelpers.createElement('p', {
+          className: 'wizard-step-copy',
+          text: 'Next add the times, status, and any note for this shift.'
+        })
+      );
+
+      startInput = uiHelpers.createElement('input', {
+        className: 'input-control',
+        attributes: { type: 'time', value: state.form.startTime }
+      });
+      appendField('Start time', startInput, 'form-field--span-6');
+
+      endInput = uiHelpers.createElement('input', {
+        className: 'input-control',
+        attributes: { type: 'time', value: state.form.endTime }
+      });
+      appendField('End time', endInput, 'form-field--span-6');
+
+      statusSelect = uiHelpers.createElement('select', { className: 'input-control' });
+      ['OPEN', 'DRAFT', 'CANCELLED'].forEach((status) => {
+        const option = uiHelpers.createElement('option', { text: uiHelpers.formatStatus(status) });
+        option.value = status;
+        option.selected = state.form.status === status;
+        statusSelect.appendChild(option);
+      });
+      appendField('Status', statusSelect);
+
+      notesInput = uiHelpers.createElement('textarea', {
+        className: 'input-control',
+        text: state.form.notes,
+        attributes: { rows: 4 }
+      });
+      appendField('Notes', notesInput);
+    }
+
+    if (state.formStep === 3) {
+      form.appendChild(
+        uiHelpers.createElement('p', {
+          className: 'wizard-step-copy',
+          text: 'Lastly check the shift before saving it.'
+        })
+      );
+      grid.appendChild(
+        uiHelpers.createElement('div', {
+          className: 'form-field form-field--span-12'
+        })
+      ).appendChild(
+        uiHelpers.createReviewList([
+          { label: 'Date', value: state.form.shiftDate },
+          { label: 'Role', value: uiHelpers.formatRole(state.form.requiredRole) },
+          { label: 'Time', value: `${state.form.startTime} - ${state.form.endTime}` },
+          { label: 'Status', value: uiHelpers.formatStatus(state.form.status) },
+          { label: 'Notes', value: state.form.notes || 'No notes' }
+        ])
+      );
+    }
 
     form.appendChild(grid);
 
     const actionsRow = uiHelpers.createElement('div', { className: 'actions-row' });
-    const submitButton = uiHelpers.createElement('button', {
-      className: 'action-button button-primary',
-      text: state.selectedShiftId ? 'Save shift' : 'Create shift',
-      attributes: { type: 'submit' }
-    });
-    actionsRow.appendChild(submitButton);
+
+    if (state.formStep > 1) {
+      const backButton = uiHelpers.createElement('button', {
+        className: 'action-button button-ghost',
+        text: 'Back',
+        attributes: { type: 'button' }
+      });
+      backButton.addEventListener('click', () => {
+        syncVisibleFields();
+        state.formStep -= 1;
+        actions.render();
+      });
+      actionsRow.appendChild(backButton);
+    }
+
+    if (state.formStep < 3) {
+      const nextButton = uiHelpers.createElement('button', {
+        className: 'action-button button-primary',
+        text: 'Next',
+        attributes: { type: 'button' }
+      });
+      nextButton.addEventListener('click', () => {
+        syncVisibleFields();
+        state.formStep += 1;
+        actions.render();
+      });
+      actionsRow.appendChild(nextButton);
+    } else {
+      const submitButton = uiHelpers.createElement('button', {
+        className: 'action-button button-primary',
+        text: state.selectedShiftId ? 'Save shift' : 'Create shift',
+        attributes: { type: 'submit' }
+      });
+      actionsRow.appendChild(submitButton);
+    }
 
     if (state.selectedShiftId) {
       const deleteButton = uiHelpers.createElement('button', {
@@ -277,6 +404,10 @@ window.SmartSchedule.shiftsUi = (function createShiftsUi() {
         attributes: { type: 'button' }
       });
       deleteButton.addEventListener('click', async () => {
+        if (!uiHelpers.confirmAction('Delete this shift?')) {
+          return;
+        }
+
         await actions.deleteShift();
       });
       actionsRow.appendChild(deleteButton);
@@ -296,14 +427,7 @@ window.SmartSchedule.shiftsUi = (function createShiftsUi() {
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
-      state.form = {
-        endTime: endInput.value,
-        notes: notesInput.value.trim(),
-        requiredRole: roleSelect.value,
-        shiftDate: dateInput.value,
-        startTime: startInput.value,
-        status: statusSelect.value
-      };
+      syncVisibleFields();
       await actions.saveShift();
     });
 
@@ -327,7 +451,7 @@ window.SmartSchedule.shiftsUi = (function createShiftsUi() {
       const metrics = uiHelpers.createElement('div', { className: 'metric-row' });
       metrics.appendChild(uiHelpers.createMetric('Week start', state.weekStart, 'accent'));
       metrics.appendChild(uiHelpers.createMetric('Shifts', state.loading ? 'Loading...' : String(state.records.length)));
-      metrics.appendChild(uiHelpers.createMetric('Filter', state.filters.requiredRole));
+      metrics.appendChild(uiHelpers.createMetric('Shown', uiHelpers.formatRole(state.filters.requiredRole)));
       workspaceElement.appendChild(metrics);
 
       const grid = uiHelpers.createElement('div', { className: 'workspace-grid' });
@@ -336,6 +460,18 @@ window.SmartSchedule.shiftsUi = (function createShiftsUi() {
         grid.appendChild(flashPanel);
       }
       grid.appendChild(renderToolbar(state, actions));
+      grid.appendChild(
+        uiHelpers.createStepsPanel(
+          'How to build shifts',
+          'This page only creates the shift records. The assignment check comes after.',
+          [
+            'Choose the week you are planning.',
+            'Create the shift date, start time, end time, and role needed.',
+            'Leave it open or draft until you are ready to assign staff.'
+          ],
+          'content-panel--span-16'
+        )
+      );
       grid.appendChild(renderTable(state, actions));
       grid.appendChild(renderForm(state, actions));
       workspaceElement.appendChild(grid);
@@ -397,7 +533,7 @@ window.SmartSchedule.shiftsUi = (function createShiftsUi() {
         resetForm(state);
         await loadShifts({
           details: [],
-          text: 'Shift saved successfully.',
+          text: 'Shift saved.',
           tone: 'success'
         });
       } catch (error) {
@@ -417,7 +553,7 @@ window.SmartSchedule.shiftsUi = (function createShiftsUi() {
         resetForm(state);
         await loadShifts({
           details: [],
-          text: 'Shift deleted successfully.',
+          text: 'Shift deleted.',
           tone: 'success'
         });
       } catch (error) {

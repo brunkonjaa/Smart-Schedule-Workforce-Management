@@ -6,10 +6,10 @@ window.SmartSchedule.pageConfig = {
       id: 'overview',
       label: 'Overview',
       audience: 'both',
-      eyebrow: 'Operations',
-      title: 'Scheduling workspace',
-      summary: 'Manage the week from one place.',
-      context: 'Switch role view to compare the manager and staff surfaces.',
+      eyebrow: 'This week',
+      title: 'What needs doing',
+      summary: 'Start with the jobs that affect the next rota.',
+      context: 'Switch role view to see what a manager or staff member needs first.',
       metrics: [
         { label: 'Open shifts', value: '3', tone: 'accent' },
         { label: 'Pending leave', value: '2', tone: 'neutral' },
@@ -21,15 +21,15 @@ window.SmartSchedule.pageConfig = {
           title: 'This week',
           controls: [
             { type: 'date', label: 'Week start', value: '2026-06-08' },
-            { type: 'button', label: 'Review rota', tone: 'primary', targetPage: 'rota' },
-            { type: 'button', label: 'Add shift', tone: 'secondary', targetPage: 'shifts' }
+            { type: 'button', label: 'Open rota', tone: 'primary', targetPage: 'rota' },
+            { type: 'button', label: 'Create shift', tone: 'secondary', targetPage: 'shifts' }
           ]
         },
         {
           type: 'table',
           spanClass: 'content-panel--span-11',
-          title: 'Current priorities',
-          caption: 'Focus items for the active week.',
+          title: 'Do these first',
+          caption: 'These are the jobs most likely to block the week.',
           columns: ['Area', 'Task', 'Owner', 'Status'],
           rows: [
             ['Leave', 'Review 2 pending requests', 'Manager', { text: 'Action needed', tag: 'warning' }],
@@ -40,8 +40,8 @@ window.SmartSchedule.pageConfig = {
         {
           type: 'list',
           spanClass: 'content-panel--span-5',
-          title: 'Quick actions',
-          caption: 'Most common weekly tasks.',
+          title: 'Common actions',
+          caption: 'The buttons people usually need during the week.',
           items: [
             'Review leave requests',
             'Create or edit shifts',
@@ -52,8 +52,8 @@ window.SmartSchedule.pageConfig = {
         {
           type: 'empty',
           spanClass: 'content-panel--span-16',
-          title: 'No urgent coverage issues flagged for this week',
-          body: 'Current rota checks show no high-priority conflicts that need immediate action.',
+          title: 'Conflict checks are still limited in this checkpoint',
+          body: 'Availability, leave, and shifts are live now. The full rota conflict engine is still the next build step.',
           action: { label: 'Open assignments', tone: 'secondary', targetPage: 'assignments' }
         }
       ]
@@ -64,8 +64,8 @@ window.SmartSchedule.pageConfig = {
       audience: 'both',
       eyebrow: 'Access',
       title: 'Sign in',
-      summary: 'Access the correct workspace quickly.',
-      context: 'A signed-in account determines which role-based pages and actions are available.',
+      summary: 'Use a work account to open the right tools.',
+      context: 'Managers and staff see different actions after login.',
       compactIntro: true,
       metrics: [
         { label: 'Action', value: 'Sign in', tone: 'accent' },
@@ -103,12 +103,12 @@ window.SmartSchedule.pageConfig = {
     },
     {
       id: 'staff',
-      label: 'Staff',
+      label: 'Staff Records',
       audience: 'manager',
       eyebrow: 'Team',
       title: 'Staff records',
-      summary: 'Maintain staff details used by scheduling.',
-      context: 'Managers maintain the team list used later by shift assignments and rota views.',
+      summary: 'Add people before they appear in shifts and assignment checks.',
+      context: 'Managers keep the team list, role, hours, and active status up to date.',
       compactIntro: true,
       metrics: [
         { label: 'Owner', value: 'Manager', tone: 'accent' },
@@ -161,9 +161,9 @@ window.SmartSchedule.pageConfig = {
       label: 'Availability',
       audience: 'both',
       eyebrow: 'Availability',
-      title: 'Weekly availability',
-      summary: 'Review and update weekly entries fast.',
-      context: 'Managers review team coverage. Staff manage only their own entries.',
+      title: 'When can staff work?',
+      summary: 'Staff add times they can or cannot work for the selected week.',
+      context: 'Managers review team coverage. Staff only change their own availability.',
       compactIntro: true,
       metrics: [
         { label: 'Week start', value: 'Monday', tone: 'accent' },
@@ -212,12 +212,12 @@ window.SmartSchedule.pageConfig = {
     },
     {
       id: 'leave',
-      label: 'Leave',
+      label: 'Leave Requests',
       audience: 'both',
       eyebrow: 'Leave',
       title: 'Leave requests',
-      summary: 'Submit, review, and decide requests clearly.',
-      context: 'Staff follow the status of their own requests. Managers review and decide requests.',
+      summary: 'Staff ask for leave and managers decide what is approved.',
+      context: 'A request stays waiting until a manager approves or rejects it.',
       compactIntro: true,
       metrics: [
         { label: 'Pending', value: '2', tone: 'accent' },
@@ -265,12 +265,12 @@ window.SmartSchedule.pageConfig = {
     },
     {
       id: 'shifts',
-      label: 'Shifts',
+      label: 'Build Shifts',
       audience: 'manager',
       eyebrow: 'Shifts',
       title: 'Shift planning',
-      summary: 'Create and review shifts for the active week.',
-      context: 'Managers define shifts first. Staff assignments are handled afterwards.',
+      summary: 'Create the shift times before assigning staff.',
+      context: 'Managers set date, time, role, and status. Assignment comes after that.',
       compactIntro: true,
       metrics: [
         { label: 'Draft shifts', value: '8', tone: 'accent' },
@@ -319,12 +319,12 @@ window.SmartSchedule.pageConfig = {
     },
     {
       id: 'assignments',
-      label: 'Assignments',
+      label: 'Assign Staff',
       audience: 'manager',
       eyebrow: 'Assignments',
-      title: 'Shift assignments',
-      summary: 'Review one shift, available staff, and conflict checks together.',
-      context: 'Assignments depend on leave, overlap, availability, role fit, and contract-hour context.',
+      title: 'Assign staff',
+      summary: 'Review one shift and check who looks suitable.',
+      context: 'This is still a review screen. The full backend conflict engine comes after this checkpoint.',
       compactIntro: true,
       metrics: [
         { label: 'Selected shift', value: 'Fri 12 Jun', tone: 'accent' },
@@ -386,8 +386,8 @@ window.SmartSchedule.pageConfig = {
       audience: 'both',
       eyebrow: 'Rota',
       title: 'Weekly rota',
-      summary: 'Review assigned work for the selected week.',
-      context: 'Role view changes the scope from team-wide scheduling to a personal weekly schedule.',
+      summary: 'Check the planned week once shifts and assignments are ready.',
+      context: 'This view is the rota direction. The real rota endpoints still come after assignment work.',
       compactIntro: true,
       metrics: [
         { label: 'Output', value: 'Weekly rota', tone: 'accent' },

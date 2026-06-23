@@ -16,6 +16,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
         reason: '',
         startDate: uiHelpers.getDateOffset(1)
       },
+      formStep: 1,
       loading: true,
       records: [],
       selectedLeaveRequestId: null,
@@ -46,7 +47,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
     });
     const toolbarRow = uiHelpers.createElement('div', { className: 'toolbar-row' });
     const toolbarTitle = uiHelpers.createElement('div', { className: 'toolbar-title' });
-    toolbarTitle.appendChild(uiHelpers.createElement('h3', { text: 'Leave filters' }));
+    toolbarTitle.appendChild(uiHelpers.createElement('h3', { text: 'Find leave requests' }));
     toolbarRow.appendChild(toolbarTitle);
 
     const controls = uiHelpers.createElement('div', { className: 'toolbar-controls' });
@@ -54,7 +55,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
     statusLabel.appendChild(uiHelpers.createElement('span', { text: 'Status' }));
     const statusSelect = uiHelpers.createElement('select', { className: 'input-control' });
     ['ALL', 'PENDING', 'APPROVED', 'REJECTED'].forEach((status) => {
-      const option = uiHelpers.createElement('option', { text: status });
+      const option = uiHelpers.createElement('option', { text: uiHelpers.formatStatus(status) });
       option.value = status;
       option.selected = state.filters.status === status;
       statusSelect.appendChild(option);
@@ -83,10 +84,10 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
     });
     panel.appendChild(
       uiHelpers.createPanelHeading(
-        'Leave requests',
+        state.sessionUser.role === 'MANAGER' ? 'Leave to review' : 'My leave requests',
         state.sessionUser.role === 'MANAGER'
-          ? 'Managers can review and decide live leave requests here.'
-          : 'Track the status of your own leave requests.'
+          ? 'Approve or reject requests that are still waiting.'
+          : 'Check what you asked for and whether the manager has decided.'
       )
     );
 
@@ -96,8 +97,26 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
     }
 
     if (state.records.length === 0) {
-      panel.appendChild(uiHelpers.createElement('p', { className: 'panel-copy', text: 'No leave requests match the current filters.' }));
-      return panel;
+      return uiHelpers.createEmptyPanel(
+        state.sessionUser.role === 'MANAGER'
+          ? 'No leave requests to show'
+          : 'You have not sent a leave request yet',
+        state.sessionUser.role === 'MANAGER'
+          ? 'Requests will appear here when staff ask for leave. Change the status filter if you want to check older decisions.'
+          : 'Use the form to choose dates and send a request to the manager.',
+        'content-panel--span-10',
+        state.sessionUser.role === 'STAFF'
+          ? {
+              label: 'Ask for leave',
+              onClick: () => {
+                state.formStep = 1;
+                setFlash(state, 'info', 'Use the form to send your first leave request.');
+                actions.render();
+              },
+              tone: 'primary'
+            }
+          : null
+      );
     }
 
     const tableWrap = uiHelpers.createElement('div', { className: 'table-wrap' });
@@ -120,28 +139,30 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
       });
 
       if (state.sessionUser.role === 'MANAGER') {
-        row.appendChild(uiHelpers.createElement('td', { text: record.fullName || 'Unknown staff' }));
+        row.appendChild(uiHelpers.createTableCell('Staff', record.fullName || 'Unknown staff'));
       }
 
       row.appendChild(
-        uiHelpers.createElement('td', {
-          text: `${record.startDate} to ${record.endDate}`
-        })
+        uiHelpers.createTableCell('Dates', `${record.startDate} to ${record.endDate}`)
       );
-      row.appendChild(uiHelpers.createElement('td', { text: record.reason }));
+      row.appendChild(uiHelpers.createTableCell('Reason', record.reason));
 
-      const statusCell = uiHelpers.createElement('td');
+      const statusCell = uiHelpers.createElement('td', {
+        attributes: { 'data-label': 'Status' }
+      });
       statusCell.appendChild(
         uiHelpers.createElement('span', {
           className: `status-tag status-tag--${
             record.status === 'APPROVED' ? 'success' : record.status === 'REJECTED' ? 'muted' : 'warning'
           }`,
-          text: record.status
+          text: uiHelpers.formatStatus(record.status)
         })
       );
       row.appendChild(statusCell);
 
-      const actionCell = uiHelpers.createElement('td');
+      const actionCell = uiHelpers.createElement('td', {
+        attributes: { 'data-label': 'Action' }
+      });
 
       if (state.sessionUser.role === 'MANAGER' && record.status === 'PENDING') {
         const reviewButton = uiHelpers.createElement('button', {
@@ -162,6 +183,10 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
           attributes: { type: 'button' }
         });
         withdrawButton.addEventListener('click', async () => {
+          if (!uiHelpers.confirmAction('Withdraw this leave request?')) {
+            return;
+          }
+
           state.selectedLeaveRequestId = record.id;
           await actions.withdrawLeaveRequest();
         });
@@ -186,8 +211,8 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
     });
     panel.appendChild(
       uiHelpers.createPanelHeading(
-        'New leave request',
-        'Leave requests are stored on the backend and start as PENDING.'
+        'Ask for leave',
+        'Choose the dates and add a short reason for the manager.'
       )
     );
 
@@ -196,6 +221,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
       attributes: { novalidate: true }
     });
     const grid = uiHelpers.createElement('div', { className: 'form-grid' });
+    form.appendChild(uiHelpers.createWizardProgress(['Dates', 'Reason', 'Review'], state.formStep));
 
     const appendField = (label, inputElement, spanClass = 'form-field--span-12') => {
       const field = uiHelpers.createElement('label', {
@@ -206,41 +232,125 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
       grid.appendChild(field);
     };
 
-    const startInput = uiHelpers.createElement('input', {
-      className: 'input-control',
-      attributes: { type: 'date', value: state.form.startDate }
-    });
-    appendField('Start date', startInput, 'form-field--span-6');
+    let startInput = null;
+    let endInput = null;
+    let reasonInput = null;
 
-    const endInput = uiHelpers.createElement('input', {
-      className: 'input-control',
-      attributes: { type: 'date', value: state.form.endDate }
-    });
-    appendField('End date', endInput, 'form-field--span-6');
+    const syncVisibleFields = () => {
+      if (startInput) {
+        state.form.startDate = startInput.value;
+      }
 
-    const reasonInput = uiHelpers.createElement('textarea', {
-      className: 'input-control',
-      text: state.form.reason,
-      attributes: { rows: 5 }
-    });
-    appendField('Reason', reasonInput);
+      if (endInput) {
+        state.form.endDate = endInput.value;
+      }
+
+      if (reasonInput) {
+        state.form.reason = reasonInput.value.trim();
+      }
+    };
+
+    if (state.formStep === 1) {
+      form.appendChild(
+        uiHelpers.createElement('p', {
+          className: 'wizard-step-copy',
+          text: 'First choose the first and last date you need off.'
+        })
+      );
+
+      startInput = uiHelpers.createElement('input', {
+        className: 'input-control',
+        attributes: { type: 'date', value: state.form.startDate }
+      });
+      appendField('Start date', startInput, 'form-field--span-6');
+
+      endInput = uiHelpers.createElement('input', {
+        className: 'input-control',
+        attributes: { type: 'date', value: state.form.endDate }
+      });
+      appendField('End date', endInput, 'form-field--span-6');
+    }
+
+    if (state.formStep === 2) {
+      form.appendChild(
+        uiHelpers.createElement('p', {
+          className: 'wizard-step-copy',
+          text: 'Next add the reason the manager will see.'
+        })
+      );
+
+      reasonInput = uiHelpers.createElement('textarea', {
+        className: 'input-control',
+        text: state.form.reason,
+        attributes: { rows: 5 }
+      });
+      appendField('Reason', reasonInput);
+    }
+
+    if (state.formStep === 3) {
+      form.appendChild(
+        uiHelpers.createElement('p', {
+          className: 'wizard-step-copy',
+          text: 'Lastly check the request before sending it.'
+        })
+      );
+      grid.appendChild(
+        uiHelpers.createElement('div', {
+          className: 'form-field form-field--span-12'
+        })
+      ).appendChild(
+        uiHelpers.createReviewList([
+          { label: 'Start date', value: state.form.startDate },
+          { label: 'End date', value: state.form.endDate },
+          { label: 'Reason', value: state.form.reason }
+        ])
+      );
+    }
 
     form.appendChild(grid);
 
     const actionsRow = uiHelpers.createElement('div', { className: 'actions-row' });
-    const submitButton = uiHelpers.createElement('button', {
-      className: 'action-button button-primary',
-      text: 'Submit request',
-      attributes: { type: 'submit' }
-    });
-    actionsRow.appendChild(submitButton);
+
+    if (state.formStep > 1) {
+      const backButton = uiHelpers.createElement('button', {
+        className: 'action-button button-ghost',
+        text: 'Back',
+        attributes: { type: 'button' }
+      });
+      backButton.addEventListener('click', () => {
+        syncVisibleFields();
+        state.formStep -= 1;
+        actions.render();
+      });
+      actionsRow.appendChild(backButton);
+    }
+
+    if (state.formStep < 3) {
+      const nextButton = uiHelpers.createElement('button', {
+        className: 'action-button button-primary',
+        text: 'Next',
+        attributes: { type: 'button' }
+      });
+      nextButton.addEventListener('click', () => {
+        syncVisibleFields();
+        state.formStep += 1;
+        actions.render();
+      });
+      actionsRow.appendChild(nextButton);
+    } else {
+      const submitButton = uiHelpers.createElement('button', {
+        className: 'action-button button-primary',
+        text: 'Send request',
+        attributes: { type: 'submit' }
+      });
+      actionsRow.appendChild(submitButton);
+    }
+
     form.appendChild(actionsRow);
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
-      state.form.startDate = startInput.value;
-      state.form.endDate = endInput.value;
-      state.form.reason = reasonInput.value.trim();
+      syncVisibleFields();
       await actions.submitLeaveRequest();
     });
 
@@ -256,8 +366,16 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
     if (!selectedRecord) {
       return uiHelpers.createEmptyPanel(
         'Select a pending request',
-        'Choose a pending leave request from the table to approve or reject it.',
-        'content-panel--span-6'
+        'Choose a request marked waiting for manager, then approve or reject it.',
+        'content-panel--span-6',
+        {
+          label: 'Show waiting requests',
+          onClick: () => {
+            state.filters.status = 'PENDING';
+            actions.loadLeaveRequests();
+          },
+          tone: 'secondary'
+        }
       );
     }
 
@@ -266,14 +384,14 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
     });
     panel.appendChild(
       uiHelpers.createPanelHeading(
-        'Leave decision',
+        'Decide leave request',
         `Review ${selectedRecord.fullName} from ${selectedRecord.startDate} to ${selectedRecord.endDate}.`
       )
     );
 
     const detailList = uiHelpers.createElement('ul', { className: 'detail-list' });
     detailList.appendChild(uiHelpers.createElement('li', { text: `Reason: ${selectedRecord.reason}` }));
-    detailList.appendChild(uiHelpers.createElement('li', { text: `Current status: ${selectedRecord.status}` }));
+    detailList.appendChild(uiHelpers.createElement('li', { text: `Current status: ${uiHelpers.formatStatus(selectedRecord.status)}` }));
     panel.appendChild(detailList);
 
     const commentField = uiHelpers.createElement('label', { className: 'form-field' });
@@ -293,6 +411,10 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
       attributes: { type: 'button', disabled: selectedRecord.status !== 'PENDING' }
     });
     approveButton.addEventListener('click', async () => {
+      if (!uiHelpers.confirmAction(`Approve leave for ${selectedRecord.fullName}?`)) {
+        return;
+      }
+
       state.form.managerComment = commentInput.value.trim();
       await actions.decideLeaveRequest('approve');
     });
@@ -304,6 +426,10 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
       attributes: { type: 'button', disabled: selectedRecord.status !== 'PENDING' }
     });
     rejectButton.addEventListener('click', async () => {
+      if (!uiHelpers.confirmAction(`Reject leave for ${selectedRecord.fullName}?`)) {
+        return;
+      }
+
       state.form.managerComment = commentInput.value.trim();
       await actions.decideLeaveRequest('reject');
     });
@@ -327,9 +453,15 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
 
       workspaceElement.textContent = '';
       const metrics = uiHelpers.createElement('div', { className: 'metric-row' });
-      metrics.appendChild(uiHelpers.createMetric('Role', state.sessionUser ? state.sessionUser.role : 'Loading', 'accent'));
+      metrics.appendChild(
+        uiHelpers.createMetric(
+          'Role',
+          state.sessionUser ? uiHelpers.formatRole(state.sessionUser.role) : 'Loading',
+          'accent'
+        )
+      );
       metrics.appendChild(uiHelpers.createMetric('Requests', state.loading ? 'Loading...' : String(state.records.length)));
-      metrics.appendChild(uiHelpers.createMetric('Filter', state.filters.status));
+      metrics.appendChild(uiHelpers.createMetric('Shown', uiHelpers.formatStatus(state.filters.status)));
       workspaceElement.appendChild(metrics);
 
       const grid = uiHelpers.createElement('div', { className: 'workspace-grid' });
@@ -338,6 +470,26 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
         grid.appendChild(flashPanel);
       }
       grid.appendChild(renderToolbar(state, actions));
+      grid.appendChild(
+        uiHelpers.createStepsPanel(
+          state.sessionUser.role === 'MANAGER' ? 'How to handle leave' : 'How leave works',
+          state.sessionUser.role === 'MANAGER'
+            ? 'Keep the decision clear before shifts are final.'
+            : 'The request stays visible while it waits for a manager.',
+          state.sessionUser.role === 'MANAGER'
+            ? [
+                'Filter to waiting requests.',
+                'Select one request and check the dates.',
+                'Approve or reject it before building the rota.'
+              ]
+            : [
+                'Choose the first and last date you need off.',
+                'Add a short reason so the manager knows what it is for.',
+                'Watch the status change from waiting to approved or rejected.'
+              ],
+          'content-panel--span-16'
+        )
+      );
       grid.appendChild(renderTable(state, actions));
       grid.appendChild(
         state.sessionUser.role === 'MANAGER' ? renderManagerPanel(state, actions) : renderStaffForm(state, actions)
@@ -388,9 +540,10 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
           startDate: state.form.startDate
         });
         state.form.reason = '';
+        state.formStep = 1;
         await loadLeaveRequests({
           details: [],
-          text: 'Leave request submitted successfully.',
+          text: 'Leave request sent.',
           tone: 'success'
         });
       } catch (error) {
@@ -413,7 +566,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
         state.form.managerComment = '';
         await loadLeaveRequests({
           details: [],
-          text: `Leave request ${action === 'approve' ? 'approved' : 'rejected'} successfully.`,
+          text: `Leave request ${action === 'approve' ? 'approved' : 'rejected'}.`,
           tone: 'success'
         });
       } catch (error) {
@@ -433,7 +586,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
         state.selectedLeaveRequestId = null;
         await loadLeaveRequests({
           details: [],
-          text: 'Leave request removed successfully.',
+          text: 'Leave request withdrawn.',
           tone: 'success'
         });
       } catch (error) {

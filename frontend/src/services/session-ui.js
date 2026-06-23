@@ -3,6 +3,7 @@ window.SmartSchedule = window.SmartSchedule || {};
 window.SmartSchedule.sessionUi = (function createSessionUi() {
   const apiClient = window.SmartSchedule.apiClient;
   const previewState = window.SmartSchedule.previewState;
+  const uiHelpers = window.SmartSchedule.liveUiHelpers;
 
   const createElement = (tagName, { className, text, attributes } = {}) => {
     const element = document.createElement(tagName);
@@ -66,7 +67,7 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
       createElement('article', { className: 'metric-pill' })
     ).append(
       createElement('span', { text: 'Session' }),
-      createElement('strong', { text: 'Server-side' })
+      createElement('strong', { text: 'Kept by server' })
     );
     metrics.appendChild(
       createElement('article', { className: 'metric-pill' })
@@ -99,7 +100,7 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     heading.appendChild(
       createElement('p', {
         className: 'panel-copy',
-        text: 'Sign in with a seeded work account to use the live API-backed pages.'
+        text: 'Sign in with a work account before using staff, leave, availability, and shifts.'
       })
     );
     formPanel.appendChild(heading);
@@ -174,28 +175,16 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     formPanel.appendChild(form);
     grid.appendChild(formPanel);
 
-    const helpPanel = createElement('section', {
-      className: 'content-panel content-panel--span-6'
-    });
-    const helpHeading = createElement('div', { className: 'panel-heading' });
-    helpHeading.appendChild(createElement('h3', { text: 'Live access notes' }));
-    helpHeading.appendChild(
-      createElement('p', {
-        className: 'panel-copy',
-        text: 'This login page now uses the real session-backed authentication routes.'
-      })
+    const helpPanel = uiHelpers.createStepsPanel(
+      'Before you start',
+      'The account decides what you can see after login.',
+      [
+        'Managers can update staff records and create shifts.',
+        'Staff can update availability and ask for leave.',
+        'The server checks access again when a live page loads.'
+      ],
+      'content-panel--span-6'
     );
-    helpPanel.appendChild(helpHeading);
-
-    const detailList = createElement('ul', { className: 'detail-list' });
-    [
-      'Managers are redirected to the staff workspace after sign-in.',
-      'Staff users keep the smaller role view.',
-      'The server decides access after login, not only the frontend shell.'
-    ].forEach((item) => {
-      detailList.appendChild(createElement('li', { text: item }));
-    });
-    helpPanel.appendChild(detailList);
     grid.appendChild(helpPanel);
 
     workspaceElement.appendChild(grid);
@@ -211,7 +200,7 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
       })
     ).append(
       createElement('span', { text: 'Signed in as' }),
-      createElement('strong', { text: sessionUser.role })
+      createElement('strong', { text: uiHelpers.formatRole(sessionUser.role) })
     );
     metrics.appendChild(
       createElement('article', { className: 'metric-pill' })
@@ -245,7 +234,7 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     const actionsRow = createElement('div', { className: 'actions-row' });
     const homeButton = createElement('button', {
       className: 'action-button button-primary',
-      text: sessionUser.role === 'MANAGER' ? 'Open staff workspace' : 'Open overview',
+      text: sessionUser.role === 'MANAGER' ? 'Open staff records' : 'Open my week',
       attributes: { type: 'button' }
     });
     homeButton.addEventListener('click', () => {
@@ -264,7 +253,7 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
         logoutButton.textContent = 'Signing out...';
         await apiClient.post('/api/v1/auth/logout', {});
         renderSignedOutState(workspaceElement, {
-          text: 'Signed out successfully.',
+          text: 'Signed out.',
           tone: 'success'
         });
       } catch (error) {

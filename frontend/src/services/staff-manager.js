@@ -2,6 +2,7 @@ window.SmartSchedule = window.SmartSchedule || {};
 
 window.SmartSchedule.staffManager = (function createStaffManager() {
   const apiClient = window.SmartSchedule.apiClient;
+  const uiHelpers = window.SmartSchedule.liveUiHelpers;
   const staffRoles = ['FLOOR', 'BAR', 'KITCHEN'];
   const statusOptions = [
     { label: 'Active only', value: 'ACTIVE' },
@@ -73,6 +74,7 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
       },
       flash: null,
       form: createDefaultFormState(),
+      formStep: 1,
       isSubmitting: false,
       loading: true,
       records: [],
@@ -95,6 +97,7 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
 
   const resetFormForCreate = (state) => {
     state.form = createDefaultFormState();
+    state.formStep = 1;
     state.selectedStaffId = null;
   };
 
@@ -108,6 +111,7 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
       phoneNumber: record.phoneNumber || '',
       primaryRole: record.primaryRole
     };
+    state.formStep = 1;
     state.selectedStaffId = record.id;
   };
 
@@ -154,7 +158,7 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
     });
     const toolbarRow = createElement('div', { className: 'toolbar-row' });
     const toolbarTitle = createElement('div', { className: 'toolbar-title' });
-    toolbarTitle.appendChild(createElement('h3', { text: 'Staff filters' }));
+    toolbarTitle.appendChild(createElement('h3', { text: 'Find staff' }));
     toolbarRow.appendChild(toolbarTitle);
 
     const controls = createElement('div', { className: 'toolbar-controls' });
@@ -177,7 +181,7 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
     const roleSelect = createElement('select', { className: 'input-control' });
     ['ALL', ...staffRoles].forEach((role) => {
       const option = createElement('option', {
-        text: role === 'ALL' ? 'All roles' : role
+        text: uiHelpers.formatRole(role)
       });
       option.value = role;
       option.selected = state.filters.primaryRole === role;
@@ -203,7 +207,7 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
     });
     const applyButton = createElement('button', {
       className: 'action-button button-secondary',
-      text: 'Apply filters',
+      text: 'Show matching staff',
       attributes: { type: 'button' }
     });
     applyWrapper.appendChild(applyButton);
@@ -214,7 +218,7 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
     });
     const resetButton = createElement('button', {
       className: 'action-button button-ghost',
-      text: 'Reset filters',
+      text: 'Clear search',
       attributes: { type: 'button' }
     });
     resetWrapper.appendChild(resetButton);
@@ -268,7 +272,7 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
     heading.appendChild(
       createElement('p', {
         className: 'panel-copy',
-        text: 'Current staff accounts available for rota planning.'
+          text: 'Click Edit, or choose a row, to update a staff member.'
       })
     );
     panel.appendChild(heading);
@@ -277,27 +281,34 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
       panel.appendChild(
         createElement('p', {
           className: 'panel-copy',
-          text: 'Loading staff records...'
+          text: 'Loading staff...'
         })
       );
       return panel;
     }
 
     if (state.records.length === 0) {
-      panel.appendChild(
-        createElement('p', {
-          className: 'panel-copy',
-          text: 'No staff records match the current filters.'
-        })
+      return uiHelpers.createEmptyPanel(
+        'No staff match this search',
+        'Clear the search or add a new staff member before building shifts.',
+        'content-panel--span-10',
+        {
+          label: 'Add staff member',
+          onClick: () => {
+            resetFormForCreate(state);
+            setFlash(state, 'info', 'Use the form to add a new staff member.');
+            actions.render();
+          },
+          tone: 'primary'
+        }
       );
-      return panel;
     }
 
     const tableWrap = createElement('div', { className: 'table-wrap' });
     const table = createElement('table');
     const thead = createElement('thead');
     const headRow = createElement('tr');
-    ['Name', 'Email', 'Role', 'Contract hours', 'Status'].forEach((title) => {
+    ['Name', 'Email', 'Role', 'Contract hours', 'Status', 'Action'].forEach((title) => {
       headRow.appendChild(createElement('th', { text: title }));
     });
     thead.appendChild(headRow);
@@ -306,19 +317,26 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
     const tbody = createElement('tbody');
     state.records.forEach((record) => {
       const row = createElement('tr', {
-        className: record.id === state.selectedStaffId ? 'table-row-selected' : ''
+        className: `${record.id === state.selectedStaffId ? 'table-row-selected ' : ''}table-row-action`
       });
 
       if (record.id === state.selectedStaffId) {
         row.setAttribute('aria-current', 'true');
       }
 
-      row.appendChild(createElement('td', { text: record.fullName }));
-      row.appendChild(createElement('td', { text: record.email }));
-      row.appendChild(createElement('td', { text: record.primaryRole }));
-      row.appendChild(createElement('td', { text: `${record.contractHours} hrs` }));
+      row.appendChild(createElement('td', { text: record.fullName, attributes: { 'data-label': 'Name' } }));
+      row.appendChild(createElement('td', { text: record.email, attributes: { 'data-label': 'Email' } }));
+      row.appendChild(
+        createElement('td', {
+          text: uiHelpers.formatRole(record.primaryRole),
+          attributes: { 'data-label': 'Role' }
+        })
+      );
+      row.appendChild(createElement('td', { text: `${record.contractHours} hrs`, attributes: { 'data-label': 'Contract hours' } }));
 
-      const statusCell = createElement('td');
+      const statusCell = createElement('td', {
+        attributes: { 'data-label': 'Status' }
+      });
       const statusTag = createElement('span', {
         className: `status-tag status-tag--${record.isActive ? 'success' : 'muted'}`,
         text: record.isActive ? 'Active' : 'Inactive'
@@ -326,11 +344,31 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
       statusCell.appendChild(statusTag);
       row.appendChild(statusCell);
 
-      row.addEventListener('click', () => {
+      const actionCell = createElement('td', {
+        attributes: { 'data-label': 'Action' }
+      });
+      const editButton = createElement('button', {
+        className: 'action-button button-ghost action-button--compact',
+        text: 'Edit',
+        attributes: { type: 'button' }
+      });
+      actionCell.appendChild(editButton);
+      row.appendChild(actionCell);
+
+      const selectRecord = () => {
         fillFormFromRecord(state, record);
         setFlash(state, 'info', `Editing ${record.fullName}.`);
         actions.render();
+      };
+
+      row.addEventListener('click', (event) => {
+        if (event.target.closest('button')) {
+          return;
+        }
+
+        selectRecord();
       });
+      editButton.addEventListener('click', selectRecord);
 
       tbody.appendChild(row);
     });
@@ -348,15 +386,15 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
     const heading = createElement('div', { className: 'panel-heading' });
     heading.appendChild(
       createElement('h3', {
-        text: isEditing ? 'Edit staff record' : 'Create staff record'
+        text: isEditing ? 'Edit staff member' : 'Add staff member'
       })
     );
     heading.appendChild(
       createElement('p', {
         className: 'panel-copy',
         text: isEditing
-          ? 'Update staff details and account status securely.'
-          : 'Create a new staff login and linked profile.'
+          ? 'Update the details used later for shifts and assignments.'
+          : 'Create the login and profile before this person appears in planning.'
       })
     );
     panel.appendChild(heading);
@@ -366,6 +404,7 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
       attributes: { novalidate: true }
     });
     const grid = createElement('div', { className: 'form-grid' });
+    form.appendChild(uiHelpers.createWizardProgress(['Account', 'Profile', 'Review'], state.formStep));
 
     const appendField = ({ label, inputElement, spanClass = 'form-field--span-12', helpText }) => {
       const field = createElement('label', {
@@ -383,111 +422,221 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
       grid.appendChild(field);
     };
 
-    const emailInput = createElement('input', {
-      className: 'input-control',
-      attributes: {
-        autocomplete: 'email',
-        type: 'email',
-        value: state.form.email
-      }
-    });
-    appendField({ label: 'Email address', inputElement: emailInput });
+    let emailInput = null;
+    let passwordInput = null;
+    let fullNameInput = null;
+    let roleSelect = null;
+    let contractHoursInput = null;
+    let phoneInput = null;
+    let statusSelect = null;
 
-    if (!isEditing) {
-      const passwordInput = createElement('input', {
+    const syncVisibleFields = () => {
+      if (emailInput) {
+        state.form.email = emailInput.value.trim();
+      }
+
+      if (passwordInput) {
+        state.form.password = passwordInput.value;
+      }
+
+      if (fullNameInput) {
+        state.form.fullName = fullNameInput.value.trim();
+      }
+
+      if (roleSelect) {
+        state.form.primaryRole = roleSelect.value;
+      }
+
+      if (contractHoursInput) {
+        state.form.contractHours = contractHoursInput.value.trim();
+      }
+
+      if (phoneInput) {
+        state.form.phoneNumber = phoneInput.value.trim();
+      }
+
+      if (statusSelect) {
+        state.form.isActive = statusSelect.value;
+      }
+    };
+
+    if (state.formStep === 1) {
+      form.appendChild(
+        createElement('p', {
+          className: 'wizard-step-copy',
+          text: isEditing
+            ? 'First check the login email for this staff member.'
+            : 'First add the login details for the staff member.'
+        })
+      );
+
+      emailInput = createElement('input', {
         className: 'input-control',
         attributes: {
-          autocomplete: 'new-password',
-          minlength: '12',
-          type: 'password',
-          value: state.form.password
+          autocomplete: 'email',
+          type: 'email',
+          value: state.form.email
+        }
+      });
+      appendField({ label: 'Email address', inputElement: emailInput });
+
+      if (!isEditing) {
+        passwordInput = createElement('input', {
+          className: 'input-control',
+          attributes: {
+            autocomplete: 'new-password',
+            minlength: '12',
+            type: 'password',
+            value: state.form.password
+          }
+        });
+        appendField({
+          label: 'Temporary password',
+          inputElement: passwordInput,
+          helpText: 'Use at least 12 characters for the initial password.'
+        });
+      }
+    }
+
+    if (state.formStep === 2) {
+      form.appendChild(
+        createElement('p', {
+          className: 'wizard-step-copy',
+          text: 'Next add the profile details used for scheduling.'
+        })
+      );
+
+      fullNameInput = createElement('input', {
+        className: 'input-control',
+        attributes: {
+          autocomplete: 'name',
+          type: 'text',
+          value: state.form.fullName
+        }
+      });
+      appendField({ label: 'Full name', inputElement: fullNameInput });
+
+      roleSelect = createElement('select', { className: 'input-control' });
+      staffRoles.forEach((role) => {
+        const option = createElement('option', { text: uiHelpers.formatRole(role) });
+        option.value = role;
+        option.selected = state.form.primaryRole === role;
+        roleSelect.appendChild(option);
+      });
+      appendField({
+        label: 'Primary role',
+        inputElement: roleSelect,
+        spanClass: 'form-field--span-6'
+      });
+
+      contractHoursInput = createElement('input', {
+        className: 'input-control',
+        attributes: {
+          max: '60',
+          min: '0',
+          step: '0.25',
+          type: 'number',
+          value: state.form.contractHours
         }
       });
       appendField({
-        label: 'Temporary password',
-        inputElement: passwordInput,
-        helpText: 'Use at least 12 characters for the initial password.'
+        label: 'Contract hours',
+        inputElement: contractHoursInput,
+        spanClass: 'form-field--span-6'
       });
-      form._passwordInput = passwordInput;
+
+      phoneInput = createElement('input', {
+        className: 'input-control',
+        attributes: {
+          autocomplete: 'tel',
+          type: 'tel',
+          value: state.form.phoneNumber
+        }
+      });
+      appendField({ label: 'Phone number', inputElement: phoneInput });
+
+      statusSelect = createElement('select', { className: 'input-control' });
+      [
+        { label: 'Active', value: 'ACTIVE' },
+        { label: 'Inactive', value: 'INACTIVE' }
+      ].forEach((optionConfig) => {
+        const option = createElement('option', { text: optionConfig.label });
+        option.value = optionConfig.value;
+        option.selected = state.form.isActive === optionConfig.value;
+        statusSelect.appendChild(option);
+      });
+      appendField({ label: 'Status', inputElement: statusSelect });
     }
 
-    const fullNameInput = createElement('input', {
-      className: 'input-control',
-      attributes: {
-        autocomplete: 'name',
-        type: 'text',
-        value: state.form.fullName
-      }
-    });
-    appendField({ label: 'Full name', inputElement: fullNameInput });
-
-    const roleSelect = createElement('select', { className: 'input-control' });
-    staffRoles.forEach((role) => {
-      const option = createElement('option', { text: role });
-      option.value = role;
-      option.selected = state.form.primaryRole === role;
-      roleSelect.appendChild(option);
-    });
-    appendField({
-      label: 'Primary role',
-      inputElement: roleSelect,
-      spanClass: 'form-field--span-6'
-    });
-
-    const contractHoursInput = createElement('input', {
-      className: 'input-control',
-      attributes: {
-        max: '60',
-        min: '0',
-        step: '0.25',
-        type: 'number',
-        value: state.form.contractHours
-      }
-    });
-    appendField({
-      label: 'Contract hours',
-      inputElement: contractHoursInput,
-      spanClass: 'form-field--span-6'
-    });
-
-    const phoneInput = createElement('input', {
-      className: 'input-control',
-      attributes: {
-        autocomplete: 'tel',
-        type: 'tel',
-        value: state.form.phoneNumber
-      }
-    });
-    appendField({ label: 'Phone number', inputElement: phoneInput });
-
-    const statusSelect = createElement('select', { className: 'input-control' });
-    [
-      { label: 'Active', value: 'ACTIVE' },
-      { label: 'Inactive', value: 'INACTIVE' }
-    ].forEach((optionConfig) => {
-      const option = createElement('option', { text: optionConfig.label });
-      option.value = optionConfig.value;
-      option.selected = state.form.isActive === optionConfig.value;
-      statusSelect.appendChild(option);
-    });
-    appendField({ label: 'Status', inputElement: statusSelect });
+    if (state.formStep === 3) {
+      form.appendChild(
+        createElement('p', {
+          className: 'wizard-step-copy',
+          text: 'Lastly check the staff details before saving.'
+        })
+      );
+      grid.appendChild(
+        createElement('div', {
+          className: 'form-field form-field--span-12'
+        })
+      ).appendChild(
+        uiHelpers.createReviewList([
+          { label: 'Email', value: state.form.email },
+          { label: 'Password', value: isEditing ? 'Not changed here' : state.form.password ? 'Temporary password entered' : 'Not set' },
+          { label: 'Full name', value: state.form.fullName },
+          { label: 'Primary role', value: uiHelpers.formatRole(state.form.primaryRole) },
+          { label: 'Contract hours', value: state.form.contractHours ? `${state.form.contractHours} hrs` : '' },
+          { label: 'Phone number', value: state.form.phoneNumber || 'Not added' },
+          { label: 'Status', value: uiHelpers.formatStatus(state.form.isActive) }
+        ])
+      );
+    }
 
     form.appendChild(grid);
 
     const actionsRow = createElement('div', { className: 'actions-row' });
-    const submitButton = createElement('button', {
-      className: 'action-button button-primary',
-      text: state.isSubmitting
-        ? 'Saving...'
-        : isEditing
-          ? 'Save changes'
-          : 'Create staff',
-      attributes: {
-        disabled: state.isSubmitting,
-        type: 'submit'
-      }
-    });
-    actionsRow.appendChild(submitButton);
+
+    if (state.formStep > 1) {
+      const backButton = createElement('button', {
+        className: 'action-button button-ghost',
+        text: 'Back',
+        attributes: { type: 'button' }
+      });
+      backButton.addEventListener('click', () => {
+        syncVisibleFields();
+        state.formStep -= 1;
+        actions.render();
+      });
+      actionsRow.appendChild(backButton);
+    }
+
+    if (state.formStep < 3) {
+      const nextButton = createElement('button', {
+        className: 'action-button button-primary',
+        text: 'Next',
+        attributes: { type: 'button' }
+      });
+      nextButton.addEventListener('click', () => {
+        syncVisibleFields();
+        state.formStep += 1;
+        actions.render();
+      });
+      actionsRow.appendChild(nextButton);
+    } else {
+      const submitButton = createElement('button', {
+        className: 'action-button button-primary',
+        text: state.isSubmitting
+          ? 'Saving...'
+          : isEditing
+            ? 'Save changes'
+            : 'Create staff',
+        attributes: {
+          disabled: state.isSubmitting,
+          type: 'submit'
+        }
+      });
+      actionsRow.appendChild(submitButton);
+    }
 
     if (isEditing) {
       const cancelButton = createElement('button', {
@@ -507,16 +656,7 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
-
-      state.form = {
-        contractHours: contractHoursInput.value.trim(),
-        email: emailInput.value.trim(),
-        fullName: fullNameInput.value.trim(),
-        isActive: statusSelect.value,
-        password: form._passwordInput ? form._passwordInput.value : '',
-        phoneNumber: phoneInput.value.trim(),
-        primaryRole: roleSelect.value
-      };
+      syncVisibleFields();
 
       await actions.submitStaff();
     });
@@ -544,6 +684,18 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
         text: message
       })
     );
+    const actionRow = createElement('div', { className: 'actions-row' });
+    actionRow.appendChild(
+      createElement('button', {
+        className: 'action-button button-primary',
+        text: 'Go to login',
+        attributes: {
+          'data-target-page': 'login',
+          type: 'button'
+        }
+      })
+    );
+    emptyState.appendChild(actionRow);
     panel.appendChild(emptyState);
     grid.appendChild(panel);
     workspaceElement.appendChild(grid);
@@ -589,6 +741,18 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
       }
 
       grid.appendChild(renderToolbar(state, actions));
+      grid.appendChild(
+        uiHelpers.createStepsPanel(
+          'Staff setup order',
+          'This is the simple order a manager can follow.',
+          [
+            'Add the staff account and contact details.',
+            'Set the main role and weekly contract hours.',
+            'Save the person before using them in shifts or assignments.'
+          ],
+          'content-panel--span-16'
+        )
+      );
       grid.appendChild(renderTable(state, actions));
       grid.appendChild(renderForm(state, actions));
       workspaceElement.appendChild(grid);
@@ -599,7 +763,7 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
       state.flash =
         nextFlash ||
         {
-          text: 'Loading staff records...',
+          text: 'Loading staff...',
           tone: 'info',
           details: []
         };
@@ -640,7 +804,7 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
         if (error.status === 401) {
           renderUnauthorized(
             workspaceElement,
-            'Sign in with a manager account to load live staff records.'
+            'Sign in with a manager account to load staff.'
           );
           return;
         }
@@ -648,7 +812,7 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
         if (error.status === 403) {
           renderUnauthorized(
             workspaceElement,
-            'Your current account does not have manager access to staff records.'
+            'Your current account does not have manager access to staff.'
           );
           return;
         }
@@ -656,7 +820,7 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
         setFlash(
           state,
           'error',
-          error.message || 'Could not load staff records right now.'
+          error.message || 'Could not load staff right now.'
         );
         render();
       }
@@ -667,7 +831,7 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
       setFlash(
         state,
         'info',
-        state.selectedStaffId ? 'Saving staff record...' : 'Creating staff record...'
+        state.selectedStaffId ? 'Saving staff member...' : 'Adding staff member...'
       );
       render();
 
@@ -721,7 +885,7 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
         setFlash(
           state,
           'error',
-          error.message || 'Could not save the staff record.',
+          error.message || 'Could not save this staff member.',
           error.payload?.details || []
         );
         render();

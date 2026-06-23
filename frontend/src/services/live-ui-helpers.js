@@ -54,6 +54,9 @@ window.SmartSchedule.liveUiHelpers = (function createLiveUiHelpers() {
     const emptyState = createElement('div', { className: 'empty-state' });
     emptyState.appendChild(createElement('h3', { text: headingText }));
     emptyState.appendChild(createElement('p', { text: bodyText }));
+    const actionRow = createElement('div', { className: 'actions-row' });
+    actionRow.appendChild(createActionButton('Go to login', 'login', 'primary'));
+    emptyState.appendChild(actionRow);
     panel.appendChild(emptyState);
     grid.appendChild(panel);
     workspaceElement.appendChild(grid);
@@ -128,13 +131,151 @@ window.SmartSchedule.liveUiHelpers = (function createLiveUiHelpers() {
     return heading;
   };
 
-  const createEmptyPanel = (title, bodyText, spanClass = 'content-panel--span-16') => {
+  const createTableCell = (label, text) => {
+    return createElement('td', {
+      text,
+      attributes: {
+        'data-label': label
+      }
+    });
+  };
+
+  const formatRole = (role) => {
+    const labels = {
+      ALL: 'All roles',
+      BAR: 'Bar',
+      FLOOR: 'Floor',
+      KITCHEN: 'Kitchen',
+      MANAGER: 'Manager',
+      STAFF: 'Staff'
+    };
+
+    return labels[role] || role || 'Not set';
+  };
+
+  const formatStatus = (status) => {
+    const labels = {
+      ACTIVE: 'Active',
+      ALL: 'All',
+      APPROVED: 'Approved',
+      AVAILABLE: 'Available',
+      CANCELLED: 'Cancelled',
+      DRAFT: 'Draft',
+      INACTIVE: 'Inactive',
+      OPEN: 'Open',
+      PENDING: 'Waiting for manager',
+      REJECTED: 'Rejected',
+      UNAVAILABLE: 'Unavailable'
+    };
+
+    return labels[status] || status || 'Not set';
+  };
+
+  const confirmAction = (message) => {
+    return window.confirm(message);
+  };
+
+  const createStepsPanel = (
+    title,
+    caption,
+    steps,
+    spanClass = 'content-panel--span-6'
+  ) => {
+    const panel = createElement('section', {
+      className: `content-panel ${spanClass}`
+    });
+    panel.appendChild(createPanelHeading(title, caption));
+
+    const list = createElement('ol', { className: 'step-list' });
+    steps.forEach((step, index) => {
+      const item = createElement('li', { className: 'step-item' });
+      item.appendChild(
+        createElement('span', {
+          className: 'step-marker',
+          text: String(index + 1)
+        })
+      );
+      item.appendChild(createElement('span', { text: step }));
+      list.appendChild(item);
+    });
+    panel.appendChild(list);
+    return panel;
+  };
+
+  const createWizardProgress = (steps, currentStep) => {
+    const progress = createElement('div', { className: 'wizard-progress' });
+    steps.forEach((step, index) => {
+      const stepNumber = index + 1;
+      const stateClass =
+        stepNumber === currentStep
+          ? ' is-current'
+          : stepNumber < currentStep
+            ? ' is-complete'
+            : '';
+      const item = createElement('div', {
+        className: `wizard-progress-item${stateClass}`
+      });
+      item.appendChild(
+        createElement('span', {
+          className: 'wizard-progress-marker',
+          text: String(stepNumber)
+        })
+      );
+      item.appendChild(
+        createElement('span', {
+          className: 'wizard-progress-label',
+          text: step
+        })
+      );
+      progress.appendChild(item);
+    });
+    return progress;
+  };
+
+  const createReviewList = (items) => {
+    const list = createElement('dl', { className: 'review-list' });
+    items.forEach((item) => {
+      list.appendChild(createElement('dt', { text: item.label }));
+      list.appendChild(createElement('dd', { text: item.value || 'Not set' }));
+    });
+    return list;
+  };
+
+  const createActionButton = (label, targetPage, tone = 'secondary') => {
+    return createElement('button', {
+      className: `action-button button-${tone}`,
+      text: label,
+      attributes: {
+        'data-target-page': targetPage,
+        type: 'button'
+      }
+    });
+  };
+
+  const createEmptyPanel = (title, bodyText, spanClass = 'content-panel--span-16', action = null) => {
     const panel = createElement('section', {
       className: `content-panel content-panel--empty ${spanClass}`
     });
     const emptyState = createElement('div', { className: 'empty-state' });
     emptyState.appendChild(createElement('h3', { text: title }));
     emptyState.appendChild(createElement('p', { text: bodyText }));
+
+    if (action) {
+      const actionRow = createElement('div', { className: 'actions-row' });
+      if (action.targetPage) {
+        actionRow.appendChild(createActionButton(action.label, action.targetPage, action.tone));
+      } else if (typeof action.onClick === 'function') {
+        const button = createElement('button', {
+          className: `action-button button-${action.tone || 'secondary'}`,
+          text: action.label,
+          attributes: { type: 'button' }
+        });
+        button.addEventListener('click', action.onClick);
+        actionRow.appendChild(button);
+      }
+      emptyState.appendChild(actionRow);
+    }
+
     panel.appendChild(emptyState);
     return panel;
   };
@@ -310,10 +451,18 @@ window.SmartSchedule.liveUiHelpers = (function createLiveUiHelpers() {
 
   return {
     buildQueryString,
+    confirmAction,
+    createActionButton,
     createElement,
     createEmptyPanel,
     createMetric,
     createPanelHeading,
+    createReviewList,
+    createTableCell,
+    createStepsPanel,
+    createWizardProgress,
+    formatRole,
+    formatStatus,
     getErrorFeedback,
     getCurrentWeekStart,
     getDateOffset,

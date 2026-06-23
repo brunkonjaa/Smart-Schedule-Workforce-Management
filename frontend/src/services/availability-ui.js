@@ -15,6 +15,7 @@ window.SmartSchedule.availabilityUi = (function createAvailabilityUi() {
         startTime: '09:00',
         status: 'AVAILABLE'
       },
+      formStep: 1,
       loading: true,
       records: [],
       selectedAvailabilityId: null,
@@ -46,6 +47,7 @@ window.SmartSchedule.availabilityUi = (function createAvailabilityUi() {
       startTime: '09:00',
       status: 'AVAILABLE'
     };
+    state.formStep = 1;
     state.selectedAvailabilityId = null;
   };
 
@@ -56,6 +58,7 @@ window.SmartSchedule.availabilityUi = (function createAvailabilityUi() {
       startTime: record.startTime.slice(0, 5),
       status: record.status
     };
+    state.formStep = 1;
     state.selectedAvailabilityId = record.id;
   };
 
@@ -65,10 +68,10 @@ window.SmartSchedule.availabilityUi = (function createAvailabilityUi() {
     });
     panel.appendChild(
       uiHelpers.createPanelHeading(
-        'Week entries',
+        state.sessionUser.role === 'MANAGER' ? 'Team availability' : 'When can I work?',
         state.sessionUser.role === 'MANAGER'
-          ? 'Managers review all entries for the selected week.'
-          : 'Your saved availability windows for the selected week.'
+          ? 'See who has added times for the selected week.'
+          : 'These are the times you have saved for this week.'
       )
     );
 
@@ -78,8 +81,26 @@ window.SmartSchedule.availabilityUi = (function createAvailabilityUi() {
     }
 
     if (state.records.length === 0) {
-      panel.appendChild(uiHelpers.createElement('p', { className: 'panel-copy', text: 'No availability entries found for this week.' }));
-      return panel;
+      return uiHelpers.createEmptyPanel(
+        state.sessionUser.role === 'MANAGER'
+          ? 'No availability added for this week'
+          : 'You have not added availability yet',
+        state.sessionUser.role === 'MANAGER'
+          ? 'Staff availability will appear here after staff submit their times for the selected week.'
+          : 'Add the first day and time you can work, or mark a day as unavailable.',
+        'content-panel--span-10',
+        state.sessionUser.role === 'STAFF'
+          ? {
+              label: 'Add availability',
+              onClick: () => {
+                resetForm(state);
+                setFlash(state, 'info', 'Use the form to add your first availability entry.');
+                actions.render();
+              },
+              tone: 'primary'
+            }
+          : null
+      );
     }
 
     const tableWrap = uiHelpers.createElement('div', { className: 'table-wrap' });
@@ -103,27 +124,32 @@ window.SmartSchedule.availabilityUi = (function createAvailabilityUi() {
       });
 
       if (state.sessionUser.role === 'MANAGER') {
-        row.appendChild(uiHelpers.createElement('td', { text: record.fullName || 'Unknown staff' }));
+        row.appendChild(uiHelpers.createTableCell('Staff', record.fullName || 'Unknown staff'));
       }
 
-      row.appendChild(uiHelpers.createElement('td', { text: getDayLabel(record.dayOfWeek) }));
+      row.appendChild(uiHelpers.createTableCell('Day', getDayLabel(record.dayOfWeek)));
       row.appendChild(
-        uiHelpers.createElement('td', {
-          text: `${record.startTime.slice(0, 5)} - ${record.endTime.slice(0, 5)}`
-        })
+        uiHelpers.createTableCell(
+          'Time window',
+          `${record.startTime.slice(0, 5)} - ${record.endTime.slice(0, 5)}`
+        )
       );
 
-      const statusCell = uiHelpers.createElement('td');
+      const statusCell = uiHelpers.createElement('td', {
+        attributes: { 'data-label': 'Status' }
+      });
       statusCell.appendChild(
         uiHelpers.createElement('span', {
           className: `status-tag status-tag--${record.status === 'AVAILABLE' ? 'success' : 'warning'}`,
-          text: record.status === 'AVAILABLE' ? 'Available' : 'Unavailable'
+          text: uiHelpers.formatStatus(record.status)
         })
       );
       row.appendChild(statusCell);
 
       if (state.sessionUser.role === 'STAFF') {
-        const actionCell = uiHelpers.createElement('td');
+        const actionCell = uiHelpers.createElement('td', {
+          attributes: { 'data-label': 'Action' }
+        });
         const editButton = uiHelpers.createElement('button', {
           className: 'action-button button-ghost action-button--compact',
           text: 'Edit',
@@ -153,7 +179,7 @@ window.SmartSchedule.availabilityUi = (function createAvailabilityUi() {
     });
     const toolbarRow = uiHelpers.createElement('div', { className: 'toolbar-row' });
     const toolbarTitle = uiHelpers.createElement('div', { className: 'toolbar-title' });
-    toolbarTitle.appendChild(uiHelpers.createElement('h3', { text: 'Availability filters' }));
+    toolbarTitle.appendChild(uiHelpers.createElement('h3', { text: 'Choose week' }));
     toolbarRow.appendChild(toolbarTitle);
 
     const controls = uiHelpers.createElement('div', { className: 'toolbar-controls' });
@@ -205,8 +231,8 @@ window.SmartSchedule.availabilityUi = (function createAvailabilityUi() {
     });
     panel.appendChild(
       uiHelpers.createPanelHeading(
-        state.selectedAvailabilityId ? 'Edit availability entry' : 'New availability entry',
-        'Only your own current or future week entries can be changed here.'
+        state.selectedAvailabilityId ? 'Edit when you can work' : 'Add when you can work',
+        'Pick one day and time window. If you cannot work that day, choose unavailable.'
       )
     );
 
@@ -215,6 +241,7 @@ window.SmartSchedule.availabilityUi = (function createAvailabilityUi() {
       attributes: { novalidate: true }
     });
     const grid = uiHelpers.createElement('div', { className: 'form-grid' });
+    form.appendChild(uiHelpers.createWizardProgress(['Day', 'Time', 'Review'], state.formStep));
 
     const appendField = (label, inputElement, spanClass = 'form-field--span-12') => {
       const field = uiHelpers.createElement('label', {
@@ -225,53 +252,144 @@ window.SmartSchedule.availabilityUi = (function createAvailabilityUi() {
       grid.appendChild(field);
     };
 
-    const daySelect = uiHelpers.createElement('select', { className: 'input-control' });
-    [
-      ['1', 'Monday'],
-      ['2', 'Tuesday'],
-      ['3', 'Wednesday'],
-      ['4', 'Thursday'],
-      ['5', 'Friday'],
-      ['6', 'Saturday'],
-      ['7', 'Sunday']
-    ].forEach(([value, label]) => {
-      const option = uiHelpers.createElement('option', { text: label });
-      option.value = value;
-      option.selected = state.form.dayOfWeek === value;
-      daySelect.appendChild(option);
-    });
-    appendField('Day', daySelect);
+    let daySelect = null;
+    let statusSelect = null;
+    let startInput = null;
+    let endInput = null;
 
-    const startInput = uiHelpers.createElement('input', {
-      className: 'input-control',
-      attributes: { type: 'time', value: state.form.startTime }
-    });
-    appendField('Start time', startInput, 'form-field--span-6');
+    const syncVisibleFields = () => {
+      if (daySelect) {
+        state.form.dayOfWeek = daySelect.value;
+      }
 
-    const endInput = uiHelpers.createElement('input', {
-      className: 'input-control',
-      attributes: { type: 'time', value: state.form.endTime }
-    });
-    appendField('End time', endInput, 'form-field--span-6');
+      if (statusSelect) {
+        state.form.status = statusSelect.value;
+      }
 
-    const statusSelect = uiHelpers.createElement('select', { className: 'input-control' });
-    availabilityStatuses.forEach((status) => {
-      const option = uiHelpers.createElement('option', { text: status === 'AVAILABLE' ? 'Available' : 'Unavailable' });
-      option.value = status;
-      option.selected = state.form.status === status;
-      statusSelect.appendChild(option);
-    });
-    appendField('Status', statusSelect);
+      if (startInput) {
+        state.form.startTime = startInput.value;
+      }
+
+      if (endInput) {
+        state.form.endTime = endInput.value;
+      }
+    };
+
+    if (state.formStep === 1) {
+      form.appendChild(
+        uiHelpers.createElement('p', {
+          className: 'wizard-step-copy',
+          text: 'First choose the day and whether you can work or not.'
+        })
+      );
+
+      daySelect = uiHelpers.createElement('select', { className: 'input-control' });
+      [
+        ['1', 'Monday'],
+        ['2', 'Tuesday'],
+        ['3', 'Wednesday'],
+        ['4', 'Thursday'],
+        ['5', 'Friday'],
+        ['6', 'Saturday'],
+        ['7', 'Sunday']
+      ].forEach(([value, label]) => {
+        const option = uiHelpers.createElement('option', { text: label });
+        option.value = value;
+        option.selected = state.form.dayOfWeek === value;
+        daySelect.appendChild(option);
+      });
+      appendField('Day', daySelect);
+
+      statusSelect = uiHelpers.createElement('select', { className: 'input-control' });
+      availabilityStatuses.forEach((status) => {
+        const option = uiHelpers.createElement('option', { text: uiHelpers.formatStatus(status) });
+        option.value = status;
+        option.selected = state.form.status === status;
+        statusSelect.appendChild(option);
+      });
+      appendField('Status', statusSelect);
+    }
+
+    if (state.formStep === 2) {
+      form.appendChild(
+        uiHelpers.createElement('p', {
+          className: 'wizard-step-copy',
+          text: 'Next add the time window for that day.'
+        })
+      );
+
+      startInput = uiHelpers.createElement('input', {
+        className: 'input-control',
+        attributes: { type: 'time', value: state.form.startTime }
+      });
+      appendField('Start time', startInput, 'form-field--span-6');
+
+      endInput = uiHelpers.createElement('input', {
+        className: 'input-control',
+        attributes: { type: 'time', value: state.form.endTime }
+      });
+      appendField('End time', endInput, 'form-field--span-6');
+    }
+
+    if (state.formStep === 3) {
+      form.appendChild(
+        uiHelpers.createElement('p', {
+          className: 'wizard-step-copy',
+          text: 'Lastly check the entry before saving it.'
+        })
+      );
+      grid.appendChild(
+        uiHelpers.createElement('div', {
+          className: 'form-field form-field--span-12'
+        })
+      ).appendChild(
+        uiHelpers.createReviewList([
+          { label: 'Week start', value: state.weekStart },
+          { label: 'Day', value: getDayLabel(Number(state.form.dayOfWeek)) },
+          { label: 'Status', value: uiHelpers.formatStatus(state.form.status) },
+          { label: 'Time', value: `${state.form.startTime} - ${state.form.endTime}` }
+        ])
+      );
+    }
 
     form.appendChild(grid);
 
     const actionsRow = uiHelpers.createElement('div', { className: 'actions-row' });
-    const submitButton = uiHelpers.createElement('button', {
-      className: 'action-button button-primary',
-      text: state.selectedAvailabilityId ? 'Save entry' : 'Add entry',
-      attributes: { type: 'submit' }
-    });
-    actionsRow.appendChild(submitButton);
+
+    if (state.formStep > 1) {
+      const backButton = uiHelpers.createElement('button', {
+        className: 'action-button button-ghost',
+        text: 'Back',
+        attributes: { type: 'button' }
+      });
+      backButton.addEventListener('click', () => {
+        syncVisibleFields();
+        state.formStep -= 1;
+        actions.render();
+      });
+      actionsRow.appendChild(backButton);
+    }
+
+    if (state.formStep < 3) {
+      const nextButton = uiHelpers.createElement('button', {
+        className: 'action-button button-primary',
+        text: 'Next',
+        attributes: { type: 'button' }
+      });
+      nextButton.addEventListener('click', () => {
+        syncVisibleFields();
+        state.formStep += 1;
+        actions.render();
+      });
+      actionsRow.appendChild(nextButton);
+    } else {
+      const submitButton = uiHelpers.createElement('button', {
+        className: 'action-button button-primary',
+        text: state.selectedAvailabilityId ? 'Save entry' : 'Add entry',
+        attributes: { type: 'submit' }
+      });
+      actionsRow.appendChild(submitButton);
+    }
 
     if (state.selectedAvailabilityId) {
       const deleteButton = uiHelpers.createElement('button', {
@@ -280,6 +398,10 @@ window.SmartSchedule.availabilityUi = (function createAvailabilityUi() {
         attributes: { type: 'button' }
       });
       deleteButton.addEventListener('click', async () => {
+        if (!uiHelpers.confirmAction('Delete this availability entry?')) {
+          return;
+        }
+
         await actions.deleteAvailability();
       });
       actionsRow.appendChild(deleteButton);
@@ -300,12 +422,7 @@ window.SmartSchedule.availabilityUi = (function createAvailabilityUi() {
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
-      state.form = {
-        dayOfWeek: daySelect.value,
-        endTime: endInput.value,
-        startTime: startInput.value,
-        status: statusSelect.value
-      };
+      syncVisibleFields();
       await actions.saveAvailability();
     });
 
@@ -315,9 +432,22 @@ window.SmartSchedule.availabilityUi = (function createAvailabilityUi() {
 
   const renderManagerSummary = () => {
     return uiHelpers.createEmptyPanel(
-      'Manager review only',
-      'Managers can review the live availability data here. Staff accounts create and change their own entries from the same page in staff role view.',
-      'content-panel--span-6'
+      'Manager view only',
+      'Managers can check staff availability here. Staff add and change their own times from the staff role view.',
+      'content-panel--span-6',
+      {
+        label: 'Open staff role',
+        onClick: () => {
+          window.SmartSchedule.previewState.set({
+            ...window.SmartSchedule.previewState.get(),
+            page: 'availability',
+            role: 'staff'
+          });
+          window.location.hash = 'availability';
+          window.location.reload();
+        },
+        tone: 'secondary'
+      }
     );
   };
 
@@ -336,7 +466,12 @@ window.SmartSchedule.availabilityUi = (function createAvailabilityUi() {
       workspaceElement.textContent = '';
       const metrics = uiHelpers.createElement('div', { className: 'metric-row' });
       metrics.appendChild(uiHelpers.createMetric('Week start', state.weekStart, 'accent'));
-      metrics.appendChild(uiHelpers.createMetric('Role', state.sessionUser ? state.sessionUser.role : 'Loading'));
+      metrics.appendChild(
+        uiHelpers.createMetric(
+          'Role',
+          state.sessionUser ? uiHelpers.formatRole(state.sessionUser.role) : 'Loading'
+        )
+      );
       metrics.appendChild(
         uiHelpers.createMetric(
           'Entries',
@@ -352,6 +487,26 @@ window.SmartSchedule.availabilityUi = (function createAvailabilityUi() {
       }
 
       grid.appendChild(renderToolbar(state, actions));
+      grid.appendChild(
+        uiHelpers.createStepsPanel(
+          state.sessionUser.role === 'STAFF' ? 'How to add your week' : 'How to check coverage',
+          state.sessionUser.role === 'STAFF'
+            ? 'Use this page one day at a time.'
+            : 'Use this page before building shifts.',
+          state.sessionUser.role === 'STAFF'
+            ? [
+                'Choose the week you are updating.',
+                'Add the day and time you can work, or mark it unavailable.',
+                'Check the list to make sure the saved times look right.'
+              ]
+            : [
+                'Choose the week you are planning.',
+                'Check who has missing or unavailable time.',
+                'Use this before creating shifts and assigning staff.'
+              ],
+          'content-panel--span-16'
+        )
+      );
       grid.appendChild(renderTable(state, actions));
       grid.appendChild(
         state.sessionUser.role === 'STAFF' ? renderStaffForm(state, actions) : renderManagerSummary()
@@ -421,7 +576,7 @@ window.SmartSchedule.availabilityUi = (function createAvailabilityUi() {
         resetForm(state);
         await loadAvailability({
           details: [],
-          text: 'Availability saved successfully.',
+          text: 'Availability saved.',
           tone: 'success'
         });
       } catch (error) {
@@ -441,7 +596,7 @@ window.SmartSchedule.availabilityUi = (function createAvailabilityUi() {
         resetForm(state);
         await loadAvailability({
           details: [],
-          text: 'Availability entry deleted successfully.',
+          text: 'Availability entry deleted.',
           tone: 'success'
         });
       } catch (error) {

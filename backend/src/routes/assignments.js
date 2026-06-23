@@ -2,7 +2,9 @@ const express = require('express');
 const { requireRole } = require('../middleware/auth');
 const { requireMutationProtection } = require('../middleware/request-security');
 const {
+  buildAssignmentListFilters,
   createAssignment,
+  listAssignments,
   validateAssignmentInput
 } = require('../services/assignment-service');
 
@@ -28,6 +30,34 @@ const sendConflictError = (response, message) => {
     message
   });
 };
+
+const assignmentConflictCodes = new Set([
+  'ASSIGNMENT_AVAILABILITY_CONFLICT',
+  'ASSIGNMENT_LEAVE_CONFLICT',
+  'ASSIGNMENT_OVERLAP_CONFLICT',
+  'ASSIGNMENT_ROLE_CONFLICT',
+  'SHIFT_ALREADY_ASSIGNED',
+  'SHIFT_NOT_OPEN',
+  'STAFF_NOT_ACTIVE'
+]);
+
+router.get(
+  '/',
+  requireRole('MANAGER'),
+  asyncHandler(async (request, response) => {
+    const { details, filters } = buildAssignmentListFilters(request.query);
+
+    if (details.length > 0) {
+      return sendValidationError(response, details);
+    }
+
+    const assignments = await listAssignments(filters);
+
+    return response.status(200).json({
+      assignments
+    });
+  })
+);
 
 router.post(
   '/',
@@ -61,7 +91,7 @@ router.post(
         message: 'Shift assignment created successfully.'
       });
     } catch (error) {
-      if (error.code === 'SHIFT_ALREADY_ASSIGNED') {
+      if (assignmentConflictCodes.has(error.code)) {
         return sendConflictError(response, error.message);
       }
 

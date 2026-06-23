@@ -3,6 +3,7 @@
   const allPages = shell.pageConfig.pages;
   const stateStore = shell.previewState;
   const layout = shell.layout;
+  const overviewUi = shell.overviewUi;
   const sessionUi = shell.sessionUi;
   const staffManager = shell.staffManager;
   const availabilityUi = shell.availabilityUi;
@@ -86,6 +87,15 @@
 
     if (staffManager) {
       await staffManager.mount({
+        page,
+        renderToken,
+        role: state.role,
+        workspaceElement
+      });
+    }
+
+    if (overviewUi) {
+      await overviewUi.mount({
         page,
         renderToken,
         role: state.role,
