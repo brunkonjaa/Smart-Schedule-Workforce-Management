@@ -4,7 +4,7 @@
 
 This matrix shows the backend access rules for the MVP routes.
 
-It is important to say this clearly as well. A lot of this matrix is already wired now for auth, staff, availability, leave, shifts, and the first assignment save route. The part that is still mainly a target is the rota side and the deeper assignment conflict rules.
+It is important to say this clearly as well. A lot of this matrix is already wired now for auth, staff, availability, leave, shifts, assignments, assignment conflict checks, and the weekly rota read route. Contract-hours warnings and audit logging still need their own later work.
 
 ## Roles
 
@@ -35,21 +35,21 @@ It is important to say this clearly as well. A lot of this matrix is already wir
 | `PUT /api/v1/shifts/{shiftId}` | Deny | Deny | Allow | Manager only |
 | `DELETE /api/v1/shifts/{shiftId}` | Deny | Deny | Allow | Manager only |
 | `POST /api/v1/assignments` | Deny | Deny | Allow | Manager only |
-| `GET /api/v1/rota?weekStart=...` | Deny | Allow own | Allow all | Staff sees only own assignments |
+| `PUT /api/v1/assignments/{assignmentId}` | Deny | Deny | Allow | Manager only |
+| `DELETE /api/v1/assignments/{assignmentId}` | Deny | Deny | Allow | Manager only |
+| `GET /api/v1/rota?weekStart=...&department=...` | Deny | Allow view | Allow view | Staff can view the rota but cannot edit it |
 
 ## Object-Level Rules
 
 1. a staff user can only create, update, or delete their own availability entries
 2. a staff user can only create leave requests for themselves
 3. a staff user can only view and withdraw their own pending leave records
-4. a staff user can only view their own rota records
-5. a staff user cannot create shifts or assignments
+4. a staff user can view rota sections but cannot create, update, or delete shifts or assignments
+5. manager-only cell actions still have backend role checks
 
 ## Current Repo Note
 
-The current repo now has the route middleware and ownership checks for the live auth, staff, availability, leave, shift, and basic assignment save surface.
-
-What still is not real yet is the assignment conflict engine and the rota route.
+The current repo now has the route middleware and ownership checks for the live auth, staff, availability, leave, shift, assignment, and rota read surface.
 
 ## Security Test Expectations
 

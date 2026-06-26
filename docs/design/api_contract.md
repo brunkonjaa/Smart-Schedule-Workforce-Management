@@ -7,7 +7,7 @@ This file mixes two things:
 1. the route set that is actually live in the repo now
 2. the target contract for the parts that still come after this checkpoint
 
-I am writing it that way on purpose so the design stays honest. Right now the backend is no longer only in foundation and identity setup. Auth, staff management, availability, leave, shifts, and the first assignment route are already live in the repo. The assignment conflict engine and rota endpoints still come after that.
+I am writing it that way on purpose so the design stays honest. Right now the backend is no longer only in foundation and identity setup. Auth, staff management, availability, leave, shifts, assignment saving, assignment conflict checks, assignment update/remove, and the weekly rota endpoint are already live in the repo. Contract-hours warnings and audit logging still come after this checkpoint.
 
 ## Current Live Backend Surface
 
@@ -155,13 +155,13 @@ Example error payload:
 
 ## Current Build Reality
 
-The auth routes above are live now. Staff, availability, leave, shift, and basic assignment routes are live as well. The rota route below is still a target route.
+The auth routes above are live now. Staff, availability, leave, shift, assignment, and rota routes are live as well.
 
 That means:
 
 1. the route shapes here are a mix of current and next
-2. the repo already exposes most of the staff, availability, leave, shift, and assignment save surface
-3. assignment conflict checks and rota logic still need real backend code
+2. the repo already exposes the staff, availability, leave, shift, assignment, and rota read surface
+3. contract-hours warnings and audit logging still need real backend code
 
 ## Staff Routes
 
@@ -329,7 +329,7 @@ Delete a current or future shift. Manager only. Live now.
 ### `POST /api/v1/assignments`
 
 Purpose:
-Assign a staff member to a shift. Manager only. Live now as a basic save route.
+Assign a staff member to a shift. Manager only. Live now.
 
 Current request:
 
@@ -347,32 +347,55 @@ Current duplicate-shift conflict:
 `409`
 
 Current limitation:
-This route stores the assignment and rejects assigning the same shift twice. It does not yet enforce leave, overlap, availability, role, or contract-hours rules.
+This route stores the assignment and blocks the main hard conflicts. Contract-hours is still planned as a warning, not a hard block.
 
 Possible business-rule errors:
 
 1. `409` duplicate assignment conflict - live now
 2. `404` unknown shift or staff record - live now
-3. `409` leave conflict - planned next
-4. `409` overlap conflict - planned next
-5. `409` availability conflict - planned next
-6. `409` role conflict - planned next
+3. `409` leave conflict - live now
+4. `409` overlap conflict - live now
+5. `409` availability conflict - live now
+6. `409` role conflict - live now
+7. `409` inactive staff or non-open shift - live now
+
+### `PUT /api/v1/assignments/{assignmentId}`
+
+Purpose:
+Change the staff member on a saved assignment. Manager only. Live now.
+
+Request:
+
+```json
+{
+  "staffProfileId": "uuid"
+}
+```
+
+### `DELETE /api/v1/assignments/{assignmentId}`
+
+Purpose:
+Remove a saved assignment from a current or future shift. Manager only. Live now.
 
 ## Rota Route
 
 ### `GET /api/v1/rota`
 
 Purpose:
-View the weekly rota.
+View the weekly rota. Live now.
 
-Planned query params:
+Current query params:
 
 1. `weekStart` required
+2. `department` optional, defaults to `BAR`
 
-Planned behavior:
+Current behavior:
 
-1. manager sees the full weekly rota
-2. staff sees only their own assigned shifts
+1. manager and staff can view the rota grid
+2. department tabs use `BAR`, `FLOOR`, `KITCHEN`, and `OTHER`
+3. manager responses include shift notes and status for editing context
+4. staff responses omit manager-only shift note fields
+5. state-changing rota actions still go through manager-only shift and assignment routes
 
 ## Security Rules For The Contract
 

@@ -181,12 +181,12 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
         'Rota boundary',
         'The dashboard can show live planning inputs now.',
         [
-          'Staff, leave, availability, and shifts are live.',
-          'Full conflict checks and rota endpoints still come after assignment work.'
+          'Staff, leave, availability, shifts, assignments, and rota are live.',
+          'Contract-hours warnings and audit logging still come later.'
         ],
-        'Rota work has not been started yet.',
-        'assignments',
-        'Open assignments'
+        'The rota is now the main screen after login.',
+        'rota',
+        'Open rota'
       )
     );
 

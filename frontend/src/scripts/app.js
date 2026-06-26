@@ -10,6 +10,7 @@
   const leaveUi = shell.leaveUi;
   const shiftsUi = shell.shiftsUi;
   const assignmentsUi = shell.assignmentsUi;
+  const rotaUi = shell.rotaUi;
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
   const navElement = document.querySelector('.top-nav');
@@ -132,6 +133,15 @@
 
     if (assignmentsUi) {
       await assignmentsUi.mount({
+        page,
+        renderToken,
+        role: state.role,
+        workspaceElement
+      });
+    }
+
+    if (rotaUi) {
+      await rotaUi.mount({
         page,
         renderToken,
         role: state.role,

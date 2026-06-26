@@ -40,7 +40,7 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
 
   const navigateToUserHome = (user) => {
     const nextRole = user.role === 'MANAGER' ? 'manager' : 'staff';
-    const nextPage = user.role === 'MANAGER' ? 'staff' : 'overview';
+    const nextPage = 'rota';
 
     previewState.set({
       ...previewState.get(),
@@ -234,7 +234,7 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     const actionsRow = createElement('div', { className: 'actions-row' });
     const homeButton = createElement('button', {
       className: 'action-button button-primary',
-      text: sessionUser.role === 'MANAGER' ? 'Open staff records' : 'Open my week',
+      text: 'Open rota',
       attributes: { type: 'button' }
     });
     homeButton.addEventListener('click', () => {

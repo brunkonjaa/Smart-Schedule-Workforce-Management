@@ -89,7 +89,7 @@ window.SmartSchedule.shiftsUi = (function createShiftsUi() {
     const roleLabel = uiHelpers.createElement('label', { className: 'toolbar-control' });
     roleLabel.appendChild(uiHelpers.createElement('span', { text: 'Role' }));
     const roleSelect = uiHelpers.createElement('select', { className: 'input-control' });
-    ['ALL', 'FLOOR', 'BAR', 'KITCHEN'].forEach((role) => {
+    ['ALL', 'FLOOR', 'BAR', 'KITCHEN', 'OTHER'].forEach((role) => {
       const option = uiHelpers.createElement('option', { text: uiHelpers.formatRole(role) });
       option.value = role;
       option.selected = state.filters.requiredRole === role;
@@ -290,7 +290,7 @@ window.SmartSchedule.shiftsUi = (function createShiftsUi() {
       appendField('Shift date', dateInput);
 
       roleSelect = uiHelpers.createElement('select', { className: 'input-control' });
-      ['FLOOR', 'BAR', 'KITCHEN'].forEach((role) => {
+      ['FLOOR', 'BAR', 'KITCHEN', 'OTHER'].forEach((role) => {
         const option = uiHelpers.createElement('option', { text: uiHelpers.formatRole(role) });
         option.value = role;
         option.selected = state.form.requiredRole === role;

@@ -1,4 +1,4 @@
-const allowedWorkRoles = ['FLOOR', 'BAR', 'KITCHEN'];
+const allowedWorkRoles = ['FLOOR', 'BAR', 'KITCHEN', 'OTHER'];
 
 const isPlainObject = (value) => {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);

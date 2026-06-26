@@ -10,6 +10,7 @@ const availabilityRoutes = require('./routes/availability');
 const leaveRequestRoutes = require('./routes/leave-requests');
 const shiftRoutes = require('./routes/shifts');
 const assignmentRoutes = require('./routes/assignments');
+const rotaRoutes = require('./routes/rota');
 
 const frontendPublicDirectory = path.resolve(__dirname, '../../frontend/public');
 const frontendSourceDirectory = path.resolve(__dirname, '../../frontend/src');
@@ -48,6 +49,7 @@ app.use('/api/v1/availability', availabilityRoutes);
 app.use('/api/v1/leave-requests', leaveRequestRoutes);
 app.use('/api/v1/shifts', shiftRoutes);
 app.use('/api/v1/assignments', assignmentRoutes);
+app.use('/api/v1/rota', rotaRoutes);
 app.use(express.static(frontendPublicDirectory));
 
 app.get('/health', async (request, response) => {

@@ -2,7 +2,7 @@ const bcrypt = require('bcrypt');
 const { pool, query } = require('../config/db');
 const { normalizeEmail } = require('./auth-service');
 
-const allowedPrimaryRoles = ['FLOOR', 'BAR', 'KITCHEN'];
+const allowedPrimaryRoles = ['FLOOR', 'BAR', 'KITCHEN', 'OTHER'];
 const allowedStatusFilters = ['ALL', 'ACTIVE', 'INACTIVE'];
 const createFieldNames = [
   'contractHours',

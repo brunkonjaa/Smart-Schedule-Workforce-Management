@@ -6,7 +6,7 @@ Smart Schedule is a rota and staff coordination project for small hospitality te
 
 The idea is simple enough. Managers need one place to keep staff records, check availability, review leave, build weekly shifts, and see the rota without chasing messages or patching things together in spreadsheets. Staff need the smaller side of that, which is mainly login, availability, leave requests, and their own assigned shifts.
 
-Right now this repo is still not the full finished system yet, but it is not only the auth and staff base anymore either. The frontend shell is built, the backend foundation is in place, the Neon database connection is working, the PostgreSQL-backed session layer is wired, the manager staff workflow is committed, and the availability, leave, shifts, and first assignment API foundation now exist in the current checkpoint. The conflict-check layer and the rota layer still come after this checkpoint.
+Right now this repo is still not the full finished system yet, but it is not only the auth and staff base anymore either. The frontend shell is built, the backend foundation is in place, the Neon database connection is working, the PostgreSQL-backed session layer is wired, and the staff, availability, leave, shifts, assignment, and weekly rota layers now exist in the current checkpoint. The rota is now the first screen after login because that is closer to how a hospitality manager actually checks the week.
 
 ## Why The Scope Was Tightened
 
@@ -53,19 +53,24 @@ Built now:
 21. live availability routes and UI for create, edit, list, and delete
 22. live leave routes and UI for submit, approve, reject, list, and staff-side withdraw
 23. live shift routes and UI for create, edit, list, and delete
-24. `shift_assignments` schema migration for the next assignment engine step
-25. backend assignment route foundation for saving one staff assignment per shift
-26. shared workflow helper logic for the new route layer
-27. screenshot evidence through `079`
-28. Jest and Supertest coverage now including availability, leave, shift, and assignment route flows
-29. exported SRS diagrams under `docs/SRS/diagrams/`
+24. `shift_assignments` schema migration and assignment save route
+25. backend assignment checks for duplicate shifts, role mismatch, approved leave, overlapping shifts, missing availability, unavailable windows, inactive staff, and non-open shifts
+26. manager assignment update and remove routes for rota cell actions
+27. weekly rota endpoint under `/api/v1/rota`
+28. rota-first frontend screen with department tabs, week controls, desktop grid, and mobile day view
+29. `OTHER` work role support for the fourth rota tab
+30. shared workflow helper logic for the route layer
+31. screenshot evidence through `079`
+32. Jest and Supertest coverage now including availability, leave, shift, assignment, and rota route flows
+33. exported SRS diagrams under `docs/SRS/diagrams/`
 
 Not built yet:
 
-1. assignment frontend wired to the real backend route
-2. overlap, leave, availability, and role blocking enforced by a real assignment engine
-3. rota endpoints and role-scoped rota views
-4. broader workflow automation beyond the current availability, leave, and shift layer
+1. contract-hours warning output
+2. audit logging
+3. deployment
+4. UAT evidence
+5. final documentation alignment after the last workflow checks
 
 That distinction matters because a lot of the docs describe the target build shape, not just the already-running code.
 
@@ -83,7 +88,7 @@ These are still the active MVP features I am building toward:
 8. staff rota view
 9. basic conflict checks
 
-What matters here is that items `4`, `5`, and `6` now exist in the current checkpoint. Item `7` is partly there because the backend can now save a basic assignment, but the frontend is still not wired to that route and the real conflict checks still come next.
+What matters here is that the rota is no longer only a planned screen. It now reads live shifts, assignments, approved leave markers, and open shift gaps from the backend. Contract-hours warnings and audit logging still need their own checkpoint.
 
 ## Current Stack
 

@@ -147,6 +147,7 @@ window.SmartSchedule.liveUiHelpers = (function createLiveUiHelpers() {
       FLOOR: 'Floor',
       KITCHEN: 'Kitchen',
       MANAGER: 'Manager',
+      OTHER: 'Other',
       STAFF: 'Staff'
     };
 

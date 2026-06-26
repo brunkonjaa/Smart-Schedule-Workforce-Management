@@ -27,12 +27,20 @@ describe('assignment routes', () => {
   const managerStaffProfileId = crypto.randomUUID();
   const staffUserId = crypto.randomUUID();
   const staffProfileId = crypto.randomUUID();
+  const secondStaffUserId = crypto.randomUUID();
+  const secondStaffProfileId = crypto.randomUUID();
   const managerEmail = `assignment-manager-${Date.now()}@example.com`;
   const staffEmail = `assignment-staff-${Date.now()}@example.com`;
+  const secondStaffEmail = `assignment-second-staff-${Date.now()}@example.com`;
   const managerPassword = 'AssignmentManager123!';
   const staffPassword = 'AssignmentStaff123!';
+  const secondStaffPassword = 'AssignmentSecondStaff123!';
   const assignableShiftId = crypto.randomUUID();
   const duplicateShiftId = crypto.randomUUID();
+  const updateAssignmentId = crypto.randomUUID();
+  const deleteAssignmentId = crypto.randomUUID();
+  const updateAssignmentShiftId = crypto.randomUUID();
+  const deleteAssignmentShiftId = crypto.randomUUID();
   const roleMismatchShiftId = crypto.randomUUID();
   const leaveConflictShiftId = crypto.randomUUID();
   const overlapConflictShiftId = crypto.randomUUID();
@@ -43,6 +51,8 @@ describe('assignment routes', () => {
   const availabilityConflictShiftDate = getDateFromWeek(nextWeekStart, 2);
   const assignableShiftDate = getDateFromWeek(nextWeekStart, 4);
   const duplicateShiftDate = getDateFromWeek(nextWeekStart, 5);
+  const updateAssignmentShiftDate = getDateFromWeek(nextWeekStart, 3);
+  const deleteAssignmentShiftDate = getDateFromWeek(nextWeekStart, 6);
   const mutationHeader = {
     [mutationProtectionHeaderName]: '1'
   };
@@ -50,15 +60,27 @@ describe('assignment routes', () => {
   beforeAll(async () => {
     const managerPasswordHash = await bcrypt.hash(managerPassword, 10);
     const staffPasswordHash = await bcrypt.hash(staffPassword, 10);
+    const secondStaffPasswordHash = await bcrypt.hash(secondStaffPassword, 10);
 
     await query(
       `
         INSERT INTO users (id, email, password_hash, role, is_active, created_at, updated_at)
         VALUES
           ($1, $2, $3, 'MANAGER', TRUE, NOW(), NOW()),
-          ($4, $5, $6, 'STAFF', TRUE, NOW(), NOW())
+          ($4, $5, $6, 'STAFF', TRUE, NOW(), NOW()),
+          ($7, $8, $9, 'STAFF', TRUE, NOW(), NOW())
       `,
-      [managerId, managerEmail, managerPasswordHash, staffUserId, staffEmail, staffPasswordHash]
+      [
+        managerId,
+        managerEmail,
+        managerPasswordHash,
+        staffUserId,
+        staffEmail,
+        staffPasswordHash,
+        secondStaffUserId,
+        secondStaffEmail,
+        secondStaffPasswordHash
+      ]
     );
 
     await query(
@@ -76,9 +98,17 @@ describe('assignment routes', () => {
         )
         VALUES
           ($1, $2, 'Assignment Manager', 'FLOOR', 40.00, '0855000001', TRUE, NOW(), NOW()),
-          ($3, $4, 'Assignment Staff', 'BAR', 28.00, '0855000002', TRUE, NOW(), NOW())
+          ($3, $4, 'Assignment Staff', 'BAR', 28.00, '0855000002', TRUE, NOW(), NOW()),
+          ($5, $6, 'Assignment Second Staff', 'BAR', 24.00, '0855000003', TRUE, NOW(), NOW())
       `,
-      [managerStaffProfileId, managerId, staffProfileId, staffUserId]
+      [
+        managerStaffProfileId,
+        managerId,
+        staffProfileId,
+        staffUserId,
+        secondStaffProfileId,
+        secondStaffUserId
+      ]
     );
 
     await query(
@@ -100,7 +130,9 @@ describe('assignment routes', () => {
           ($5, $6, '12:00', '20:00', 'FLOOR', 'OPEN', 'Role mismatch assignment route test', NOW(), NOW()),
           ($7, $8, '11:00', '19:00', 'BAR', 'OPEN', 'Leave conflict assignment route test', NOW(), NOW()),
           ($9, $4, '10:00', '18:00', 'BAR', 'OPEN', 'Overlap assignment route test', NOW(), NOW()),
-          ($10, $11, '15:00', '21:00', 'BAR', 'OPEN', 'Availability conflict assignment route test', NOW(), NOW())
+          ($10, $11, '15:00', '21:00', 'BAR', 'OPEN', 'Availability conflict assignment route test', NOW(), NOW()),
+          ($12, $13, '10:00', '16:00', 'BAR', 'OPEN', 'Update assignment route test', NOW(), NOW()),
+          ($14, $15, '08:00', '14:00', 'BAR', 'OPEN', 'Delete assignment route test', NOW(), NOW())
       `,
       [
         assignableShiftId,
@@ -113,7 +145,11 @@ describe('assignment routes', () => {
         leaveConflictShiftDate,
         overlapConflictShiftId,
         availabilityConflictShiftId,
-        availabilityConflictShiftDate
+        availabilityConflictShiftDate,
+        updateAssignmentShiftId,
+        updateAssignmentShiftDate,
+        deleteAssignmentShiftId,
+        deleteAssignmentShiftDate
       ]
     );
 
@@ -132,9 +168,10 @@ describe('assignment routes', () => {
         VALUES
           ($1, $2, 2, '10:00', '20:00', 'AVAILABLE', NOW(), NOW()),
           ($1, $2, 5, '13:00', '23:00', 'AVAILABLE', NOW(), NOW()),
-          ($1, $2, 6, '08:00', '18:00', 'AVAILABLE', NOW(), NOW())
+          ($1, $2, 6, '08:00', '18:00', 'AVAILABLE', NOW(), NOW()),
+          ($3, $2, 4, '09:00', '17:00', 'AVAILABLE', NOW(), NOW())
       `,
-      [staffProfileId, nextWeekStart]
+      [staffProfileId, nextWeekStart, secondStaffProfileId]
     );
 
     await query(
@@ -159,6 +196,7 @@ describe('assignment routes', () => {
     await query(
       `
         INSERT INTO shift_assignments (
+          id,
           shift_id,
           staff_profile_id,
           assigned_by_user_id,
@@ -166,48 +204,67 @@ describe('assignment routes', () => {
           created_at,
           updated_at
         )
-        VALUES ($1, $2, $3, NOW(), NOW(), NOW())
+        VALUES
+          ($1, $2, $3, $4, NOW(), NOW(), NOW()),
+          ($5, $6, $3, $4, NOW(), NOW(), NOW()),
+          ($7, $8, $3, $4, NOW(), NOW(), NOW())
       `,
-      [duplicateShiftId, staffProfileId, managerId]
+      [
+        crypto.randomUUID(),
+        duplicateShiftId,
+        staffProfileId,
+        managerId,
+        updateAssignmentId,
+        updateAssignmentShiftId,
+        deleteAssignmentId,
+        deleteAssignmentShiftId
+      ]
     );
   });
 
   afterAll(async () => {
     await query(
-      'DELETE FROM shift_assignments WHERE shift_id IN ($1, $2, $3, $4, $5, $6)',
+      'DELETE FROM shift_assignments WHERE shift_id IN ($1, $2, $3, $4, $5, $6, $7, $8)',
       [
         assignableShiftId,
         duplicateShiftId,
         roleMismatchShiftId,
         leaveConflictShiftId,
         overlapConflictShiftId,
-        availabilityConflictShiftId
+        availabilityConflictShiftId,
+        updateAssignmentShiftId,
+        deleteAssignmentShiftId
       ]
     );
     await query(
-      'DELETE FROM leave_requests WHERE staff_profile_id IN ($1, $2)',
-      [managerStaffProfileId, staffProfileId]
+      'DELETE FROM leave_requests WHERE staff_profile_id IN ($1, $2, $3)',
+      [managerStaffProfileId, staffProfileId, secondStaffProfileId]
     );
     await query(
-      'DELETE FROM availability_entries WHERE staff_profile_id IN ($1, $2)',
-      [managerStaffProfileId, staffProfileId]
+      'DELETE FROM availability_entries WHERE staff_profile_id IN ($1, $2, $3)',
+      [managerStaffProfileId, staffProfileId, secondStaffProfileId]
     );
     await query(
-      'DELETE FROM shifts WHERE id IN ($1, $2, $3, $4, $5, $6)',
+      'DELETE FROM shifts WHERE id IN ($1, $2, $3, $4, $5, $6, $7, $8)',
       [
         assignableShiftId,
         duplicateShiftId,
         roleMismatchShiftId,
         leaveConflictShiftId,
         overlapConflictShiftId,
-        availabilityConflictShiftId
+        availabilityConflictShiftId,
+        updateAssignmentShiftId,
+        deleteAssignmentShiftId
       ]
     );
     await query(
-      'DELETE FROM staff_profiles WHERE id IN ($1, $2)',
-      [managerStaffProfileId, staffProfileId]
+      'DELETE FROM staff_profiles WHERE id IN ($1, $2, $3)',
+      [managerStaffProfileId, staffProfileId, secondStaffProfileId]
     );
-    await query('DELETE FROM users WHERE id IN ($1, $2)', [managerId, staffUserId]);
+    await query(
+      'DELETE FROM users WHERE id IN ($1, $2, $3)',
+      [managerId, staffUserId, secondStaffUserId]
+    );
     await closePool();
   });
 
@@ -328,6 +385,40 @@ describe('assignment routes', () => {
         startTime: '14:00:00'
       })
     );
+  });
+
+  test('updates an assignment for managers', async () => {
+    const agent = await loginAsManager();
+    const response = await agent
+      .put(`/api/v1/assignments/${updateAssignmentId}`)
+      .set(mutationHeader)
+      .send({
+        staffProfileId: secondStaffProfileId
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.assignment).toEqual(
+      expect.objectContaining({
+        fullName: 'Assignment Second Staff',
+        shiftId: updateAssignmentShiftId,
+        staffProfileId: secondStaffProfileId
+      })
+    );
+  });
+
+  test('deletes assignments for managers', async () => {
+    const agent = await loginAsManager();
+    const response = await agent
+      .delete(`/api/v1/assignments/${deleteAssignmentId}`)
+      .set(mutationHeader);
+
+    expect(response.status).toBe(204);
+
+    const deletedAssignment = await query(
+      'SELECT id FROM shift_assignments WHERE id = $1',
+      [deleteAssignmentId]
+    );
+    expect(deletedAssignment.rowCount).toBe(0);
   });
 
   test('rejects duplicate assignment for the same shift', async () => {

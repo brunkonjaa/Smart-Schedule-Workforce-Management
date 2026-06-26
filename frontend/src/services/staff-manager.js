@@ -3,7 +3,7 @@ window.SmartSchedule = window.SmartSchedule || {};
 window.SmartSchedule.staffManager = (function createStaffManager() {
   const apiClient = window.SmartSchedule.apiClient;
   const uiHelpers = window.SmartSchedule.liveUiHelpers;
-  const staffRoles = ['FLOOR', 'BAR', 'KITCHEN'];
+  const staffRoles = ['FLOOR', 'BAR', 'KITCHEN', 'OTHER'];
   const statusOptions = [
     { label: 'Active only', value: 'ACTIVE' },
     { label: 'All staff', value: 'ALL' },

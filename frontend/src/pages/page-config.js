@@ -3,13 +3,29 @@ window.SmartSchedule = window.SmartSchedule || {};
 window.SmartSchedule.pageConfig = {
   pages: [
     {
+      id: 'rota',
+      label: 'Rota',
+      audience: 'both',
+      eyebrow: 'Rota',
+      title: 'Weekly rota',
+      summary: 'Check whether the week is covered without opening separate lists.',
+      context: 'Managers can edit from cell menus. Staff can view the same rota with read-only actions.',
+      compactIntro: true,
+      metrics: [
+        { label: 'Main screen', value: 'Rota', tone: 'accent' },
+        { label: 'View', value: 'Week', tone: 'neutral' },
+        { label: 'Departments', value: '4', tone: 'neutral' }
+      ],
+      blocks: []
+    },
+    {
       id: 'overview',
       label: 'Overview',
       audience: 'both',
       eyebrow: 'This week',
       title: 'What needs doing',
       summary: 'Start with the jobs that affect the next rota.',
-      context: 'Switch role view to see what a manager or staff member needs first.',
+      context: 'The rota is the main screen. This page stays as a short support view.',
       metrics: [
         { label: 'Open shifts', value: '3', tone: 'accent' },
         { label: 'Pending leave', value: '2', tone: 'neutral' },
@@ -24,37 +40,6 @@ window.SmartSchedule.pageConfig = {
             { type: 'button', label: 'Open rota', tone: 'primary', targetPage: 'rota' },
             { type: 'button', label: 'Create shift', tone: 'secondary', targetPage: 'shifts' }
           ]
-        },
-        {
-          type: 'table',
-          spanClass: 'content-panel--span-11',
-          title: 'Do these first',
-          caption: 'These are the jobs most likely to block the week.',
-          columns: ['Area', 'Task', 'Owner', 'Status'],
-          rows: [
-            ['Leave', 'Review 2 pending requests', 'Manager', { text: 'Action needed', tag: 'warning' }],
-            ['Shifts', 'Fill Friday bar coverage', 'Manager', { text: 'Open', tag: 'info' }],
-            ['Availability', '1 staff member missing entries', 'Staff', { text: 'Waiting', tag: 'muted' }]
-          ]
-        },
-        {
-          type: 'list',
-          spanClass: 'content-panel--span-5',
-          title: 'Common actions',
-          caption: 'The buttons people usually need during the week.',
-          items: [
-            'Review leave requests',
-            'Create or edit shifts',
-            'Assign staff to open shifts',
-            'Check the weekly rota'
-          ]
-        },
-        {
-          type: 'empty',
-          spanClass: 'content-panel--span-16',
-          title: 'Conflict checks are still limited in this checkpoint',
-          body: 'Availability, leave, and shifts are live now. The full rota conflict engine is still the next build step.',
-          action: { label: 'Open assignments', tone: 'secondary', targetPage: 'assignments' }
         }
       ]
     },
@@ -120,7 +105,7 @@ window.SmartSchedule.pageConfig = {
           type: 'toolbar',
           controls: [
             { type: 'search', label: 'Search staff', value: 'Alex Byrne' },
-            { type: 'select', label: 'Role', value: 'All roles', options: ['All roles', 'Floor', 'Bar', 'Kitchen'] },
+            { type: 'select', label: 'Role', value: 'All roles', options: ['All roles', 'Floor', 'Bar', 'Kitchen', 'Other'] },
             { type: 'select', label: 'Status', value: 'Active only', options: ['Active only', 'All staff', 'Inactive only'] },
             { type: 'button', label: 'Add staff', tone: 'primary' }
           ]
@@ -144,7 +129,7 @@ window.SmartSchedule.pageConfig = {
           caption: 'Update core details before scheduling.',
           fields: [
             { label: 'Full name', type: 'text', value: 'Alex Byrne', spanClass: 'form-field--span-12' },
-            { label: 'Primary role', type: 'select', value: 'Floor', options: ['Floor', 'Bar', 'Kitchen'], spanClass: 'form-field--span-6' },
+            { label: 'Primary role', type: 'select', value: 'Floor', options: ['Floor', 'Bar', 'Kitchen', 'Other'], spanClass: 'form-field--span-6' },
             { label: 'Contract hours', type: 'number', value: '25', spanClass: 'form-field--span-6' },
             { label: 'Phone number', type: 'tel', value: '0850000000', spanClass: 'form-field--span-12' },
             { label: 'Status', type: 'select', value: 'Active', options: ['Active', 'Inactive'], spanClass: 'form-field--span-12' }
@@ -282,7 +267,7 @@ window.SmartSchedule.pageConfig = {
           type: 'toolbar',
           controls: [
             { type: 'date', label: 'Week start', value: '2026-06-08' },
-            { type: 'select', label: 'Role', value: 'All roles', options: ['All roles', 'Floor', 'Bar', 'Kitchen'] },
+            { type: 'select', label: 'Role', value: 'All roles', options: ['All roles', 'Floor', 'Bar', 'Kitchen', 'Other'] },
             { type: 'button', label: 'Create shift', tone: 'primary' }
           ]
         },
@@ -307,7 +292,7 @@ window.SmartSchedule.pageConfig = {
             { label: 'Shift date', type: 'date', value: '2026-06-12', spanClass: 'form-field--span-12' },
             { label: 'Start time', type: 'time', value: '14:00', spanClass: 'form-field--span-6' },
             { label: 'End time', type: 'time', value: '22:00', spanClass: 'form-field--span-6' },
-            { label: 'Required role', type: 'select', value: 'Bar', options: ['Floor', 'Bar', 'Kitchen'], spanClass: 'form-field--span-12' },
+            { label: 'Required role', type: 'select', value: 'Bar', options: ['Floor', 'Bar', 'Kitchen', 'Other'], spanClass: 'form-field--span-12' },
             { label: 'Notes', type: 'textarea', value: 'Busy Friday service', spanClass: 'form-field--span-12', rows: 4 }
           ],
           actions: [
@@ -380,54 +365,5 @@ window.SmartSchedule.pageConfig = {
         }
       ]
     },
-    {
-      id: 'rota',
-      label: 'Rota',
-      audience: 'both',
-      eyebrow: 'Rota',
-      title: 'Weekly rota',
-      summary: 'Check the planned week once shifts and assignments are ready.',
-      context: 'This view is the rota direction. The real rota endpoints still come after assignment work.',
-      compactIntro: true,
-      metrics: [
-        { label: 'Output', value: 'Weekly rota', tone: 'accent' },
-        { label: 'Assigned shifts', value: '9', tone: 'neutral' },
-        { label: 'Open shifts', value: '2', tone: 'neutral' }
-      ],
-      blocks: [
-        {
-          type: 'toolbar',
-          controls: [
-            { type: 'date', label: 'Week start', value: '2026-06-08' },
-            { type: 'select', label: 'View', value: 'Full team', options: ['Full team', 'Own shifts'] },
-            { type: 'button', label: 'Export week', tone: 'secondary' }
-          ]
-        },
-        {
-          type: 'table',
-          spanClass: 'content-panel--span-11',
-          title: 'This week',
-          caption: 'Assigned work for the selected week.',
-          columns: ['Day', 'Shift', 'Role', 'Assigned'],
-          rows: [
-            ['Mon 08 Jun', '09:00 - 17:00', 'Floor', 'Alex Byrne'],
-            ['Tue 09 Jun', '14:00 - 22:00', 'Bar', 'Maya Quinn'],
-            ['Wed 10 Jun', '12:00 - 20:00', 'Kitchen', { text: 'Open', tag: 'info' }]
-          ]
-        },
-        {
-          type: 'list',
-          spanClass: 'content-panel--span-5',
-          title: 'Week summary',
-          caption: 'Use the rota to review coverage quickly.',
-          items: [
-            '9 shifts already assigned',
-            '2 shifts still open',
-            '1 role gap on Friday evening',
-            'No approved leave conflicts shown'
-          ]
-        }
-      ]
-    }
   ]
 };

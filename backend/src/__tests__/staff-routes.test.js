@@ -248,7 +248,7 @@ describe('staff routes', () => {
         'unsupported fields: notes',
         'email must be a valid email address',
         'password must include an uppercase letter',
-        'primaryRole must be one of: FLOOR, BAR, KITCHEN',
+        'primaryRole must be one of: FLOOR, BAR, KITCHEN, OTHER',
         'contractHours must use no more than 2 decimal places',
         'isActive must be a boolean'
       ])
@@ -336,7 +336,7 @@ describe('staff routes', () => {
       expect.arrayContaining([
         'unsupported fields: notes',
         'fullName cannot be empty',
-        'primaryRole must be one of: FLOOR, BAR, KITCHEN',
+        'primaryRole must be one of: FLOOR, BAR, KITCHEN, OTHER',
         'contractHours must use no more than 2 decimal places',
         'phoneNumber must contain only digits and common phone symbols'
       ])

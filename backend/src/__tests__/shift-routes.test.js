@@ -158,7 +158,7 @@ describe('shift routes', () => {
     expect(response.body.details).toEqual(
       expect.arrayContaining([
         'shiftDate must be a valid YYYY-MM-DD date',
-        'requiredRole must be one of: FLOOR, BAR, KITCHEN'
+        'requiredRole must be one of: FLOOR, BAR, KITCHEN, OTHER'
       ])
     );
   });

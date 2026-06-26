@@ -1,12 +1,14 @@
 const { query } = require('../config/db');
 const {
   isPlainObject,
+  getCurrentIsoDate,
   isMondayDate,
   listUnexpectedFields,
   parseIsoDate
 } = require('./workflow-service-utils');
 
 const assignmentFieldNames = ['shiftId', 'staffProfileId'];
+const assignmentUpdateFieldNames = ['staffProfileId'];
 const listFilterFieldNames = ['weekStart'];
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -112,6 +114,34 @@ const validateAssignmentInput = (payload) => {
   return {
     assignmentInput: {
       shiftId,
+      staffProfileId
+    },
+    details
+  };
+};
+
+const validateAssignmentUpdateInput = (payload) => {
+  if (!isPlainObject(payload)) {
+    return {
+      assignmentInput: {},
+      details: ['request body must be a JSON object']
+    };
+  }
+
+  const details = [];
+  const unexpectedFields = listUnexpectedFields(payload, assignmentUpdateFieldNames);
+  const staffProfileId = String(payload.staffProfileId || '').trim();
+
+  if (unexpectedFields.length > 0) {
+    details.push(`unsupported fields: ${unexpectedFields.join(', ')}`);
+  }
+
+  if (!uuidPattern.test(staffProfileId)) {
+    details.push('staffProfileId must be a valid UUID');
+  }
+
+  return {
+    assignmentInput: {
       staffProfileId
     },
     details
@@ -436,6 +466,14 @@ const findAssignmentById = async (assignmentId) => {
   return mapAssignmentRecord(result.rows[0]);
 };
 
+const assertAssignmentCanBeChanged = (assignment) => {
+  if (assignment.shiftDate < getCurrentIsoDate()) {
+    const error = new Error('Only current or future assignments can be changed.');
+    error.code = 'ASSIGNMENT_LOCKED';
+    throw error;
+  }
+};
+
 const createAssignment = async (assignmentInput, assignedByUserId) => {
   const shift = await findShiftForAssignment(assignmentInput.shiftId);
 
@@ -480,9 +518,78 @@ const createAssignment = async (assignmentInput, assignedByUserId) => {
   };
 };
 
+const updateAssignment = async (assignmentId, assignmentInput, assignedByUserId) => {
+  const existingAssignment = await findAssignmentById(assignmentId);
+
+  if (!existingAssignment) {
+    return {
+      assignment: null,
+      missingResource: 'assignment'
+    };
+  }
+
+  assertAssignmentCanBeChanged(existingAssignment);
+
+  const shift = await findShiftForAssignment(existingAssignment.shiftId);
+  const staffProfile = await findStaffProfileForAssignment(
+    assignmentInput.staffProfileId
+  );
+
+  if (!staffProfile) {
+    return {
+      assignment: null,
+      missingResource: 'staff'
+    };
+  }
+
+  await assertNoAssignmentConflicts(
+    {
+      shiftId: existingAssignment.shiftId,
+      staffProfileId: assignmentInput.staffProfileId
+    },
+    shift,
+    staffProfile
+  );
+
+  await query(
+    `
+      UPDATE shift_assignments
+      SET
+        staff_profile_id = $1,
+        assigned_by_user_id = $2,
+        assigned_at = NOW(),
+        updated_at = NOW()
+      WHERE id = $3
+    `,
+    [assignmentInput.staffProfileId, assignedByUserId, assignmentId]
+  );
+
+  return {
+    assignment: await findAssignmentById(assignmentId),
+    missingResource: null
+  };
+};
+
+const deleteAssignment = async (assignmentId) => {
+  const existingAssignment = await findAssignmentById(assignmentId);
+
+  if (!existingAssignment) {
+    return false;
+  }
+
+  assertAssignmentCanBeChanged(existingAssignment);
+
+  await query('DELETE FROM shift_assignments WHERE id = $1', [assignmentId]);
+  return true;
+};
+
 module.exports = {
   buildAssignmentListFilters,
   createAssignment,
+  deleteAssignment,
+  findAssignmentById,
   listAssignments,
-  validateAssignmentInput
+  updateAssignment,
+  validateAssignmentInput,
+  validateAssignmentUpdateInput
 };
