@@ -182,7 +182,7 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
         'The dashboard can show live planning inputs now.',
         [
           'Staff, leave, availability, shifts, assignments, and rota are live.',
-          'Contract-hours warnings and audit logging still come later.'
+          'Contract-hours warnings now show after assignment save. Audit logging still comes later.'
         ],
         'The rota is now the main screen after login.',
         'rota',
@@ -248,10 +248,10 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
     grid.appendChild(
       createDashboardPanel(
         'Assigned shifts',
-        'This is still limited because the rota engine is not finished yet.',
+        'This now opens the live rota view for the selected week.',
         [
-          'Live availability and leave are ready for staff.',
-          'Assigned shift and rota views still come after the assignment backend is finished.'
+          'Live availability, leave, assignments, and rota records are connected.',
+          'Staff can use the rota page for read-only shift visibility.'
         ],
         'No assigned-shift feed is available yet.',
         'rota',

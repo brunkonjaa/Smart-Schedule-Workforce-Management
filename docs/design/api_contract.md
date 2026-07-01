@@ -7,7 +7,7 @@ This file mixes two things:
 1. the route set that is actually live in the repo now
 2. the target contract for the parts that still come after this checkpoint
 
-I am writing it that way on purpose so the design stays honest. Right now the backend is no longer only in foundation and identity setup. Auth, staff management, availability, leave, shifts, assignment saving, assignment conflict checks, assignment update/remove, and the weekly rota endpoint are already live in the repo. Contract-hours warnings and audit logging still come after this checkpoint.
+I am writing it that way on purpose so the design stays honest. Right now the backend is no longer only in foundation and identity setup. Auth, staff management, availability, leave, shifts, assignment saving, assignment conflict checks, contract-hours warnings, assignment update/remove, and the weekly rota endpoint are already live in the repo. Audit logging still comes after this checkpoint.
 
 ## Current Live Backend Surface
 
@@ -129,7 +129,7 @@ That matters because the auth direction is no longer abstract. The app already h
 3. `user_sessions` store configuration
 4. production `trust proxy` handling in `backend/src/app.js`
 
-That part is no longer just planned. The session base is live now because the auth routes are using it already. What is still missing is the real assignment conflict layer and the rota route layer.
+That part is no longer just planned. The session base is live now because the auth routes are using it already. Assignment conflict checks, contract-hours warnings, and the rota route layer are now live too, while audit logging and deployment checks still come later.
 
 ## Contract Conventions For The Next Routes
 
@@ -161,7 +161,7 @@ That means:
 
 1. the route shapes here are a mix of current and next
 2. the repo already exposes the staff, availability, leave, shift, assignment, and rota read surface
-3. contract-hours warnings and audit logging still need real backend code
+3. audit logging still needs real backend code
 
 ## Staff Routes
 
@@ -347,17 +347,44 @@ Current duplicate-shift conflict:
 `409`
 
 Current limitation:
-This route stores the assignment and blocks the main hard conflicts. Contract-hours is still planned as a warning, not a hard block.
+This route stores the assignment and blocks the main hard conflicts. Contract-hours is handled as a warning, not a hard block, because a manager may still need to approve extra hours in a real week.
+
+Current success body:
+
+```json
+{
+  "assignment": {
+    "id": "uuid",
+    "shiftId": "uuid",
+    "staffProfileId": "uuid"
+  },
+  "message": "Shift assignment created successfully.",
+  "warnings": []
+}
+```
+
+Contract-hours warning example:
+
+```json
+{
+  "code": "CONTRACT_HOURS_EXCEEDED",
+  "contractHours": 20,
+  "projectedHours": 24,
+  "overByHours": 4,
+  "weekStart": "2026-07-13"
+}
+```
 
 Possible business-rule errors:
 
 1. `409` duplicate assignment conflict - live now
 2. `404` unknown shift or staff record - live now
 3. `409` leave conflict - live now
-4. `409` overlap conflict - live now
+4. `409` overlap or back-to-back shift conflict - live now
 5. `409` availability conflict - live now
 6. `409` role conflict - live now
 7. `409` inactive staff or non-open shift - live now
+8. `warnings[]` contract-hours warning on successful create or update - live now
 
 ### `PUT /api/v1/assignments/{assignmentId}`
 

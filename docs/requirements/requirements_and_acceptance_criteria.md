@@ -4,7 +4,7 @@
 
 These are the active MVP requirements for the project.
 
-They are not a claim that every requirement is already implemented in the current repo state. Right now the repo has the frontend shell, backend foundation, migrations, seed setup, auth, staff management, availability, leave, shift routes, and a basic assignment save route. The assignment conflict checks and rota requirements are still the main unfinished backend work.
+They are not a claim that every requirement is already implemented in the current repo state. Right now the repo has the frontend shell, backend foundation, migrations, seed setup, auth, staff management, availability, leave, shift routes, assignment save and update routes, main assignment conflict checks, contract-hours warnings, and the weekly rota route. Audit logging, deployment, UAT, and final evidence are still the main unfinished work.
 
 ## User Roles
 
@@ -116,7 +116,7 @@ Managers must be able to assign staff while the system checks the common conflic
 | --- | --- |
 | ASSIGN-01 | A manager can assign a staff member to an unassigned shift. |
 | ASSIGN-02 | The system blocks assignment if the staff member is on approved leave for that date. |
-| ASSIGN-03 | The system blocks assignment if the staff member has an overlapping assigned shift. |
+| ASSIGN-03 | The system blocks assignment if the staff member has an overlapping or back-to-back assigned shift on the same day. |
 | ASSIGN-04 | The system blocks assignment if the staff member is unavailable during the shift time. |
 | ASSIGN-05 | The system blocks assignment if the staff member role does not match the shift role. |
 | ASSIGN-06 | The system warns the manager when the assignment would exceed contract hours for the week. |
@@ -175,12 +175,10 @@ Right now the repo already supports or partially supports:
 
 It does not yet fully support:
 
-1. backend assignment conflict checks
-2. contract-hours warnings
-3. assignment frontend using the live backend route
-4. rota endpoint
-5. manager and staff rota views backed by saved assignments
-6. broader automated requirement-level test coverage for conflict rules and rota
+1. audit logging for assignment and shift changes
+2. hosted deployment
+3. UAT evidence
+4. broader automated requirement-level test coverage outside the current route suites
 
 ## Traceability Rule
 

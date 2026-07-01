@@ -40,15 +40,15 @@ These are already represented by real migration files:
 
 ## Main Backend Work Still Not Finished
 
-The table structure is now ahead of the assignment feature.
+The table structure now supports the current assignment and rota layer.
 
 Still not built yet:
 
-1. assignment API routes
-2. assignment service logic
-3. leave, overlap, availability, and role conflict checks
-4. contract-hours warning
-5. rota endpoint and role-scoped rota views
+1. audit log records for assignment and shift changes
+2. hosted deployment state
+3. final UAT evidence
+
+The assignment API, leave checks, availability checks, role checks, overlap and back-to-back shift checks, contract-hours warning, rota endpoint, and role-scoped rota views are now code-backed.
 
 ## Deferred Tables From Older Drafts
 
@@ -248,7 +248,7 @@ Indexes already real:
 
 ## Conflict Logic The Schema Is Meant To Support
 
-1. overlap checks by comparing assigned shifts for the same staff member
+1. overlap and back-to-back shift checks by comparing assigned shifts for the same staff member
 2. leave checks by matching shift dates against approved leave ranges
 3. availability checks by matching shift time against submitted windows
 4. role checks by comparing `required_role` and `primary_role`

@@ -901,3 +901,51 @@ Each entry should answer four practical things:
 1. add leave and overlap conflict checks
 2. add availability and role conflict checks after that
 3. keep frontend assignment wiring after the backend conflict responses are real
+
+## 2026-07-01
+
+### Snapshot
+
+- Phase: Assignment warning and stricter same-day conflict checks
+- Sprint: Sprint 2 still active
+- Status: contract-hours warning logic added after the rota-first checkpoint
+
+### What Changed
+
+1. I added contract-hours warning output to the assignment save and update flow.
+2. The backend now sums the staff member's assigned shift hours for the selected week and compares the projected total with `staff_profiles.contract_hours`.
+3. The warning is returned in `warnings[]` on successful assignment responses instead of blocking the save.
+4. I tightened the same-day assignment check so a staff member cannot be assigned to `10:00-16:00` and then `16:00-22:00` on the same date.
+5. I also updated `seed-demo-history.js` so fake rota history does not generate one person across both a day shift and an evening shift on the same date.
+6. I added `db:seed:demo-history:reset` so old fake rota rows can be removed and rebuilt after the seed logic changes.
+7. The assignment page and rota cell assignment flow now show the warning after a successful save.
+8. I updated the repo docs that were still saying contract-hours warnings were future work.
+
+### Why It Changed
+
+1. Contract hours should warn the manager, not stop them, because extra hours can still happen in hospitality.
+2. Back-to-back shifts needed to be blocked because the earlier overlap check allowed exact handovers, and that still creates an unrealistic rota for one person.
+3. I did this after the rota-first checkpoint because assignments are now used from both the assignment page and the rota page.
+
+### Drawback Accepted
+
+1. The warning is shown after save, not as a live pre-check while the manager is selecting staff.
+2. There is still no audit log record for who changed an assignment beyond the existing assignment fields.
+
+### Evidence
+
+1. `backend/src/services/assignment-service.js`
+2. `backend/src/routes/assignments.js`
+3. `backend/src/__tests__/assignment-routes.test.js`
+4. `backend/src/scripts/seed-demo-history.js`
+5. `backend/package.json`
+6. `frontend/src/services/assignments-ui.js`
+7. `frontend/src/services/rota-ui.js`
+8. `npm test -- --runInBand backend/src/__tests__/assignment-routes.test.js`
+9. `npm test -- --runInBand`
+
+### Next Steps
+
+1. capture more rota evidence screenshots for mobile and staff read-only view
+2. add audit logging foundation
+3. keep deployment after the core rota evidence is clearer

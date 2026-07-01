@@ -52,6 +52,17 @@ const mapAssignmentRecord = (record) => {
   };
 };
 
+const roundHours = (value) => {
+  return Number(Number(value || 0).toFixed(2));
+};
+
+const getShiftHours = (shift) => {
+  const start = new Date(`1970-01-01T${shift.start_time}Z`);
+  const end = new Date(`1970-01-01T${shift.end_time}Z`);
+
+  return roundHours((end.getTime() - start.getTime()) / (1000 * 60 * 60));
+};
+
 const validateWeekStart = (value, details, fieldName = 'weekStart') => {
   const parsedDate = parseIsoDate(value);
 
@@ -211,6 +222,7 @@ const findStaffProfileForAssignment = async (staffProfileId) => {
         staff_profiles.id,
         staff_profiles.full_name,
         staff_profiles.primary_role,
+        staff_profiles.contract_hours,
         staff_profiles.is_active,
         users.is_active AS user_is_active
       FROM staff_profiles
@@ -256,7 +268,7 @@ const findApprovedLeaveForShift = async (staffProfileId, shiftDate) => {
   return result.rows[0] || null;
 };
 
-const findOverlappingAssignment = async (staffProfileId, shift) => {
+const findSameDayTimeConflictAssignment = async (staffProfileId, shift) => {
   const result = await query(
     `
       SELECT shift_assignments.id
@@ -265,8 +277,8 @@ const findOverlappingAssignment = async (staffProfileId, shift) => {
         ON shifts.id = shift_assignments.shift_id
       WHERE shift_assignments.staff_profile_id = $1
         AND shifts.shift_date = $2::date
-        AND shifts.start_time < $3::time
-        AND shifts.end_time > $4::time
+        AND shifts.start_time <= $3::time
+        AND shifts.end_time >= $4::time
         AND shifts.id <> $5
       LIMIT 1
     `,
@@ -280,6 +292,52 @@ const findOverlappingAssignment = async (staffProfileId, shift) => {
   );
 
   return result.rows[0] || null;
+};
+
+const buildContractHoursWarnings = async (staffProfile, shift) => {
+  const { weekStart } = getDateDetails(shift.shift_date);
+  const weekStartDate = new Date(`${weekStart}T00:00:00Z`);
+  const weekEndDate = new Date(weekStartDate.getTime());
+  weekEndDate.setUTCDate(weekEndDate.getUTCDate() + 6);
+
+  const weekEnd = weekEndDate.toISOString().slice(0, 10);
+  const result = await query(
+    `
+      SELECT COALESCE(
+        SUM(EXTRACT(EPOCH FROM (shifts.end_time - shifts.start_time)) / 3600),
+        0
+      ) AS assigned_hours
+      FROM shift_assignments
+      INNER JOIN shifts
+        ON shifts.id = shift_assignments.shift_id
+      WHERE shift_assignments.staff_profile_id = $1
+        AND shifts.shift_date BETWEEN $2::date AND $3::date
+        AND shifts.id <> $4
+    `,
+    [staffProfile.id, weekStart, weekEnd, shift.id]
+  );
+
+  const assignedHoursBefore = roundHours(result.rows[0]?.assigned_hours);
+  const shiftHours = getShiftHours(shift);
+  const projectedHours = roundHours(assignedHoursBefore + shiftHours);
+  const contractHours = roundHours(staffProfile.contract_hours);
+
+  if (projectedHours <= contractHours) {
+    return [];
+  }
+
+  return [
+    {
+      assignedHoursBefore,
+      code: 'CONTRACT_HOURS_EXCEEDED',
+      contractHours,
+      message: `${staffProfile.full_name} would be assigned ${projectedHours} hours this week, which is ${roundHours(projectedHours - contractHours)} hours over their contract.`,
+      overByHours: roundHours(projectedHours - contractHours),
+      projectedHours,
+      shiftHours,
+      weekStart
+    }
+  ];
 };
 
 const findUnavailableWindowForShift = async (staffProfileId, shift) => {
@@ -368,15 +426,15 @@ const assertNoAssignmentConflicts = async (assignmentInput, shift, staffProfile)
     );
   }
 
-  const overlappingAssignment = await findOverlappingAssignment(
+  const sameDayTimeConflict = await findSameDayTimeConflictAssignment(
     assignmentInput.staffProfileId,
     shift
   );
 
-  if (overlappingAssignment) {
+  if (sameDayTimeConflict) {
     throw createConflictError(
       'ASSIGNMENT_OVERLAP_CONFLICT',
-      'This staff member already has an overlapping shift assignment.'
+      'This staff member already has a shift that overlaps or touches this shift time.'
     );
   }
 
@@ -506,6 +564,7 @@ const createAssignment = async (assignmentInput, assignedByUserId) => {
 
   await assertNoAssignmentConflicts(assignmentInput, shift, staffProfile);
 
+  const warnings = await buildContractHoursWarnings(staffProfile, shift);
   const insertedAssignment = await insertAssignment(
     assignmentInput,
     assignedByUserId
@@ -514,7 +573,8 @@ const createAssignment = async (assignmentInput, assignedByUserId) => {
 
   return {
     assignment,
-    missingResource: null
+    missingResource: null,
+    warnings
   };
 };
 
@@ -551,6 +611,8 @@ const updateAssignment = async (assignmentId, assignmentInput, assignedByUserId)
     staffProfile
   );
 
+  const warnings = await buildContractHoursWarnings(staffProfile, shift);
+
   await query(
     `
       UPDATE shift_assignments
@@ -566,7 +628,8 @@ const updateAssignment = async (assignmentId, assignmentInput, assignedByUserId)
 
   return {
     assignment: await findAssignmentById(assignmentId),
-    missingResource: null
+    missingResource: null,
+    warnings
   };
 };
 

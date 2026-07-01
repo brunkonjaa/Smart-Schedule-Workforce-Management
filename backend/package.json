@@ -10,6 +10,7 @@
     "db:migrate": "node src/scripts/run-migrations.js up",
     "db:migrate:status": "node src/scripts/run-migrations.js status",
     "db:seed:demo-history": "node src/scripts/seed-demo-history.js",
+    "db:seed:demo-history:reset": "node src/scripts/seed-demo-history.js --reset",
     "test": "jest --runInBand",
     "test:watch": "jest --watch"
   },

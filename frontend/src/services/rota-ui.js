@@ -35,6 +35,16 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     };
   };
 
+  const getAssignmentWarningDetails = (result) => {
+    if (!Array.isArray(result?.warnings)) {
+      return [];
+    }
+
+    return result.warnings
+      .map((warning) => warning.message)
+      .filter(Boolean);
+  };
+
   const addDays = (dateValue, offsetDays) => {
     const date = new Date(`${dateValue}T00:00:00Z`);
     date.setUTCDate(date.getUTCDate() + offsetDays);
@@ -497,7 +507,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     const { backdrop, panel } = createModalShell('Conflict check', state, actions);
     const details = [
       { label: 'Current marker', value: cell.state === 'OPEN' ? 'Unassigned required shift' : 'No conflict marker saved' },
-      { label: 'Backend check', value: 'Leave, availability, overlap, role, and active staff checks run when assignments are saved.' }
+      { label: 'Backend check', value: 'Leave, availability, overlap, back-to-back shift, role, active staff, and contract-hours checks run when assignments are saved.' }
     ];
     panel.appendChild(uiHelpers.createReviewList(details));
     return backdrop;
@@ -813,22 +823,27 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       const cell = getContextCell(state.modal.context);
 
       try {
+        let result = null;
+
         if (state.modal.mode === 'change') {
-          await apiClient.put(`/api/v1/assignments/${cell.assignmentId}`, {
+          result = await apiClient.put(`/api/v1/assignments/${cell.assignmentId}`, {
             staffProfileId
           });
         } else {
-          await apiClient.post('/api/v1/assignments', {
+          result = await apiClient.post('/api/v1/assignments', {
             shiftId: cell.shiftId,
             staffProfileId
           });
         }
 
+        const warningDetails = getAssignmentWarningDetails(result);
         state.modal = null;
         await loadRota({
-          details: [],
-          text: 'Assignment saved.',
-          tone: 'success'
+          details: warningDetails,
+          text: warningDetails.length > 0
+            ? 'Assignment saved, but check the contract-hours warning.'
+            : 'Assignment saved.',
+          tone: warningDetails.length > 0 ? 'warning' : 'success'
         });
       } catch (error) {
         const feedback = uiHelpers.getErrorFeedback(error, 'Could not save assignment.');

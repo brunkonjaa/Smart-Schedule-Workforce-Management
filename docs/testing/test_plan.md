@@ -54,6 +54,8 @@ At the current checkpoint I can already verify:
 10. a manager can create a basic saved shift assignment through the backend
 11. staff users are rejected from the assignment route
 12. duplicate assignment for the same shift returns a conflict
+13. overlapping or back-to-back assignment for the same staff member returns a conflict
+14. assignment above weekly contract hours returns a warning
 
 ## Unit Test Coverage Planned
 
@@ -63,7 +65,7 @@ At the current checkpoint I can already verify:
 | --- | --- | --- |
 | UT-SCHED-01 | Assign staff when no conflicts exist | Assignment allowed |
 | UT-SCHED-02 | Assign staff on approved leave | Assignment blocked |
-| UT-SCHED-03 | Assign staff with overlapping shift | Assignment blocked |
+| UT-SCHED-03 | Assign staff with overlapping or back-to-back shift | Assignment blocked |
 | UT-SCHED-04 | Assign staff outside availability window | Assignment blocked |
 | UT-SCHED-05 | Assign staff above contract hours | Warning returned |
 

@@ -385,6 +385,7 @@ describe('assignment routes', () => {
         startTime: '14:00:00'
       })
     );
+    expect(response.body.warnings).toEqual([]);
   });
 
   test('updates an assignment for managers', async () => {
@@ -404,6 +405,7 @@ describe('assignment routes', () => {
         staffProfileId: secondStaffProfileId
       })
     );
+    expect(response.body.warnings).toEqual([]);
   });
 
   test('deletes assignments for managers', async () => {
@@ -485,8 +487,229 @@ describe('assignment routes', () => {
     expect(response.status).toBe(409);
     expect(response.body).toEqual({
       error: 'Conflict',
-      message: 'This staff member already has an overlapping shift assignment.'
+      message: 'This staff member already has a shift that overlaps or touches this shift time.'
     });
+  });
+
+  test('rejects assignment when staff already has a shift ending at the new shift start time', async () => {
+    const adjacentExistingShiftId = crypto.randomUUID();
+    const adjacentConflictShiftId = crypto.randomUUID();
+    const adjacentAssignmentId = crypto.randomUUID();
+    const adjacentShiftDate = roleMismatchShiftDate;
+    const agent = await loginAsManager();
+
+    try {
+      await query(
+        `
+          INSERT INTO shifts (
+            id,
+            shift_date,
+            start_time,
+            end_time,
+            required_role,
+            status,
+            notes,
+            created_at,
+            updated_at
+          )
+          VALUES
+            ($1, $3, '10:00', '16:00', 'BAR', 'OPEN', 'Adjacent existing shift', NOW(), NOW()),
+            ($2, $3, '16:00', '22:00', 'BAR', 'OPEN', 'Adjacent conflict shift', NOW(), NOW())
+        `,
+        [adjacentExistingShiftId, adjacentConflictShiftId, adjacentShiftDate]
+      );
+      await query(
+        `
+          INSERT INTO shift_assignments (
+            id,
+            shift_id,
+            staff_profile_id,
+            assigned_by_user_id,
+            assigned_at,
+            created_at,
+            updated_at
+          )
+          VALUES ($1, $2, $3, $4, NOW(), NOW(), NOW())
+        `,
+        [adjacentAssignmentId, adjacentExistingShiftId, staffProfileId, managerId]
+      );
+
+      const response = await agent
+        .post('/api/v1/assignments')
+        .set(mutationHeader)
+        .send({
+          shiftId: adjacentConflictShiftId,
+          staffProfileId
+        });
+
+      expect(response.status).toBe(409);
+      expect(response.body).toEqual({
+        error: 'Conflict',
+        message: 'This staff member already has a shift that overlaps or touches this shift time.'
+      });
+    } finally {
+      await query(
+        'DELETE FROM shift_assignments WHERE shift_id IN ($1, $2)',
+        [adjacentExistingShiftId, adjacentConflictShiftId]
+      );
+      await query(
+        'DELETE FROM shifts WHERE id IN ($1, $2)',
+        [adjacentExistingShiftId, adjacentConflictShiftId]
+      );
+    }
+  });
+
+  test('returns a warning when assignment would exceed weekly contract hours', async () => {
+    const contractUserId = crypto.randomUUID();
+    const contractStaffProfileId = crypto.randomUUID();
+    const firstExistingShiftId = crypto.randomUUID();
+    const secondExistingShiftId = crypto.randomUUID();
+    const contractWarningShiftId = crypto.randomUUID();
+    const firstExistingAssignmentId = crypto.randomUUID();
+    const secondExistingAssignmentId = crypto.randomUUID();
+    const contractEmail = `assignment-contract-warning-${Date.now()}@example.com`;
+    const contractPasswordHash = await bcrypt.hash('AssignmentContract123!', 10);
+    const firstShiftDate = getDateFromWeek(nextWeekStart, 0);
+    const secondShiftDate = getDateFromWeek(nextWeekStart, 1);
+    const warningShiftDate = getDateFromWeek(nextWeekStart, 2);
+    const agent = await loginAsManager();
+
+    try {
+      await query(
+        `
+          INSERT INTO users (id, email, password_hash, role, is_active, created_at, updated_at)
+          VALUES ($1, $2, $3, 'STAFF', TRUE, NOW(), NOW())
+        `,
+        [contractUserId, contractEmail, contractPasswordHash]
+      );
+      await query(
+        `
+          INSERT INTO staff_profiles (
+            id,
+            user_id,
+            full_name,
+            primary_role,
+            contract_hours,
+            phone_number,
+            is_active,
+            created_at,
+            updated_at
+          )
+          VALUES ($1, $2, 'Contract Warning Staff', 'BAR', 20.00, '0855000099', TRUE, NOW(), NOW())
+        `,
+        [contractStaffProfileId, contractUserId]
+      );
+      await query(
+        `
+          INSERT INTO shifts (
+            id,
+            shift_date,
+            start_time,
+            end_time,
+            required_role,
+            status,
+            notes,
+            created_at,
+            updated_at
+          )
+          VALUES
+            ($1, $4, '09:00', '17:00', 'BAR', 'OPEN', 'Contract warning existing one', NOW(), NOW()),
+            ($2, $5, '09:00', '17:00', 'BAR', 'OPEN', 'Contract warning existing two', NOW(), NOW()),
+            ($3, $6, '09:00', '17:00', 'BAR', 'OPEN', 'Contract warning new shift', NOW(), NOW())
+        `,
+        [
+          firstExistingShiftId,
+          secondExistingShiftId,
+          contractWarningShiftId,
+          firstShiftDate,
+          secondShiftDate,
+          warningShiftDate
+        ]
+      );
+      await query(
+        `
+          INSERT INTO availability_entries (
+            staff_profile_id,
+            week_start,
+            day_of_week,
+            start_time,
+            end_time,
+            status,
+            created_at,
+            updated_at
+          )
+          VALUES
+            ($1, $2, 1, '08:00', '18:00', 'AVAILABLE', NOW(), NOW()),
+            ($1, $2, 2, '08:00', '18:00', 'AVAILABLE', NOW(), NOW()),
+            ($1, $2, 3, '08:00', '18:00', 'AVAILABLE', NOW(), NOW())
+        `,
+        [contractStaffProfileId, nextWeekStart]
+      );
+      await query(
+        `
+          INSERT INTO shift_assignments (
+            id,
+            shift_id,
+            staff_profile_id,
+            assigned_by_user_id,
+            assigned_at,
+            created_at,
+            updated_at
+          )
+          VALUES
+            ($1, $3, $5, $6, NOW(), NOW(), NOW()),
+            ($2, $4, $5, $6, NOW(), NOW(), NOW())
+        `,
+        [
+          firstExistingAssignmentId,
+          secondExistingAssignmentId,
+          firstExistingShiftId,
+          secondExistingShiftId,
+          contractStaffProfileId,
+          managerId
+        ]
+      );
+
+      const response = await agent
+        .post('/api/v1/assignments')
+        .set(mutationHeader)
+        .send({
+          shiftId: contractWarningShiftId,
+          staffProfileId: contractStaffProfileId
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.warnings).toEqual([
+        expect.objectContaining({
+          assignedHoursBefore: 16,
+          code: 'CONTRACT_HOURS_EXCEEDED',
+          contractHours: 20,
+          overByHours: 4,
+          projectedHours: 24,
+          shiftHours: 8,
+          weekStart: nextWeekStart
+        })
+      ]);
+      expect(response.body.warnings[0].message).toContain('Contract Warning Staff');
+    } finally {
+      await query(
+        'DELETE FROM shift_assignments WHERE shift_id IN ($1, $2, $3)',
+        [firstExistingShiftId, secondExistingShiftId, contractWarningShiftId]
+      );
+      await query(
+        'DELETE FROM availability_entries WHERE staff_profile_id = $1',
+        [contractStaffProfileId]
+      );
+      await query(
+        'DELETE FROM shifts WHERE id IN ($1, $2, $3)',
+        [firstExistingShiftId, secondExistingShiftId, contractWarningShiftId]
+      );
+      await query(
+        'DELETE FROM staff_profiles WHERE id = $1',
+        [contractStaffProfileId]
+      );
+      await query('DELETE FROM users WHERE id = $1', [contractUserId]);
+    }
   });
 
   test('rejects assignment when availability does not cover the shift time', async () => {

@@ -13,6 +13,7 @@ const nextWeekOffset = 1;
 const firstWeekOffset = -104;
 const staffCount = 45;
 const activeStaffCount = 30;
+const resetDemoSeed = process.argv.includes('--reset') || process.env.SMART_SCHEDULE_RESET_DEMO_SEED === 'true';
 
 const fakeFirstNames = [
   'Ava',
@@ -106,8 +107,8 @@ const slugify = (value) => {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '.').replace(/\.+/g, '.');
 };
 
-const overlaps = (left, right) => {
-  return left.startTime < right.endTime && left.endTime > right.startTime;
+const hasSameDayTimeConflict = (left, right) => {
+  return left.startTime <= right.endTime && left.endTime >= right.startTime;
 };
 
 const timeRange = (startTime, endTime) => ({ startTime, endTime });
@@ -259,7 +260,9 @@ const chooseStaffForShift = (
     const staffDateKey = `${staffMember.id}:${shiftDate}`;
     const existingWindows = assignedWindows.get(staffDateKey) || [];
 
-    return !existingWindows.some((existingWindow) => overlaps(existingWindow, shiftWindow));
+    return !existingWindows.some((existingWindow) => {
+      return hasSameDayTimeConflict(existingWindow, shiftWindow);
+    });
   });
 
   if (candidates.length === 0) {
@@ -378,6 +381,44 @@ const getExistingDemoUserCount = async (client) => {
   return result.rows[0].count;
 };
 
+const deleteExistingDemoData = async (client) => {
+  const demoStaffResult = await client.query(
+    `
+      SELECT staff_profiles.id
+      FROM staff_profiles
+      INNER JOIN users
+        ON users.id = staff_profiles.user_id
+      WHERE users.email LIKE $1
+    `,
+    [`%@${demoDomain}`]
+  );
+  const demoStaffProfileIds = demoStaffResult.rows.map((row) => row.id);
+
+  if (demoStaffProfileIds.length > 0) {
+    await client.query(
+      `
+        DELETE FROM shift_assignments
+        WHERE staff_profile_id = ANY($1::uuid[])
+      `,
+      [demoStaffProfileIds]
+    );
+  }
+
+  await client.query(
+    `
+      DELETE FROM shifts
+      WHERE notes LIKE 'Demo % rota history'
+    `
+  );
+  await client.query(
+    `
+      DELETE FROM users
+      WHERE email LIKE $1
+    `,
+    [`%@${demoDomain}`]
+  );
+};
+
 const getManagerUserId = async (client) => {
   const result = await client.query(
     `
@@ -447,12 +488,22 @@ const run = async () => {
 
     await client.query('BEGIN');
 
-    const existingDemoUserCount = await getExistingDemoUserCount(client);
+    let existingDemoUserCount = await getExistingDemoUserCount(client);
 
     if (existingDemoUserCount > 0) {
-      await client.query('ROLLBACK');
-      console.log('Demo history already exists. No records added.');
-      return;
+      if (!resetDemoSeed) {
+        await client.query('ROLLBACK');
+        console.log('Demo history already exists. No records added.');
+        console.log('Run this script with --reset to rebuild the fake demo rota data.');
+        return;
+      }
+
+      await deleteExistingDemoData(client);
+      existingDemoUserCount = await getExistingDemoUserCount(client);
+
+      if (existingDemoUserCount > 0) {
+        throw new Error('Demo history reset did not remove all demo staff users.');
+      }
     }
 
     const managerUserId = await getManagerUserId(client);
@@ -577,7 +628,7 @@ const run = async () => {
 
     await client.query('COMMIT');
 
-    console.log('Demo history seed complete.');
+    console.log(resetDemoSeed ? 'Demo history reset and seed complete.' : 'Demo history seed complete.');
     console.log(`Fake staff users added: ${staff.length}`);
     console.log(`Active fake staff now: ${staff.filter((item) => item.isActive).length}`);
     console.log(`Historical and current shifts added: ${shifts.length}`);

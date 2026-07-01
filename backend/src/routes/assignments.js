@@ -86,7 +86,7 @@ router.put(
     }
 
     try {
-      const { assignment, missingResource } = await updateAssignment(
+      const { assignment, missingResource, warnings } = await updateAssignment(
         request.params.assignmentId,
         assignmentInput,
         request.authUser.id
@@ -104,7 +104,8 @@ router.put(
 
       return response.status(200).json({
         assignment,
-        message: 'Shift assignment updated successfully.'
+        message: 'Shift assignment updated successfully.',
+        warnings
       });
     } catch (error) {
       if (assignmentConflictCodes.has(error.code)) {
@@ -158,7 +159,7 @@ router.post(
     }
 
     try {
-      const { assignment, missingResource } = await createAssignment(
+      const { assignment, missingResource, warnings } = await createAssignment(
         assignmentInput,
         request.authUser.id
       );
@@ -175,7 +176,8 @@ router.post(
 
       return response.status(201).json({
         assignment,
-        message: 'Shift assignment created successfully.'
+        message: 'Shift assignment created successfully.',
+        warnings
       });
     } catch (error) {
       if (assignmentConflictCodes.has(error.code)) {

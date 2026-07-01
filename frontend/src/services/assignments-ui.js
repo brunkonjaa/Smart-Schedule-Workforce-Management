@@ -48,6 +48,16 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
     return `${shift.shiftDate} ${shift.startTime.slice(0, 5)}-${shift.endTime.slice(0, 5)} ${uiHelpers.formatRole(shift.requiredRole)}`;
   };
 
+  const getAssignmentWarningDetails = (result) => {
+    if (!Array.isArray(result?.warnings)) {
+      return [];
+    }
+
+    return result.warnings
+      .map((warning) => warning.message)
+      .filter(Boolean);
+  };
+
   const getCandidateStatus = (shift, staffMember, existingAssignment) => {
     if (existingAssignment) {
       return {
@@ -71,7 +81,7 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
       blocked: false,
       label: 'Ready to check',
       tone: 'success',
-      warning: 'Backend will still check leave, availability, and overlapping shifts when saving.'
+      warning: 'Backend will still check leave, availability, overlapping or back-to-back shifts, and contract hours when saving.'
     };
   };
 
@@ -242,7 +252,7 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
     panel.appendChild(
       uiHelpers.createPanelHeading(
         'Active staff',
-        'Role, leave, availability, and overlap checks now run when the assignment is saved.'
+        'Role, leave, availability, overlap, back-to-back shift, and contract-hours checks now run when the assignment is saved.'
       )
     );
 
@@ -408,7 +418,7 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
           [
             'Choose a week and shift from live shift records.',
             'Select an active staff member from the backend staff list.',
-            'Save the assignment. The backend blocks duplicate shifts, role mismatch, approved leave, missing availability, and overlapping shifts.'
+            'Save the assignment. The backend blocks duplicate shifts, role mismatch, approved leave, missing availability, and overlapping or back-to-back shifts. Contract hours return a warning.'
           ],
           'content-panel--span-16'
         )
@@ -513,16 +523,19 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
       }
 
       try {
-        await apiClient.post('/api/v1/assignments', {
+        const result = await apiClient.post('/api/v1/assignments', {
           shiftId: selectedShift.id,
           staffProfileId: selectedStaff.id
         });
+        const warningDetails = getAssignmentWarningDetails(result);
 
         state.selectedStaffProfileId = '';
         await loadAssignmentData({
-          details: [],
-          text: `${selectedStaff.fullName} assigned to ${selectedShift.shiftDate}.`,
-          tone: 'success'
+          details: warningDetails,
+          text: warningDetails.length > 0
+            ? `${selectedStaff.fullName} assigned to ${selectedShift.shiftDate}, but check the contract-hours warning.`
+            : `${selectedStaff.fullName} assigned to ${selectedShift.shiftDate}.`,
+          tone: warningDetails.length > 0 ? 'warning' : 'success'
         });
       } catch (error) {
         const feedback = uiHelpers.getErrorFeedback(error, 'Could not save this assignment.');

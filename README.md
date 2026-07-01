@@ -54,23 +54,23 @@ Built now:
 22. live leave routes and UI for submit, approve, reject, list, and staff-side withdraw
 23. live shift routes and UI for create, edit, list, and delete
 24. `shift_assignments` schema migration and assignment save route
-25. backend assignment checks for duplicate shifts, role mismatch, approved leave, overlapping shifts, missing availability, unavailable windows, inactive staff, and non-open shifts
+25. backend assignment checks for duplicate shifts, role mismatch, approved leave, overlapping or back-to-back shifts, missing availability, unavailable windows, inactive staff, non-open shifts, and contract-hours warnings
 26. manager assignment update and remove routes for rota cell actions
 27. weekly rota endpoint under `/api/v1/rota`
 28. rota-first frontend screen with department tabs, week controls, desktop grid, and mobile day view
 29. `OTHER` work role support for the fourth rota tab
-30. shared workflow helper logic for the route layer
-31. screenshot evidence through `079`
-32. Jest and Supertest coverage now including availability, leave, shift, assignment, and rota route flows
-33. exported SRS diagrams under `docs/SRS/diagrams/`
+30. demo-history seed support with a reset script for rebuilding fake rota evidence data
+31. shared workflow helper logic for the route layer
+32. screenshot evidence through `080`
+33. Jest and Supertest coverage now including availability, leave, shift, assignment, and rota route flows
+34. exported SRS diagrams under `docs/SRS/diagrams/`
 
 Not built yet:
 
-1. contract-hours warning output
-2. audit logging
-3. deployment
-4. UAT evidence
-5. final documentation alignment after the last workflow checks
+1. audit logging
+2. deployment
+3. UAT evidence
+4. final documentation alignment after the last workflow checks
 
 That distinction matters because a lot of the docs describe the target build shape, not just the already-running code.
 
@@ -88,7 +88,7 @@ These are still the active MVP features I am building toward:
 8. staff rota view
 9. basic conflict checks
 
-What matters here is that the rota is no longer only a planned screen. It now reads live shifts, assignments, approved leave markers, and open shift gaps from the backend. Contract-hours warnings and audit logging still need their own checkpoint.
+What matters here is that the rota is no longer only a planned screen. It now reads live shifts, assignments, approved leave markers, and open shift gaps from the backend. Contract-hours warnings now come back when a saved assignment pushes a staff member over their weekly hours, but audit logging still needs its own checkpoint.
 
 ## Current Stack
 

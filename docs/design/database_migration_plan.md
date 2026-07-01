@@ -94,11 +94,11 @@ I added `shift_assignments` after `shifts` because assignment records need both 
 5. role and status checks on the new workflow tables
 6. non-blank checks where text fields should not accept empty trimmed values
 
-## Constraints Planned Next
+## Constraint Direction
 
-1. assignment route validation
-2. leave, overlap, availability, and role checks in service logic
-3. any later assignment-side checks that need to move from route logic into database rules
+1. assignment route validation is handled in the route and service layer
+2. leave, overlap, back-to-back shift, availability, and role checks are handled in service logic
+3. any later assignment-side checks should only move into database rules if the app needs stronger data-level protection
 
 ## Seed Data Plan
 
@@ -120,6 +120,6 @@ I left that outside the main migration chain for now because the goal of that ch
 
 ## Next Action
 
-1. build the real assignment route and service layer on top of `shift_assignments`
-2. add leave, overlap, availability, and role conflict checks
-3. keep the rota layer after saved assignments are real
+1. add audit logging if the next checkpoint needs a database table
+2. keep deployment and hosted database checks separate from local workflow commits
+3. only add another migration when the app has a real data need for it

@@ -62,11 +62,10 @@ Parts already visible in the repo:
 
 Parts still not built yet:
 
-1. leave, overlap, availability, and role conflict checks for assignment
-2. contract-hours warning logic
-3. assignment frontend wired to the backend route
-4. rota endpoint
-5. staff and manager rota views backed by assignment data
+1. audit logging for assignment and shift changes
+2. deployment
+3. UAT evidence
+4. final documentation alignment
 
 ## Deferred From The Older Draft
 
@@ -91,10 +90,10 @@ These are not part of the current module build:
 
 ## Core Rules The MVP Depends On
 
-1. a staff member cannot be assigned to overlapping shifts
+1. a staff member cannot be assigned to overlapping or back-to-back shifts on the same day
 2. a staff member cannot be assigned during approved leave
 3. availability needs to be checked before assignment
-4. contract hours can raise a warning
+4. contract hours can raise a warning instead of blocking the manager
 5. manager-only actions stay manager-only
 
 ## What Counts As Success
