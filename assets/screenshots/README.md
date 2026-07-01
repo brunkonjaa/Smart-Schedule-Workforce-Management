@@ -115,6 +115,16 @@ Examples:
 - `068` shift delete success
 - `069` assignments review shift working
 - `070` assignments staff assigned success
+- `071` shift assignments migration status applied
+- `072` shift assignments table visible
+- `073` shift assignments columns query
+- `074` assignment route test suite passing
+- `075` assignment API manager login success
+- `076` assignment API shift created
+- `077` assignment API create success
+- `078` assignment API duplicate conflict
+- `079` assignment route test suite passing
+- `080` rota first weekly view manager
 
 ## Practical Reminder
 

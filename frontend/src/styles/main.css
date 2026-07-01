@@ -1425,6 +1425,14 @@ body[data-theme='dark'] .rota-day-cell {
 
   .rota-mobile-day.has-gap {
     border-color: #f97316;
+    background: #fff7ed;
+    color: #7c2d12;
+  }
+
+  .rota-mobile-day.has-leave {
+    border-color: #86efac;
+    background: #dcfce7;
+    color: #14532d;
   }
 
   .rota-mobile-day span,
@@ -1465,6 +1473,36 @@ body[data-theme='dark'] .rota-day-cell {
 
   .rota-cell-block {
     min-height: 58px;
+  }
+
+  .rota-mobile-row .rota-cell--assigned {
+    border-color: #60a5fa;
+    background: #dbeafe;
+    color: #172554;
+  }
+
+  .rota-mobile-row .rota-cell--open {
+    border-color: #9ca3af;
+    background: #e5e7eb;
+    color: #111827;
+  }
+
+  .rota-mobile-row .rota-cell--approved-leave {
+    border-color: #4ade80;
+    background: #dcfce7;
+    color: #14532d;
+  }
+
+  .rota-mobile-row .rota-cell--empty {
+    border-color: rgba(148, 163, 184, 0.24);
+    background: #ffffff;
+    color: #64748b;
+  }
+
+  .rota-mobile-row .rota-cell--conflict {
+    border-color: #f97316;
+    background: #fff7ed;
+    color: #7c2d12;
   }
 
   .rota-cell-menu-button {

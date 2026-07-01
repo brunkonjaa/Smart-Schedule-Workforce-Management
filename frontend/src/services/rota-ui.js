@@ -292,7 +292,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       const openCount = dayCells.filter((cell) => cell.state === 'OPEN').length;
       const leaveCount = dayCells.filter((cell) => cell.state === 'APPROVED_LEAVE').length;
       const button = uiHelpers.createElement('button', {
-        className: `rota-mobile-day${state.selectedDay === day.date ? ' is-active' : ''}${openCount ? ' has-gap' : ''}`,
+        className: `rota-mobile-day${state.selectedDay === day.date ? ' is-active' : ''}${openCount ? ' has-gap' : ''}${leaveCount && !openCount ? ' has-leave' : ''}`,
         attributes: { type: 'button' }
       });
       button.appendChild(uiHelpers.createElement('strong', { text: formatDayShort(day) }));
@@ -685,12 +685,6 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       }
 
       workspaceElement.textContent = '';
-      const metrics = uiHelpers.createElement('div', { className: 'metric-row' });
-      metrics.appendChild(uiHelpers.createMetric('Department', uiHelpers.formatRole(state.department), 'accent'));
-      metrics.appendChild(uiHelpers.createMetric('Assigned', state.loading ? 'Loading...' : String(state.rota.summary.assignedShifts)));
-      metrics.appendChild(uiHelpers.createMetric('Open gaps', state.loading ? 'Loading...' : String(state.rota.summary.openShifts), state.rota?.summary?.openShifts ? 'accent' : 'neutral'));
-      workspaceElement.appendChild(metrics);
-
       const grid = uiHelpers.createElement('div', { className: 'workspace-grid rota-workspace' });
       const flashPanel = uiHelpers.renderFlash(state.flash);
       if (flashPanel) {

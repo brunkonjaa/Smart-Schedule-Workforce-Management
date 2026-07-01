@@ -9,6 +9,7 @@
     "dev": "nodemon src/server.js",
     "db:migrate": "node src/scripts/run-migrations.js up",
     "db:migrate:status": "node src/scripts/run-migrations.js status",
+    "db:seed:demo-history": "node src/scripts/seed-demo-history.js",
     "test": "jest --runInBand",
     "test:watch": "jest --watch"
   },
