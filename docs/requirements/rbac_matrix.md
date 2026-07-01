@@ -4,7 +4,7 @@
 
 This matrix shows the backend access rules for the MVP routes.
 
-It is important to say this clearly as well. A lot of this matrix is already wired now for auth, staff, availability, leave, shifts, assignments, assignment conflict checks, contract-hours warnings, and the weekly rota read route. Audit logging still needs its own later work.
+It is important to say this clearly as well. A lot of this matrix is already wired now for auth, staff, availability, leave, shifts, assignments, assignment conflict checks, contract-hours warnings, the weekly rota read route, and internal audit writes. Audit log viewing still needs its own later work.
 
 ## Roles
 

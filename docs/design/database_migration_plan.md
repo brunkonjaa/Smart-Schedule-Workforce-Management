@@ -28,6 +28,8 @@ Keeping schema and seed data separate means an extra step during setup, but it m
 5. `database/migrations/005_create_leave_requests_schema.sql`
 6. `database/migrations/006_create_shifts_schema.sql`
 7. `database/migrations/007_create_shift_assignments_schema.sql`
+8. `database/migrations/008_allow_other_work_role.sql`
+9. `database/migrations/009_create_audit_logs_schema.sql`
 
 ## What Is Already Applied In The Current Build Trail
 
@@ -40,6 +42,8 @@ Already done:
 5. `005_create_leave_requests_schema.sql`
 6. `006_create_shifts_schema.sql`
 7. `007_create_shift_assignments_schema.sql`
+8. `008_allow_other_work_role.sql`
+9. `009_create_audit_logs_schema.sql`
 
 That gives the project:
 
@@ -50,6 +54,8 @@ That gives the project:
 5. leave request storage with manager decision fields
 6. shift storage before assignment logic
 7. saved shift assignment storage for one staff member per shift
+8. `OTHER` as a real work role for the rota tabs
+9. audit records for manager shift and assignment changes
 
 ## Why The Order Was Kept This Way
 
@@ -77,6 +83,10 @@ After that I added `shifts` because there was no point talking about assignment 
 That means the repo has now reached the point where the next schema step really is `shift_assignments`, not availability or leave anymore.
 
 I added `shift_assignments` after `shifts` because assignment records need both a real shift and a real staff profile before they can mean anything. This migration still does not make the assignment engine complete by itself. It only gives the next route and conflict-check work a proper table to write to.
+
+After the rota-first work, I added `008_allow_other_work_role.sql` because the fourth rota tab needed to be backed by a real role value instead of being only frontend display.
+
+I added `009_create_audit_logs_schema.sql` after assignment and rota actions were live. Before that, there were not enough manager actions worth recording.
 
 ## Constraints Already Real
 
@@ -120,6 +130,6 @@ I left that outside the main migration chain for now because the goal of that ch
 
 ## Next Action
 
-1. add audit logging if the next checkpoint needs a database table
+1. keep audit log viewing out unless there is time after deployment and UAT
 2. keep deployment and hosted database checks separate from local workflow commits
 3. only add another migration when the app has a real data need for it

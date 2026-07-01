@@ -141,7 +141,7 @@ These were part of the wider version and can return later if time allows:
 1. smart candidate suggestions
 2. swap requests
 3. reports
-4. broader audit logging features
+4. audit log viewing and broader audit reporting features
 5. rota publication state
 
 ## Non-Functional Requirements
@@ -175,7 +175,7 @@ Right now the repo already supports or partially supports:
 
 It does not yet fully support:
 
-1. audit logging for assignment and shift changes
+1. audit log viewing screen
 2. hosted deployment
 3. UAT evidence
 4. broader automated requirement-level test coverage outside the current route suites

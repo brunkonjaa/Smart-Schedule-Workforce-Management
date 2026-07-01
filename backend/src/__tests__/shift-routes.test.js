@@ -73,6 +73,10 @@ describe('shift routes', () => {
   });
 
   afterAll(async () => {
+    await query(
+      'DELETE FROM audit_logs WHERE actor_user_id IN ($1, $2)',
+      [managerId, staffUserId]
+    );
     await query('DELETE FROM shifts WHERE shift_date >= $1', [nextWeekStart]);
     await query(
       'DELETE FROM staff_profiles WHERE id IN ($1, $2)',
@@ -139,6 +143,28 @@ describe('shift routes', () => {
         status: 'OPEN'
       })
     );
+
+    const auditLog = await query(
+      `
+        SELECT action, actor_user_id, after_state, before_state, entity_id, entity_type
+        FROM audit_logs
+        WHERE entity_id = $1
+          AND action = 'SHIFT_CREATED'
+        LIMIT 1
+      `,
+      [response.body.shift.id]
+    );
+    expect(auditLog.rowCount).toBe(1);
+    expect(auditLog.rows[0]).toEqual(
+      expect.objectContaining({
+        action: 'SHIFT_CREATED',
+        actor_user_id: managerId,
+        before_state: null,
+        entity_id: response.body.shift.id,
+        entity_type: 'SHIFT'
+      })
+    );
+    expect(auditLog.rows[0].after_state.requiredRole).toBe('BAR');
   });
 
   test('rejects invalid shift payloads for managers', async () => {
@@ -206,6 +232,28 @@ describe('shift routes', () => {
         status: 'DRAFT'
       })
     );
+
+    const auditLog = await query(
+      `
+        SELECT action, actor_user_id, after_state, before_state, entity_id, entity_type
+        FROM audit_logs
+        WHERE entity_id = $1
+          AND action = 'SHIFT_UPDATED'
+        LIMIT 1
+      `,
+      [createdShift.rows[0].id]
+    );
+    expect(auditLog.rowCount).toBe(1);
+    expect(auditLog.rows[0]).toEqual(
+      expect.objectContaining({
+        action: 'SHIFT_UPDATED',
+        actor_user_id: managerId,
+        entity_id: createdShift.rows[0].id,
+        entity_type: 'SHIFT'
+      })
+    );
+    expect(auditLog.rows[0].before_state.status).toBe('OPEN');
+    expect(auditLog.rows[0].after_state.status).toBe('DRAFT');
   });
 
   test('deletes shifts for managers', async () => {
@@ -231,6 +279,28 @@ describe('shift routes', () => {
       createdShift.rows[0].id
     ]);
     expect(deletedShift.rowCount).toBe(0);
+
+    const auditLog = await query(
+      `
+        SELECT action, actor_user_id, after_state, before_state, entity_id, entity_type
+        FROM audit_logs
+        WHERE entity_id = $1
+          AND action = 'SHIFT_DELETED'
+        LIMIT 1
+      `,
+      [createdShift.rows[0].id]
+    );
+    expect(auditLog.rowCount).toBe(1);
+    expect(auditLog.rows[0]).toEqual(
+      expect.objectContaining({
+        action: 'SHIFT_DELETED',
+        actor_user_id: managerId,
+        after_state: null,
+        entity_id: createdShift.rows[0].id,
+        entity_type: 'SHIFT'
+      })
+    );
+    expect(auditLog.rows[0].before_state.status).toBe('DRAFT');
   });
 
   test('returns 404 for missing shift updates', async () => {

@@ -56,6 +56,8 @@ At the current checkpoint I can already verify:
 12. duplicate assignment for the same shift returns a conflict
 13. overlapping or back-to-back assignment for the same staff member returns a conflict
 14. assignment above weekly contract hours returns a warning
+15. assignment create, update, and delete write audit records
+16. shift create, update, and delete write audit records
 
 ## Unit Test Coverage Planned
 

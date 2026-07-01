@@ -224,6 +224,10 @@ describe('assignment routes', () => {
 
   afterAll(async () => {
     await query(
+      'DELETE FROM audit_logs WHERE actor_user_id IN ($1, $2, $3)',
+      [managerId, staffUserId, secondStaffUserId]
+    );
+    await query(
       'DELETE FROM shift_assignments WHERE shift_id IN ($1, $2, $3, $4, $5, $6, $7, $8)',
       [
         assignableShiftId,
@@ -386,6 +390,28 @@ describe('assignment routes', () => {
       })
     );
     expect(response.body.warnings).toEqual([]);
+
+    const auditLog = await query(
+      `
+        SELECT action, actor_user_id, after_state, before_state, entity_id, entity_type
+        FROM audit_logs
+        WHERE entity_id = $1
+          AND action = 'ASSIGNMENT_CREATED'
+        LIMIT 1
+      `,
+      [response.body.assignment.id]
+    );
+    expect(auditLog.rowCount).toBe(1);
+    expect(auditLog.rows[0]).toEqual(
+      expect.objectContaining({
+        action: 'ASSIGNMENT_CREATED',
+        actor_user_id: managerId,
+        before_state: null,
+        entity_id: response.body.assignment.id,
+        entity_type: 'ASSIGNMENT'
+      })
+    );
+    expect(auditLog.rows[0].after_state.staffProfileId).toBe(staffProfileId);
   });
 
   test('updates an assignment for managers', async () => {
@@ -406,6 +432,28 @@ describe('assignment routes', () => {
       })
     );
     expect(response.body.warnings).toEqual([]);
+
+    const auditLog = await query(
+      `
+        SELECT action, actor_user_id, after_state, before_state, entity_id, entity_type
+        FROM audit_logs
+        WHERE entity_id = $1
+          AND action = 'ASSIGNMENT_UPDATED'
+        LIMIT 1
+      `,
+      [response.body.assignment.id]
+    );
+    expect(auditLog.rowCount).toBe(1);
+    expect(auditLog.rows[0]).toEqual(
+      expect.objectContaining({
+        action: 'ASSIGNMENT_UPDATED',
+        actor_user_id: managerId,
+        entity_id: response.body.assignment.id,
+        entity_type: 'ASSIGNMENT'
+      })
+    );
+    expect(auditLog.rows[0].before_state.staffProfileId).toBe(staffProfileId);
+    expect(auditLog.rows[0].after_state.staffProfileId).toBe(secondStaffProfileId);
   });
 
   test('deletes assignments for managers', async () => {
@@ -421,6 +469,28 @@ describe('assignment routes', () => {
       [deleteAssignmentId]
     );
     expect(deletedAssignment.rowCount).toBe(0);
+
+    const auditLog = await query(
+      `
+        SELECT action, actor_user_id, after_state, before_state, entity_id, entity_type
+        FROM audit_logs
+        WHERE entity_id = $1
+          AND action = 'ASSIGNMENT_DELETED'
+        LIMIT 1
+      `,
+      [deleteAssignmentId]
+    );
+    expect(auditLog.rowCount).toBe(1);
+    expect(auditLog.rows[0]).toEqual(
+      expect.objectContaining({
+        action: 'ASSIGNMENT_DELETED',
+        actor_user_id: managerId,
+        after_state: null,
+        entity_id: deleteAssignmentId,
+        entity_type: 'ASSIGNMENT'
+      })
+    );
+    expect(auditLog.rows[0].before_state.shiftId).toBe(deleteAssignmentShiftId);
   });
 
   test('rejects duplicate assignment for the same shift', async () => {

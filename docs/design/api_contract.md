@@ -7,7 +7,7 @@ This file mixes two things:
 1. the route set that is actually live in the repo now
 2. the target contract for the parts that still come after this checkpoint
 
-I am writing it that way on purpose so the design stays honest. Right now the backend is no longer only in foundation and identity setup. Auth, staff management, availability, leave, shifts, assignment saving, assignment conflict checks, contract-hours warnings, assignment update/remove, and the weekly rota endpoint are already live in the repo. Audit logging still comes after this checkpoint.
+I am writing it that way on purpose so the design stays honest. Right now the backend is no longer only in foundation and identity setup. Auth, staff management, availability, leave, shifts, assignment saving, assignment conflict checks, contract-hours warnings, assignment update/remove, weekly rota endpoint, and backend audit writes are already live in the repo. Audit viewing still comes after this checkpoint.
 
 ## Current Live Backend Surface
 
@@ -129,7 +129,7 @@ That matters because the auth direction is no longer abstract. The app already h
 3. `user_sessions` store configuration
 4. production `trust proxy` handling in `backend/src/app.js`
 
-That part is no longer just planned. The session base is live now because the auth routes are using it already. Assignment conflict checks, contract-hours warnings, and the rota route layer are now live too, while audit logging and deployment checks still come later.
+That part is no longer just planned. The session base is live now because the auth routes are using it already. Assignment conflict checks, contract-hours warnings, the rota route layer, and audit log writes are now live too, while deployment checks still come later.
 
 ## Contract Conventions For The Next Routes
 
@@ -161,7 +161,7 @@ That means:
 
 1. the route shapes here are a mix of current and next
 2. the repo already exposes the staff, availability, leave, shift, assignment, and rota read surface
-3. audit logging still needs real backend code
+3. audit log records are written internally, but there is no audit read endpoint yet
 
 ## Staff Routes
 
@@ -324,6 +324,9 @@ Update a shift. Manager only. Live now.
 Purpose:
 Delete a current or future shift. Manager only. Live now.
 
+Audit note:
+Shift create, update, and delete actions now write to `audit_logs`. There is no public audit route yet.
+
 ## Assignment Route
 
 ### `POST /api/v1/assignments`
@@ -403,6 +406,9 @@ Request:
 
 Purpose:
 Remove a saved assignment from a current or future shift. Manager only. Live now.
+
+Audit note:
+Assignment create, update, and delete actions now write to `audit_logs`. There is no public audit route yet.
 
 ## Rota Route
 

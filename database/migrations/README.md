@@ -14,6 +14,7 @@ At this checkpoint the folder contains:
 6. `006_create_shifts_schema.sql`
 7. `007_create_shift_assignments_schema.sql`
 8. `008_allow_other_work_role.sql`
+9. `009_create_audit_logs_schema.sql`
 
 The order matters. I kept the schema work first and the sample data after that because it is much easier to explain and debug that way.
 
@@ -32,6 +33,7 @@ Examples:
 3. `004_create_availability_entries_schema.sql`
 4. `007_create_shift_assignments_schema.sql`
 5. `008_allow_other_work_role.sql`
+6. `009_create_audit_logs_schema.sql`
 
 ## Run Commands
 

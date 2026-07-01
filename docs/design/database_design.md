@@ -26,6 +26,7 @@ That distinction is important. I do not want the schema notes to read like the w
 4. `leave_requests`
 5. `shifts`
 6. `shift_assignments`
+7. `audit_logs`
 
 ## Tables Already In The Repo Database Layer
 
@@ -37,6 +38,7 @@ These are already represented by real migration files:
 4. `leave_requests`
 5. `shifts`
 6. `shift_assignments`
+7. `audit_logs`
 
 ## Main Backend Work Still Not Finished
 
@@ -44,11 +46,11 @@ The table structure now supports the current assignment and rota layer.
 
 Still not built yet:
 
-1. audit log records for assignment and shift changes
+1. audit log viewing screen
 2. hosted deployment state
 3. final UAT evidence
 
-The assignment API, leave checks, availability checks, role checks, overlap and back-to-back shift checks, contract-hours warning, rota endpoint, and role-scoped rota views are now code-backed.
+The assignment API, leave checks, availability checks, role checks, overlap and back-to-back shift checks, contract-hours warning, rota endpoint, role-scoped rota views, and basic audit log writes are now code-backed.
 
 ## Deferred Tables From Older Drafts
 
@@ -59,7 +61,7 @@ These were in the wider version and are not part of the first build:
 3. `assignment_override_reasons`
 4. `swap_requests`
 5. `rota_publications`
-6. `audit_log`
+6. wider audit reporting tables
 
 ## PostgreSQL Notes
 
@@ -231,6 +233,32 @@ Notes:
 1. the MVP assumes one assignment per shift
 2. reassignment can update or replace the stored record in service logic later
 
+### `audit_logs`
+
+Purpose:
+Keep a backend trail of important manager changes.
+
+Current repo note:
+This table already exists through `009_create_audit_logs_schema.sql`.
+
+| Column | Type | Constraints |
+| --- | --- | --- |
+| `id` | UUID | PK |
+| `actor_user_id` | UUID | FK -> `users.id`, NULL allowed if user is later removed |
+| `action` | VARCHAR(40) | NOT NULL |
+| `entity_type` | VARCHAR(30) | NOT NULL |
+| `entity_id` | UUID | NOT NULL |
+| `summary` | VARCHAR(250) | NOT NULL |
+| `before_state` | JSONB | NULL |
+| `after_state` | JSONB | NULL |
+| `created_at` | TIMESTAMPTZ | NOT NULL |
+
+Notes:
+
+1. the first audit layer records shift and assignment create, update, and delete actions
+2. it stores snapshots as `JSONB` because this is evidence support, not a main reporting workflow yet
+3. there is no audit log screen in the MVP checkpoint yet
+
 ## Indexing Plan
 
 Indexes already real:
@@ -245,6 +273,9 @@ Indexes already real:
 8. index on `shifts(required_role, shift_date)`
 9. index on `shift_assignments(staff_profile_id)`
 10. index on `shift_assignments(assigned_at)`
+11. index on `audit_logs(actor_user_id)`
+12. index on `audit_logs(entity_type, entity_id)`
+13. index on `audit_logs(created_at)`
 
 ## Conflict Logic The Schema Is Meant To Support
 

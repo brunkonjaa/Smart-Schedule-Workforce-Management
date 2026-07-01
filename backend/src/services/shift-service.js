@@ -1,4 +1,5 @@
 const { query } = require('../config/db');
+const { createAuditLog } = require('./audit-log-service');
 const {
   allowedWorkRoles,
   compareTimes,
@@ -249,7 +250,7 @@ const findShiftById = async (shiftId) => {
   return mapShiftRecord(result.rows[0]);
 };
 
-const createShift = async (shiftInput) => {
+const createShift = async (shiftInput, actorUserId) => {
   const result = await query(
     `
       INSERT INTO shifts (
@@ -284,10 +285,22 @@ const createShift = async (shiftInput) => {
     ]
   );
 
-  return mapShiftRecord(result.rows[0]);
+  const shift = mapShiftRecord(result.rows[0]);
+
+  await createAuditLog({
+    action: 'SHIFT_CREATED',
+    actorUserId,
+    afterState: shift,
+    beforeState: null,
+    entityId: shift.id,
+    entityType: 'SHIFT',
+    summary: `Created ${shift.requiredRole} shift ${shift.id} for ${shift.shiftDate}.`
+  });
+
+  return shift;
 };
 
-const updateShift = async (existingShift, shiftInput) => {
+const updateShift = async (existingShift, shiftInput, actorUserId) => {
   if (existingShift.shiftDate < getCurrentIsoDate()) {
     const error = new Error('Only current or future shifts can be changed.');
     error.code = 'SHIFT_LOCKED';
@@ -346,10 +359,22 @@ const updateShift = async (existingShift, shiftInput) => {
     ]
   );
 
-  return mapShiftRecord(result.rows[0]);
+  const shift = mapShiftRecord(result.rows[0]);
+
+  await createAuditLog({
+    action: 'SHIFT_UPDATED',
+    actorUserId,
+    afterState: shift,
+    beforeState: existingShift,
+    entityId: shift.id,
+    entityType: 'SHIFT',
+    summary: `Updated ${shift.requiredRole} shift ${shift.id} for ${shift.shiftDate}.`
+  });
+
+  return shift;
 };
 
-const deleteShift = async (existingShift) => {
+const deleteShift = async (existingShift, actorUserId) => {
   if (existingShift.shiftDate < getCurrentIsoDate()) {
     const error = new Error('Only current or future shifts can be changed.');
     error.code = 'SHIFT_LOCKED';
@@ -357,6 +382,15 @@ const deleteShift = async (existingShift) => {
   }
 
   await query('DELETE FROM shifts WHERE id = $1', [existingShift.id]);
+  await createAuditLog({
+    action: 'SHIFT_DELETED',
+    actorUserId,
+    afterState: null,
+    beforeState: existingShift,
+    entityId: existingShift.id,
+    entityType: 'SHIFT',
+    summary: `Deleted ${existingShift.requiredRole} shift ${existingShift.id} for ${existingShift.shiftDate}.`
+  });
 };
 
 module.exports = {

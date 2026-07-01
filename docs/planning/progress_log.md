@@ -949,3 +949,48 @@ Each entry should answer four practical things:
 1. capture more rota evidence screenshots for mobile and staff read-only view
 2. add audit logging foundation
 3. keep deployment after the core rota evidence is clearer
+
+## 2026-07-01
+
+### Snapshot
+
+- Phase: Audit logging foundation
+- Sprint: Sprint 2 still active
+- Status: backend audit records added for manager shift and assignment changes
+
+### What Changed
+
+1. I added `009_create_audit_logs_schema.sql`.
+2. The new `audit_logs` table stores the manager user, action, entity type, entity id, short summary, and before/after JSON snapshots.
+3. Assignment create, update, and delete now write audit records.
+4. Shift create, update, and delete now write audit records.
+5. Route tests now check the audit rows directly for assignment and shift changes.
+6. I updated the repo docs so audit logging is no longer described as completely missing.
+
+### Why It Changed
+
+1. The rota can now be changed from the manager flow, so the project needs some trail of who changed shifts and assignments.
+2. I kept this as backend evidence first because an audit screen would be extra UI work and not needed before deployment or UAT.
+3. JSON snapshots are acceptable here because the audit log is mainly proof and debugging support at this stage, not a full reporting module.
+
+### Drawback Accepted
+
+1. There is no audit log viewing page yet.
+2. The current audit layer only covers shift and assignment changes, not every staff, availability, or leave action.
+
+### Evidence
+
+1. `database/migrations/009_create_audit_logs_schema.sql`
+2. `backend/src/services/audit-log-service.js`
+3. `backend/src/services/assignment-service.js`
+4. `backend/src/services/shift-service.js`
+5. `backend/src/__tests__/assignment-routes.test.js`
+6. `backend/src/__tests__/shift-routes.test.js`
+7. `npm run db:migrate`
+8. `npm test -- --runInBand backend/src/__tests__/assignment-routes.test.js backend/src/__tests__/shift-routes.test.js`
+
+### Next Steps
+
+1. capture more rota evidence screenshots for mobile and staff read-only view
+2. start deployment setup after the current backend checkpoint is committed
+3. keep audit viewing out unless there is time after deployment and UAT

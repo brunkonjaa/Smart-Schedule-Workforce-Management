@@ -127,7 +127,10 @@ router.delete(
     }
 
     try {
-      const deleted = await deleteAssignment(request.params.assignmentId);
+      const deleted = await deleteAssignment(
+        request.params.assignmentId,
+        request.authUser.id
+      );
 
       if (!deleted) {
         return response.status(404).json({

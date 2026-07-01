@@ -65,7 +65,7 @@ router.post(
       return sendValidationError(response, details);
     }
 
-    const shift = await createShift(shiftInput);
+    const shift = await createShift(shiftInput, request.authUser.id);
 
     return response.status(201).json({
       message: 'Shift created successfully.',
@@ -99,7 +99,11 @@ router.put(
     }
 
     try {
-      const shift = await updateShift(existingShift, shiftInput);
+      const shift = await updateShift(
+        existingShift,
+        shiftInput,
+        request.authUser.id
+      );
 
       return response.status(200).json({
         message: 'Shift updated successfully.',
@@ -134,7 +138,7 @@ router.delete(
     }
 
     try {
-      await deleteShift(existingShift);
+      await deleteShift(existingShift, request.authUser.id);
       return response.status(204).send();
     } catch (error) {
       if (error.code === 'SHIFT_LOCKED') {

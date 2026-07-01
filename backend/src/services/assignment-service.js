@@ -1,4 +1,5 @@
 const { query } = require('../config/db');
+const { createAuditLog } = require('./audit-log-service');
 const {
   isPlainObject,
   getCurrentIsoDate,
@@ -571,6 +572,16 @@ const createAssignment = async (assignmentInput, assignedByUserId) => {
   );
   const assignment = await findAssignmentById(insertedAssignment.id);
 
+  await createAuditLog({
+    action: 'ASSIGNMENT_CREATED',
+    actorUserId: assignedByUserId,
+    afterState: assignment,
+    beforeState: null,
+    entityId: assignment.id,
+    entityType: 'ASSIGNMENT',
+    summary: `Assigned staff profile ${assignment.staffProfileId} to shift ${assignment.shiftId}.`
+  });
+
   return {
     assignment,
     missingResource: null,
@@ -626,14 +637,26 @@ const updateAssignment = async (assignmentId, assignmentInput, assignedByUserId)
     [assignmentInput.staffProfileId, assignedByUserId, assignmentId]
   );
 
+  const assignment = await findAssignmentById(assignmentId);
+
+  await createAuditLog({
+    action: 'ASSIGNMENT_UPDATED',
+    actorUserId: assignedByUserId,
+    afterState: assignment,
+    beforeState: existingAssignment,
+    entityId: assignment.id,
+    entityType: 'ASSIGNMENT',
+    summary: `Changed assignment ${assignment.id} to staff profile ${assignment.staffProfileId}.`
+  });
+
   return {
-    assignment: await findAssignmentById(assignmentId),
+    assignment,
     missingResource: null,
     warnings
   };
 };
 
-const deleteAssignment = async (assignmentId) => {
+const deleteAssignment = async (assignmentId, actorUserId) => {
   const existingAssignment = await findAssignmentById(assignmentId);
 
   if (!existingAssignment) {
@@ -643,6 +666,15 @@ const deleteAssignment = async (assignmentId) => {
   assertAssignmentCanBeChanged(existingAssignment);
 
   await query('DELETE FROM shift_assignments WHERE id = $1', [assignmentId]);
+  await createAuditLog({
+    action: 'ASSIGNMENT_DELETED',
+    actorUserId,
+    afterState: null,
+    beforeState: existingAssignment,
+    entityId: existingAssignment.id,
+    entityType: 'ASSIGNMENT',
+    summary: `Removed assignment ${existingAssignment.id} from shift ${existingAssignment.shiftId}.`
+  });
   return true;
 };
 

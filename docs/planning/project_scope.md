@@ -62,7 +62,7 @@ Parts already visible in the repo:
 
 Parts still not built yet:
 
-1. audit logging for assignment and shift changes
+1. audit log viewing screen
 2. deployment
 3. UAT evidence
 4. final documentation alignment
