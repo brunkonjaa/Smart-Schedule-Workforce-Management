@@ -38,6 +38,14 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     return workspaceElement.dataset.renderToken === renderToken;
   };
 
+  const resetGuestState = () => {
+    previewState.set({
+      ...previewState.get(),
+      page: 'login',
+      role: 'guest'
+    });
+  };
+
   const navigateToUserHome = (user) => {
     const nextRole = user.role === 'MANAGER' ? 'manager' : 'staff';
     const nextPage = 'rota';
@@ -107,7 +115,10 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
 
     const form = createElement('form', {
       className: 'form-shell',
-      attributes: { novalidate: true }
+      attributes: {
+        autocomplete: 'off',
+        novalidate: true
+      }
     });
     const formGrid = createElement('div', { className: 'form-grid' });
 
@@ -118,9 +129,9 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     const emailInput = createElement('input', {
       className: 'input-control',
       attributes: {
-        autocomplete: 'email',
-        type: 'email',
-        value: 'manager@example.com'
+        autocomplete: 'off',
+        spellcheck: false,
+        type: 'email'
       }
     });
     emailField.appendChild(emailInput);
@@ -133,12 +144,24 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     const passwordInput = createElement('input', {
       className: 'input-control',
       attributes: {
-        autocomplete: 'current-password',
+        autocomplete: 'off',
         type: 'password'
       }
     });
     passwordField.appendChild(passwordInput);
     formGrid.appendChild(passwordField);
+
+    const rememberField = createElement('label', {
+      className: 'form-field form-field--span-12 session-checkbox'
+    });
+    const rememberInput = createElement('input', {
+      attributes: {
+        type: 'checkbox'
+      }
+    });
+    rememberField.appendChild(rememberInput);
+    rememberField.appendChild(createElement('span', { text: 'Remember me' }));
+    formGrid.appendChild(rememberField);
 
     form.appendChild(formGrid);
 
@@ -160,7 +183,8 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
 
         const result = await apiClient.post('/api/v1/auth/login', {
           email: emailInput.value.trim(),
-          password: passwordInput.value
+          password: passwordInput.value,
+          rememberMe: rememberInput.checked
         });
 
         navigateToUserHome(result.user);
@@ -179,6 +203,7 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
       'Before you start',
       'The account decides what you can see after login.',
       [
+        'Remember me keeps the server session active for longer without storing your password.',
         'Managers can update staff records and create shifts.',
         'Staff can update availability and ask for leave.',
         'The server checks access again when a live page loads.'
@@ -190,7 +215,12 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     workspaceElement.appendChild(grid);
   };
 
-  const renderSignedInState = (workspaceElement, sessionUser) => {
+  const renderSignedInState = (
+    workspaceElement,
+    sessionUser,
+    flashMessage = null,
+    renderToken = null
+  ) => {
     workspaceElement.textContent = '';
 
     const metrics = createElement('div', { className: 'metric-row' });
@@ -218,8 +248,21 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
 
     const grid = createElement('div', { className: 'workspace-grid' });
 
+    if (flashMessage) {
+      const flashPanel = createElement('section', {
+        className: `content-panel content-panel--span-16 content-panel--alert content-panel--alert-${flashMessage.tone}`
+      });
+      flashPanel.appendChild(
+        createElement('p', {
+          className: 'panel-copy panel-copy--strong',
+          text: flashMessage.text
+        })
+      );
+      grid.appendChild(flashPanel);
+    }
+
     const panel = createElement('section', {
-      className: 'content-panel content-panel--span-16'
+      className: 'content-panel content-panel--span-8'
     });
     const heading = createElement('div', { className: 'panel-heading' });
     heading.appendChild(createElement('h3', { text: 'Signed in' }));
@@ -252,6 +295,7 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
         logoutButton.disabled = true;
         logoutButton.textContent = 'Signing out...';
         await apiClient.post('/api/v1/auth/logout', {});
+        resetGuestState();
         renderSignedOutState(workspaceElement, {
           text: 'Signed out.',
           tone: 'success'
@@ -264,6 +308,116 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
 
     panel.appendChild(actionsRow);
     grid.appendChild(panel);
+
+    const passwordPanel = createElement('section', {
+      className: 'content-panel content-panel--span-8'
+    });
+    const passwordHeading = createElement('div', { className: 'panel-heading' });
+    passwordHeading.appendChild(createElement('h3', { text: 'Password' }));
+    passwordHeading.appendChild(
+      createElement('p', {
+        className: 'panel-copy',
+        text: sessionUser.mustChangePassword
+          ? 'You are signed in with a temporary password. Change it before leaving this session.'
+          : 'Change the current password without leaving the live workspace.'
+      })
+    );
+    passwordPanel.appendChild(passwordHeading);
+
+    const passwordForm = createElement('form', {
+      className: 'form-shell',
+      attributes: {
+        autocomplete: 'off',
+        novalidate: true
+      }
+    });
+    const passwordGrid = createElement('div', { className: 'form-grid' });
+
+    const currentPasswordField = createElement('label', {
+      className: 'form-field form-field--span-12'
+    });
+    currentPasswordField.appendChild(
+      createElement('span', { text: 'Current password' })
+    );
+    const currentPasswordInput = createElement('input', {
+      className: 'input-control',
+      attributes: {
+        autocomplete: 'current-password',
+        type: 'password'
+      }
+    });
+    currentPasswordField.appendChild(currentPasswordInput);
+    passwordGrid.appendChild(currentPasswordField);
+
+    const newPasswordField = createElement('label', {
+      className: 'form-field form-field--span-12'
+    });
+    newPasswordField.appendChild(createElement('span', { text: 'New password' }));
+    const newPasswordInput = createElement('input', {
+      className: 'input-control',
+      attributes: {
+        autocomplete: 'new-password',
+        type: 'password'
+      }
+    });
+    newPasswordField.appendChild(newPasswordInput);
+    passwordGrid.appendChild(newPasswordField);
+
+    passwordForm.appendChild(passwordGrid);
+
+    const passwordActions = createElement('div', { className: 'actions-row' });
+    const changePasswordButton = createElement('button', {
+      className: 'action-button button-secondary',
+      text: 'Change password',
+      attributes: { type: 'submit' }
+    });
+    passwordActions.appendChild(changePasswordButton);
+    passwordForm.appendChild(passwordActions);
+
+    passwordForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      try {
+        changePasswordButton.disabled = true;
+        changePasswordButton.textContent = 'Saving...';
+
+        const result = await apiClient.post('/api/v1/auth/change-password', {
+          currentPassword: currentPasswordInput.value,
+          newPassword: newPasswordInput.value
+        });
+
+        if (renderToken && !isActiveRender(workspaceElement, renderToken)) {
+          return;
+        }
+
+        renderSignedInState(
+          workspaceElement,
+          result.user,
+          {
+            text: result.message || 'Password changed successfully.',
+            tone: 'success'
+          },
+          renderToken
+        );
+      } catch (error) {
+        if (renderToken && !isActiveRender(workspaceElement, renderToken)) {
+          return;
+        }
+
+        renderSignedInState(
+          workspaceElement,
+          sessionUser,
+          {
+            text: error.message || 'Could not change the password right now.',
+            tone: 'error'
+          },
+          renderToken
+        );
+      }
+    });
+
+    passwordPanel.appendChild(passwordForm);
+    grid.appendChild(passwordPanel);
     workspaceElement.appendChild(grid);
   };
 
@@ -279,12 +433,13 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
         return;
       }
 
-      renderSignedInState(workspaceElement, result.user);
+      renderSignedInState(workspaceElement, result.user, null, renderToken);
     } catch (error) {
       if (!isActiveRender(workspaceElement, renderToken)) {
         return;
       }
 
+      resetGuestState();
       renderSignedOutState(workspaceElement, null);
     }
   };

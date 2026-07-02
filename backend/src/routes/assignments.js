@@ -36,6 +36,7 @@ const sendConflictError = (response, message) => {
 
 const assignmentConflictCodes = new Set([
   'ASSIGNMENT_AVAILABILITY_CONFLICT',
+  'ASSIGNMENT_CONCURRENT_MODIFICATION',
   'ASSIGNMENT_LOCKED',
   'ASSIGNMENT_LEAVE_CONFLICT',
   'ASSIGNMENT_OVERLAP_CONFLICT',

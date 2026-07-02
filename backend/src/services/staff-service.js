@@ -1,6 +1,9 @@
-const bcrypt = require('bcrypt');
 const { pool, query } = require('../config/db');
-const { normalizeEmail } = require('./auth-service');
+const {
+  hashPassword,
+  normalizeEmail,
+  validatePassword
+} = require('./auth-service');
 
 const allowedPrimaryRoles = ['FLOOR', 'BAR', 'KITCHEN', 'OTHER'];
 const allowedStatusFilters = ['ALL', 'ACTIVE', 'INACTIVE'];
@@ -23,7 +26,6 @@ const updateFieldNames = [
 ];
 const listFilterNames = ['primaryRole', 'search', 'status'];
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const passwordHashRounds = 12;
 
 const mapStaffRecord = (record) => {
   if (!record) {
@@ -145,21 +147,9 @@ const validateStaffCreateInput = (payload) => {
   }
 
   if (!password) {
-    details.push('password is required');
-  } else if (password !== password.trim()) {
-    details.push('password cannot start or end with spaces');
-  } else if (password.length < 12) {
-    details.push('password must be at least 12 characters long');
-  } else if (password.length > 72) {
-    details.push('password must be 72 characters or fewer');
-  } else if (!/[a-z]/.test(password)) {
-    details.push('password must include a lowercase letter');
-  } else if (!/[A-Z]/.test(password)) {
-    details.push('password must include an uppercase letter');
-  } else if (!/[0-9]/.test(password)) {
-    details.push('password must include a number');
-  } else if (!/[^A-Za-z0-9]/.test(password)) {
-    details.push('password must include a symbol');
+    details.push(...validatePassword(password, 'password'));
+  } else {
+    details.push(...validatePassword(password, 'password'));
   }
 
   if (!fullName) {
@@ -451,10 +441,7 @@ const createStaff = async (staffInput) => {
   try {
     await client.query('BEGIN');
 
-    const passwordHash = await bcrypt.hash(
-      staffInput.password,
-      passwordHashRounds
-    );
+    const passwordHash = await hashPassword(staffInput.password);
 
     const userResult = await client.query(
       `
@@ -604,13 +591,57 @@ const updateStaff = async (staffId, staffInput) => {
   }
 };
 
+const validateTemporaryPasswordInput = (payload) => {
+  if (!isPlainObject(payload)) {
+    return {
+      details: ['request body must be a JSON object'],
+      temporaryPassword: ''
+    };
+  }
+
+  const temporaryPassword =
+    typeof payload.temporaryPassword === 'string' ? payload.temporaryPassword : '';
+
+  return {
+    details: validatePassword(temporaryPassword, 'temporaryPassword'),
+    temporaryPassword
+  };
+};
+
+const resetStaffPassword = async (staffId, temporaryPassword) => {
+  const existingStaff = await findStaffById(staffId);
+
+  if (!existingStaff) {
+    return null;
+  }
+
+  const passwordHash = await hashPassword(temporaryPassword);
+
+  await query(
+    `
+      UPDATE users
+      SET
+        password_hash = $1,
+        must_change_password = TRUE,
+        password_changed_at = NOW(),
+        updated_at = NOW()
+      WHERE id = $2
+    `,
+    [passwordHash, existingStaff.userId]
+  );
+
+  return findStaffById(staffId);
+};
+
 module.exports = {
   allowedPrimaryRoles,
   buildListFilters,
   createStaff,
   findStaffById,
   listStaff,
+  resetStaffPassword,
   updateStaff,
   validateStaffCreateInput,
+  validateTemporaryPasswordInput,
   validateStaffUpdateInput
 };

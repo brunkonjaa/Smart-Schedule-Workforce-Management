@@ -14,7 +14,6 @@
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
   const navElement = document.querySelector('.top-nav');
-  const roleSwitcherElement = document.getElementById('role-switcher');
   const themeToggleElement = document.getElementById('theme-toggle');
   const pageIntroElement = document.getElementById('page-intro');
   const workspaceElement = document.getElementById('workspace');
@@ -22,6 +21,10 @@
   let renderQueue = Promise.resolve();
 
   function pagesForRole(role) {
+    if (role === 'guest') {
+      return allPages.filter((page) => page.id === 'login');
+    }
+
     return allPages.filter((page) => page.audience === 'both' || page.audience === role);
   }
 
@@ -37,13 +40,14 @@
   function resolveState() {
     const previousState = stateStore.get();
     const rolePages = pagesForRole(previousState.role);
+    const fallbackPage = rolePages[0] || allPages.find((page) => page.id === 'login');
     const hashPage = currentHash();
     const allowedPageIds = rolePages.map((page) => page.id);
     const chosenPage = allowedPageIds.includes(hashPage)
       ? hashPage
       : allowedPageIds.includes(previousState.page)
         ? previousState.page
-        : rolePages[0].id;
+        : fallbackPage.id;
 
     const resolvedState = nextState({ page: chosenPage });
     if (window.location.hash !== `#${chosenPage}`) {
@@ -57,16 +61,6 @@
     document.body.dataset.theme = theme;
     const label = theme === 'light' ? 'Dark mode' : 'Light mode';
     document.querySelector('.theme-toggle-label').textContent = label;
-  }
-
-  function renderRoleSwitcher(state) {
-    roleSwitcherElement.innerHTML = ['manager', 'staff']
-      .map((role) => {
-        const activeClass = role === state.role ? ' is-active' : '';
-        const label = role === 'manager' ? 'Manager' : 'Staff';
-        return `<button class="segment-button${activeClass}" data-role="${role}" type="button">${label}</button>`;
-      })
-      .join('');
   }
 
   function renderNavigation(state) {
@@ -222,7 +216,6 @@
       await animateStageOut();
     }
     applyTheme(state.theme);
-    renderRoleSwitcher(state);
     renderNavigation(state);
     await renderPage(state);
 
@@ -275,20 +268,6 @@
     }
 
     navigateToPage(nextPage);
-  });
-
-  roleSwitcherElement.addEventListener('click', (event) => {
-    const nextRole = event.target.dataset.role;
-    if (!nextRole) {
-      return;
-    }
-
-    const state = nextState({ role: nextRole });
-    const firstAllowedPage = pagesForRole(state.role)[0].id;
-    nextState({ role: nextRole, page: firstAllowedPage });
-    suppressNextHashChange = true;
-    window.location.hash = firstAllowedPage;
-    queueRender(true);
   });
 
   themeToggleElement.addEventListener('click', () => {

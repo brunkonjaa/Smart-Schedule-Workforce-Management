@@ -235,6 +235,17 @@ const addLeaveMarkersToRows = (staffRows, leaveMarkers, days) => {
   });
 };
 
+const mapSanitizedStaffCell = (cell) => {
+  return {
+    department: cell.department,
+    endTime: cell.endTime,
+    shiftDate: cell.shiftDate,
+    staffName: cell.staffName,
+    startTime: cell.startTime,
+    state: cell.state
+  };
+};
+
 const addShiftCellsToRows = (staffRows, openShiftRows, shiftRows, days, authUser) => {
   shiftRows.forEach((shiftRow) => {
     const cell = mapShiftCell(shiftRow, authUser);
@@ -324,6 +335,27 @@ const buildSummary = (rows, days) => {
   );
 };
 
+const sanitizeRowsForStaff = (rows, days) => {
+  return rows.map((row) => {
+    const sanitizedRow = {
+      days: days.reduce((cellsByDate, day) => {
+        cellsByDate[day.date] = (row.days[day.date] || []).map((cell) => {
+          return mapSanitizedStaffCell(cell);
+        });
+        return cellsByDate;
+      }, {}),
+      primaryRole: row.primaryRole,
+      staffName: row.staffName
+    };
+
+    if (row.systemRow) {
+      sanitizedRow.systemRow = row.systemRow;
+    }
+
+    return sanitizedRow;
+  });
+};
+
 const getRota = async (authUser, filters) => {
   const weekEnd = getWeekEnd(filters.weekStart);
   const days = buildWeekDays(filters.weekStart);
@@ -346,12 +378,14 @@ const getRota = async (authUser, filters) => {
   addLeaveMarkersToRows(staffRows, leaveMarkers, days);
 
   const rows = formatRows(staffRows, openShiftRows, days);
+  const visibleRows =
+    authUser.role === 'STAFF' ? sanitizeRowsForStaff(rows, days) : rows;
 
   return {
     days,
     department: filters.department,
-    rows,
-    summary: buildSummary(rows, days),
+    rows: visibleRows,
+    summary: buildSummary(visibleRows, days),
     weekEnd,
     weekStart: filters.weekStart
   };

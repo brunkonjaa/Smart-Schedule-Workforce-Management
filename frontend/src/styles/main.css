@@ -585,6 +585,18 @@ table {
 .form-field--span-6 { grid-column: span 6; }
 .form-field--span-12 { grid-column: span 12; }
 
+.session-checkbox {
+  align-items: center;
+  column-gap: 0.75rem;
+  display: flex;
+  flex-direction: row;
+}
+
+.session-checkbox input {
+  accent-color: var(--accent-strong);
+  flex: 0 0 auto;
+}
+
 .actions-row {
   display: flex;
   gap: 10px;

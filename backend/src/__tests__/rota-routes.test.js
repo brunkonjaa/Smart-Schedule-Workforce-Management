@@ -258,23 +258,29 @@ describe('rota routes', () => {
     expect(response.status).toBe(200);
 
     const staffRow = response.body.rota.rows.find((row) => {
-      return row.staffProfileId === staffProfileId;
+      return row.staffName === 'Rota Bar Staff';
     });
     const assignedCell = staffRow.days[assignedShiftDate].find((cell) => {
-      return cell.shiftId === assignedShiftId;
+      return cell.staffName === 'Rota Bar Staff' && cell.state === 'ASSIGNED';
     });
 
     expect(assignedCell).toEqual(
       expect.objectContaining({
-        shiftId: assignedShiftId,
+        endTime: '20:00',
+        shiftDate: assignedShiftDate,
+        startTime: '12:00',
         staffName: 'Rota Bar Staff',
         state: 'ASSIGNED'
       })
     );
+    expect(assignedCell.assignmentId).toBeUndefined();
     expect(assignedCell.notes).toBeUndefined();
+    expect(assignedCell.shiftId).toBeUndefined();
+    expect(staffRow.contractHours).toBeUndefined();
+    expect(staffRow.staffProfileId).toBeUndefined();
 
     const leaveRow = response.body.rota.rows.find((row) => {
-      return row.staffProfileId === secondStaffProfileId;
+      return row.staffName === 'Rota Leave Staff';
     });
     expect(leaveRow.days[leaveDate]).toEqual(
       expect.arrayContaining([

@@ -7,6 +7,11 @@ const {
   sessionCookieName
 } = require('../config/session');
 
+const setNoStoreHeaders = (response) => {
+  response.set('Cache-Control', 'no-store');
+  response.set('Pragma', 'no-cache');
+};
+
 const sendAuthenticationRequired = (response, message) => {
   return response.status(401).json({
     error: 'Authentication Required',
@@ -48,6 +53,18 @@ const loadAuthenticatedUser = async (request, response) => {
     return null;
   }
 
+  const absoluteExpiresAt = request.session?.auth?.absoluteExpiresAt;
+
+  if (absoluteExpiresAt) {
+    const expiresAtTimestamp = Date.parse(absoluteExpiresAt);
+
+    if (Number.isFinite(expiresAtTimestamp) && expiresAtTimestamp <= Date.now()) {
+      await invalidateSession(request, response);
+      sendAuthenticationRequired(response, 'Your session has expired.');
+      return null;
+    }
+  }
+
   const user = await findUserById(request.session.user.id);
   const hasInactiveStaffProfile =
     typeof user?.staffProfileIsActive === 'boolean' && !user.staffProfileIsActive;
@@ -58,6 +75,7 @@ const loadAuthenticatedUser = async (request, response) => {
     return null;
   }
 
+  setNoStoreHeaders(response);
   return buildPublicUser(user);
 };
 
@@ -127,6 +145,7 @@ module.exports = {
   destroySession,
   requireAuth,
   requireRole,
+  setNoStoreHeaders,
   sendForbidden,
   sendAuthenticationRequired
 };

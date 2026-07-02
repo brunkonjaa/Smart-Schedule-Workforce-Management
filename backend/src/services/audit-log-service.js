@@ -5,11 +5,14 @@ const createAuditLog = async ({
   actorUserId,
   afterState = null,
   beforeState = null,
+  client = null,
   entityId,
   entityType,
   summary
 }) => {
-  await query(
+  const executeQuery = client ? client.query.bind(client) : query;
+
+  await executeQuery(
     `
       INSERT INTO audit_logs (
         actor_user_id,

@@ -11,9 +11,37 @@ jest.setTimeout(20000);
 
 describe('auth routes', () => {
   const testPassword = 'SmartScheduleTest123!';
+  const changedPassword = 'SmartScheduleChanged123!';
   const testUserId = crypto.randomUUID();
   const testStaffProfileId = crypto.randomUUID();
   const testEmail = `auth-test-${Date.now()}@example.com`;
+  const mutationHeader = {
+    [mutationProtectionHeaderName]: '1'
+  };
+
+  const getCookieMaxAge = (response) => {
+    const sessionCookie = response.headers['set-cookie']?.find((cookie) => {
+      return cookie.startsWith('smart_schedule.sid=');
+    });
+
+    const match = sessionCookie?.match(/Max-Age=(\d+)/i);
+    if (match) {
+      return Number(match[1]);
+    }
+
+    const expiresMatch = sessionCookie?.match(/Expires=([^;]+)/i);
+    if (!expiresMatch) {
+      return null;
+    }
+
+    const expiresAt = Date.parse(expiresMatch[1]);
+
+    if (!Number.isFinite(expiresAt)) {
+      return null;
+    }
+
+    return expiresAt;
+  };
 
   beforeAll(async () => {
     const passwordHash = await bcrypt.hash(testPassword, 10);
@@ -63,6 +91,7 @@ describe('auth routes', () => {
       user: {
         email: testEmail,
         id: testUserId,
+        mustChangePassword: false,
         role: 'MANAGER',
         staffProfileId: testStaffProfileId
       }
@@ -110,7 +139,7 @@ describe('auth routes', () => {
     expect(response.body).toEqual({
       details: ['request body must be a JSON object'],
       error: 'Validation Failed',
-      message: 'The login request is missing required fields.'
+      message: 'The auth request contains invalid fields.'
     });
   });
 
@@ -131,10 +160,31 @@ describe('auth routes', () => {
       user: {
         email: testEmail,
         id: testUserId,
+        mustChangePassword: false,
         role: 'MANAGER',
         staffProfileId: testStaffProfileId
       }
     });
+  });
+
+  test('remember me issues a longer session cookie than the default login', async () => {
+    const shortSessionResponse = await request(app).post('/api/v1/auth/login').send({
+      email: testEmail,
+      password: testPassword
+    });
+    const rememberedSessionResponse = await request(app)
+      .post('/api/v1/auth/login')
+      .send({
+        email: testEmail,
+        password: testPassword,
+        rememberMe: true
+      });
+
+    expect(shortSessionResponse.status).toBe(200);
+    expect(rememberedSessionResponse.status).toBe(200);
+    expect(getCookieMaxAge(rememberedSessionResponse)).toBeGreaterThan(
+      getCookieMaxAge(shortSessionResponse)
+    );
   });
 
   test('logout destroys the session', async () => {
@@ -158,5 +208,52 @@ describe('auth routes', () => {
       error: 'Authentication Required',
       message: 'You must be logged in to access this route.'
     });
+  });
+
+  test('authenticated users can change their password', async () => {
+    const agent = request.agent(app);
+
+    const loginResponse = await agent.post('/api/v1/auth/login').send({
+      email: testEmail,
+      password: testPassword
+    });
+
+    expect(loginResponse.status).toBe(200);
+
+    const changePasswordResponse = await agent
+      .post('/api/v1/auth/change-password')
+      .set(mutationHeader)
+      .send({
+        currentPassword: testPassword,
+        newPassword: changedPassword
+      });
+
+    expect(changePasswordResponse.status).toBe(200);
+    expect(changePasswordResponse.body).toEqual({
+      message: 'Password changed successfully.',
+      user: {
+        email: testEmail,
+        id: testUserId,
+        mustChangePassword: false,
+        role: 'MANAGER',
+        staffProfileId: testStaffProfileId
+      }
+    });
+
+    const oldPasswordLoginResponse = await request(app)
+      .post('/api/v1/auth/login')
+      .send({
+        email: testEmail,
+        password: testPassword
+      });
+    const newPasswordLoginResponse = await request(app)
+      .post('/api/v1/auth/login')
+      .send({
+        email: testEmail,
+        password: changedPassword
+      });
+
+    expect(oldPasswordLoginResponse.status).toBe(401);
+    expect(newPasswordLoginResponse.status).toBe(200);
   });
 });

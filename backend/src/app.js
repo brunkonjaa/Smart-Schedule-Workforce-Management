@@ -4,6 +4,10 @@ const helmet = require('helmet');
 const config = require('./config/env');
 const { checkDatabaseConnection } = require('./config/db');
 const { sessionMiddleware } = require('./config/session');
+const {
+  apiRateLimiter,
+  healthRateLimiter
+} = require('./config/rate-limit');
 const authRoutes = require('./routes/auth');
 const staffRoutes = require('./routes/staff');
 const availabilityRoutes = require('./routes/availability');
@@ -43,6 +47,7 @@ app.use(sessionMiddleware);
 app.use(express.json({ limit: '32kb' }));
 app.use(express.urlencoded({ extended: false, limit: '10kb', parameterLimit: 25 }));
 app.use('/src', express.static(frontendSourceDirectory));
+app.use('/api/v1', apiRateLimiter);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/staff', staffRoutes);
 app.use('/api/v1/availability', availabilityRoutes);
@@ -52,7 +57,7 @@ app.use('/api/v1/assignments', assignmentRoutes);
 app.use('/api/v1/rota', rotaRoutes);
 app.use(express.static(frontendPublicDirectory));
 
-app.get('/health', async (request, response) => {
+app.get('/health', healthRateLimiter, async (request, response) => {
   try {
     await checkDatabaseConnection();
 

@@ -63,6 +63,44 @@ const query = (text, params) => {
   return pool.query(text, params);
 };
 
+const allowedIsolationLevels = new Set([
+  'READ COMMITTED',
+  'REPEATABLE READ',
+  'SERIALIZABLE'
+]);
+
+const withTransaction = async (handler, options = {}) => {
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    if (options.isolationLevel) {
+      const isolationLevel = String(options.isolationLevel).trim().toUpperCase();
+
+      if (!allowedIsolationLevels.has(isolationLevel)) {
+        throw new Error(`Unsupported transaction isolation level "${options.isolationLevel}".`);
+      }
+
+      await client.query(`SET TRANSACTION ISOLATION LEVEL ${isolationLevel}`);
+    }
+
+    const result = await handler(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    try {
+      await client.query('ROLLBACK');
+    } catch (rollbackError) {
+      // Keep the original error because it is the actual failure.
+    }
+
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
 const checkDatabaseConnection = async () => {
   await pool.query('SELECT 1');
 };
@@ -78,5 +116,6 @@ module.exports = {
   isLocalDatabaseUrl,
   pool,
   query,
-  stripConnectionStringSslSettings
+  stripConnectionStringSslSettings,
+  withTransaction
 };

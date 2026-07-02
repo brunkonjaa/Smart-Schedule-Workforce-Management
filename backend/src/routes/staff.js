@@ -4,11 +4,14 @@ const { requireMutationProtection } = require('../middleware/request-security');
 const {
   buildListFilters,
   createStaff,
+  resetStaffPassword,
   updateStaff,
   validateStaffCreateInput,
+  validateTemporaryPasswordInput,
   validateStaffUpdateInput,
   listStaff
 } = require('../services/staff-service');
+const { createSecurityEvent } = require('../services/security-event-service');
 
 const router = express.Router();
 
@@ -34,6 +37,14 @@ const sendConflictError = (response, message) => {
     error: 'Conflict',
     message
   });
+};
+
+const logSecurityEventSafely = async (eventInput) => {
+  try {
+    await createSecurityEvent(eventInput);
+  } catch (error) {
+    // Security-event writes should not break the main request path.
+  }
 };
 
 const validateStaffId = (staffId) => {
@@ -128,6 +139,61 @@ router.put(
 
       throw error;
     }
+  })
+);
+
+router.post(
+  '/:staffId/reset-password',
+  requireRole('MANAGER'),
+  requireMutationProtection,
+  asyncHandler(async (request, response) => {
+    if (!validateStaffId(request.params.staffId)) {
+      return sendValidationError(response, ['staffId must be a valid UUID']);
+    }
+
+    const { details, temporaryPassword } = validateTemporaryPasswordInput(
+      request.body
+    );
+
+    if (details.length > 0) {
+      return sendValidationError(response, details);
+    }
+
+    const updatedStaff = await resetStaffPassword(
+      request.params.staffId,
+      temporaryPassword
+    );
+
+    if (!updatedStaff) {
+      await logSecurityEventSafely({
+        actorUserId: request.authUser.id,
+        eventType: 'STAFF_PASSWORD_RESET',
+        ipAddress: request.ip,
+        metadata: {
+          staffId: request.params.staffId
+        },
+        outcome: 'FAILURE'
+      });
+
+      return response.status(404).json({
+        error: 'Not Found',
+        message: 'The requested staff record could not be found.'
+      });
+    }
+
+    await logSecurityEventSafely({
+      actorUserId: request.authUser.id,
+      eventType: 'STAFF_PASSWORD_RESET',
+      ipAddress: request.ip,
+      outcome: 'SUCCESS',
+      staffProfileId: updatedStaff.id,
+      targetUserId: updatedStaff.userId
+    });
+
+    return response.status(200).json({
+      message: 'Temporary password reset successfully.',
+      staff: updatedStaff
+    });
   })
 );
 

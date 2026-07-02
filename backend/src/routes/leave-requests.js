@@ -1,6 +1,7 @@
 const express = require('express');
 const { requireAuth, requireRole, sendForbidden } = require('../middleware/auth');
 const { requireMutationProtection } = require('../middleware/request-security');
+const { createSecurityEvent } = require('../services/security-event-service');
 const {
   buildLeaveRequestListFilters,
   createLeaveRequest,
@@ -28,6 +29,14 @@ const sendValidationError = (response, details) => {
     error: 'Validation Failed',
     message: 'The leave request contains invalid fields.'
   });
+};
+
+const logSecurityEventSafely = async (eventInput) => {
+  try {
+    await createSecurityEvent(eventInput);
+  } catch (error) {
+    // Security-event writes should not break the main request path.
+  }
 };
 
 const sendConflictError = (response, message) => {
@@ -130,12 +139,36 @@ router.put(
         decisionInput
       );
 
+      await logSecurityEventSafely({
+        actorUserId: request.authUser.id,
+        eventType: 'LEAVE_DECISION',
+        ipAddress: request.ip,
+        metadata: {
+          leaveRequestId: leaveRequest.id,
+          status: 'APPROVED'
+        },
+        outcome: 'SUCCESS',
+        staffProfileId: leaveRequest.staffProfileId
+      });
+
       return response.status(200).json({
         leaveRequest,
         message: 'Leave request approved successfully.'
       });
     } catch (error) {
       if (error.code === 'LEAVE_ALREADY_DECIDED') {
+        await logSecurityEventSafely({
+          actorUserId: request.authUser.id,
+          eventType: 'LEAVE_DECISION',
+          ipAddress: request.ip,
+          metadata: {
+            leaveRequestId: existingLeaveRequest.id,
+            status: 'APPROVED'
+          },
+          outcome: 'FAILURE',
+          staffProfileId: existingLeaveRequest.staffProfileId
+        });
+
         return sendConflictError(response, error.message);
       }
 
@@ -176,12 +209,36 @@ router.put(
         decisionInput
       );
 
+      await logSecurityEventSafely({
+        actorUserId: request.authUser.id,
+        eventType: 'LEAVE_DECISION',
+        ipAddress: request.ip,
+        metadata: {
+          leaveRequestId: leaveRequest.id,
+          status: 'REJECTED'
+        },
+        outcome: 'SUCCESS',
+        staffProfileId: leaveRequest.staffProfileId
+      });
+
       return response.status(200).json({
         leaveRequest,
         message: 'Leave request rejected successfully.'
       });
     } catch (error) {
       if (error.code === 'LEAVE_ALREADY_DECIDED') {
+        await logSecurityEventSafely({
+          actorUserId: request.authUser.id,
+          eventType: 'LEAVE_DECISION',
+          ipAddress: request.ip,
+          metadata: {
+            leaveRequestId: existingLeaveRequest.id,
+            status: 'REJECTED'
+          },
+          outcome: 'FAILURE',
+          staffProfileId: existingLeaveRequest.staffProfileId
+        });
+
         return sendConflictError(response, error.message);
       }
 

@@ -21,6 +21,7 @@ describe('staff routes', () => {
   const extraStaffEmail = `staff-route-extra-${Date.now()}@example.com`;
   const managerPassword = 'ManagerRoutePass123!';
   const staffPassword = 'StaffRoutePass123!';
+  const temporaryResetPassword = 'StaffRouteReset123!';
   const createdStaffEmail = 'created-route-staff@example.com';
   const mutationHeader = {
     [mutationProtectionHeaderName]: '1'
@@ -374,5 +375,35 @@ describe('staff routes', () => {
       error: 'Not Found',
       message: 'The requested staff record could not be found.'
     });
+  });
+
+  test('managers can set a temporary password for staff accounts', async () => {
+    const agent = await loginAsManager();
+    const response = await agent
+      .post(`/api/v1/staff/${extraStaffProfileId}/reset-password`)
+      .set(mutationHeader)
+      .send({
+        temporaryPassword: temporaryResetPassword
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.message).toBe('Temporary password reset successfully.');
+
+    const oldPasswordLoginResponse = await request(app)
+      .post('/api/v1/auth/login')
+      .send({
+        email: extraStaffEmail,
+        password: staffPassword
+      });
+    const temporaryPasswordLoginResponse = await request(app)
+      .post('/api/v1/auth/login')
+      .send({
+        email: extraStaffEmail,
+        password: temporaryResetPassword
+      });
+
+    expect(oldPasswordLoginResponse.status).toBe(401);
+    expect(temporaryPasswordLoginResponse.status).toBe(200);
+    expect(temporaryPasswordLoginResponse.body.user.mustChangePassword).toBe(true);
   });
 });

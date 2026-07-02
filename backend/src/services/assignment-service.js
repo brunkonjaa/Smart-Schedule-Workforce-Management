@@ -1,4 +1,4 @@
-const { query } = require('../config/db');
+const { query, withTransaction } = require('../config/db');
 const { createAuditLog } = require('./audit-log-service');
 const {
   isPlainObject,
@@ -13,11 +13,46 @@ const assignmentUpdateFieldNames = ['staffProfileId'];
 const listFilterFieldNames = ['weekStart'];
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const assignmentTransactionRetries = 2;
 
 const createConflictError = (code, message) => {
   const error = new Error(message);
   error.code = code;
   return error;
+};
+
+const executeQuery = (client, text, params) => {
+  if (client) {
+    return client.query(text, params);
+  }
+
+  return query(text, params);
+};
+
+const withAssignmentTransaction = async (handler) => {
+  let lastError = null;
+
+  for (let attempt = 0; attempt < assignmentTransactionRetries; attempt += 1) {
+    try {
+      return await withTransaction(
+        (client) => handler(client),
+        { isolationLevel: 'SERIALIZABLE' }
+      );
+    } catch (error) {
+      if (error.code === '40001') {
+        lastError = error;
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  throw createConflictError(
+    'ASSIGNMENT_CONCURRENT_MODIFICATION',
+    lastError?.message ||
+      'The assignment changed while this request was running. Please retry.'
+  );
 };
 
 const getDateDetails = (dateText) => {
@@ -196,8 +231,9 @@ const listAssignments = async (filters) => {
   return result.rows.map((row) => mapAssignmentRecord(row));
 };
 
-const findShiftForAssignment = async (shiftId) => {
-  const result = await query(
+const findShiftForAssignment = async (shiftId, client = null, options = {}) => {
+  const result = await executeQuery(
+    client,
     `
       SELECT
         id,
@@ -209,6 +245,7 @@ const findShiftForAssignment = async (shiftId) => {
       FROM shifts
       WHERE id = $1
       LIMIT 1
+      ${options.forUpdate ? 'FOR UPDATE' : ''}
     `,
     [shiftId]
   );
@@ -216,8 +253,9 @@ const findShiftForAssignment = async (shiftId) => {
   return result.rows[0] || null;
 };
 
-const findStaffProfileForAssignment = async (staffProfileId) => {
-  const result = await query(
+const findStaffProfileForAssignment = async (staffProfileId, client = null) => {
+  const result = await executeQuery(
+    client,
     `
       SELECT
         staff_profiles.id,
@@ -238,13 +276,15 @@ const findStaffProfileForAssignment = async (staffProfileId) => {
   return result.rows[0] || null;
 };
 
-const findAssignmentByShiftId = async (shiftId) => {
-  const result = await query(
+const findAssignmentByShiftId = async (shiftId, client = null, options = {}) => {
+  const result = await executeQuery(
+    client,
     `
       SELECT id
       FROM shift_assignments
       WHERE shift_id = $1
       LIMIT 1
+      ${options.forUpdate ? 'FOR UPDATE' : ''}
     `,
     [shiftId]
   );
@@ -252,8 +292,9 @@ const findAssignmentByShiftId = async (shiftId) => {
   return result.rows[0] || null;
 };
 
-const findApprovedLeaveForShift = async (staffProfileId, shiftDate) => {
-  const result = await query(
+const findApprovedLeaveForShift = async (staffProfileId, shiftDate, client = null) => {
+  const result = await executeQuery(
+    client,
     `
       SELECT id
       FROM leave_requests
@@ -269,8 +310,13 @@ const findApprovedLeaveForShift = async (staffProfileId, shiftDate) => {
   return result.rows[0] || null;
 };
 
-const findSameDayTimeConflictAssignment = async (staffProfileId, shift) => {
-  const result = await query(
+const findSameDayTimeConflictAssignment = async (
+  staffProfileId,
+  shift,
+  client = null
+) => {
+  const result = await executeQuery(
+    client,
     `
       SELECT shift_assignments.id
       FROM shift_assignments
@@ -295,14 +341,15 @@ const findSameDayTimeConflictAssignment = async (staffProfileId, shift) => {
   return result.rows[0] || null;
 };
 
-const buildContractHoursWarnings = async (staffProfile, shift) => {
+const buildContractHoursWarnings = async (staffProfile, shift, client = null) => {
   const { weekStart } = getDateDetails(shift.shift_date);
   const weekStartDate = new Date(`${weekStart}T00:00:00Z`);
   const weekEndDate = new Date(weekStartDate.getTime());
   weekEndDate.setUTCDate(weekEndDate.getUTCDate() + 6);
 
   const weekEnd = weekEndDate.toISOString().slice(0, 10);
-  const result = await query(
+  const result = await executeQuery(
+    client,
     `
       SELECT COALESCE(
         SUM(EXTRACT(EPOCH FROM (shifts.end_time - shifts.start_time)) / 3600),
@@ -341,9 +388,10 @@ const buildContractHoursWarnings = async (staffProfile, shift) => {
   ];
 };
 
-const findUnavailableWindowForShift = async (staffProfileId, shift) => {
+const findUnavailableWindowForShift = async (staffProfileId, shift, client = null) => {
   const { dayOfWeek, weekStart } = getDateDetails(shift.shift_date);
-  const result = await query(
+  const result = await executeQuery(
+    client,
     `
       SELECT id
       FROM availability_entries
@@ -367,9 +415,10 @@ const findUnavailableWindowForShift = async (staffProfileId, shift) => {
   return result.rows[0] || null;
 };
 
-const findAvailableWindowForShift = async (staffProfileId, shift) => {
+const findAvailableWindowForShift = async (staffProfileId, shift, client = null) => {
   const { dayOfWeek, weekStart } = getDateDetails(shift.shift_date);
-  const result = await query(
+  const result = await executeQuery(
+    client,
     `
       SELECT id
       FROM availability_entries
@@ -393,7 +442,12 @@ const findAvailableWindowForShift = async (staffProfileId, shift) => {
   return result.rows[0] || null;
 };
 
-const assertNoAssignmentConflicts = async (assignmentInput, shift, staffProfile) => {
+const assertNoAssignmentConflicts = async (
+  assignmentInput,
+  shift,
+  staffProfile,
+  client = null
+) => {
   if (shift.status !== 'OPEN') {
     throw createConflictError(
       'SHIFT_NOT_OPEN',
@@ -417,7 +471,8 @@ const assertNoAssignmentConflicts = async (assignmentInput, shift, staffProfile)
 
   const approvedLeave = await findApprovedLeaveForShift(
     assignmentInput.staffProfileId,
-    shift.shift_date
+    shift.shift_date,
+    client
   );
 
   if (approvedLeave) {
@@ -429,7 +484,8 @@ const assertNoAssignmentConflicts = async (assignmentInput, shift, staffProfile)
 
   const sameDayTimeConflict = await findSameDayTimeConflictAssignment(
     assignmentInput.staffProfileId,
-    shift
+    shift,
+    client
   );
 
   if (sameDayTimeConflict) {
@@ -441,7 +497,8 @@ const assertNoAssignmentConflicts = async (assignmentInput, shift, staffProfile)
 
   const unavailableWindow = await findUnavailableWindowForShift(
     assignmentInput.staffProfileId,
-    shift
+    shift,
+    client
   );
 
   if (unavailableWindow) {
@@ -453,7 +510,8 @@ const assertNoAssignmentConflicts = async (assignmentInput, shift, staffProfile)
 
   const availableWindow = await findAvailableWindowForShift(
     assignmentInput.staffProfileId,
-    shift
+    shift,
+    client
   );
 
   if (!availableWindow) {
@@ -464,8 +522,9 @@ const assertNoAssignmentConflicts = async (assignmentInput, shift, staffProfile)
   }
 };
 
-const insertAssignment = async (assignmentInput, assignedByUserId) => {
-  const result = await query(
+const insertAssignment = async (assignmentInput, assignedByUserId, client = null) => {
+  const result = await executeQuery(
+    client,
     `
       INSERT INTO shift_assignments (
         shift_id,
@@ -495,8 +554,9 @@ const insertAssignment = async (assignmentInput, assignedByUserId) => {
   return mapAssignmentRecord(result.rows[0]);
 };
 
-const findAssignmentById = async (assignmentId) => {
-  const result = await query(
+const findAssignmentById = async (assignmentId, client = null, options = {}) => {
+  const result = await executeQuery(
+    client,
     `
       SELECT
         shift_assignments.id,
@@ -518,6 +578,7 @@ const findAssignmentById = async (assignmentId) => {
         ON staff_profiles.id = shift_assignments.staff_profile_id
       WHERE shift_assignments.id = $1
       LIMIT 1
+      ${options.forUpdate ? 'FOR UPDATE OF shift_assignments' : ''}
     `,
     [assignmentId]
   );
@@ -534,148 +595,200 @@ const assertAssignmentCanBeChanged = (assignment) => {
 };
 
 const createAssignment = async (assignmentInput, assignedByUserId) => {
-  const shift = await findShiftForAssignment(assignmentInput.shiftId);
+  try {
+    return await withAssignmentTransaction(async (client) => {
+      const shift = await findShiftForAssignment(
+        assignmentInput.shiftId,
+        client,
+        { forUpdate: true }
+      );
 
-  if (!shift) {
-    return {
-      assignment: null,
-      missingResource: 'shift'
-    };
+      if (!shift) {
+        return {
+          assignment: null,
+          missingResource: 'shift'
+        };
+      }
+
+      const staffProfile = await findStaffProfileForAssignment(
+        assignmentInput.staffProfileId,
+        client
+      );
+
+      if (!staffProfile) {
+        return {
+          assignment: null,
+          missingResource: 'staff'
+        };
+      }
+
+      const existingAssignment = await findAssignmentByShiftId(
+        assignmentInput.shiftId,
+        client,
+        { forUpdate: true }
+      );
+
+      if (existingAssignment) {
+        throw createConflictError(
+          'SHIFT_ALREADY_ASSIGNED',
+          'This shift already has an assignment.'
+        );
+      }
+
+      await assertNoAssignmentConflicts(
+        assignmentInput,
+        shift,
+        staffProfile,
+        client
+      );
+
+      const warnings = await buildContractHoursWarnings(staffProfile, shift, client);
+      const insertedAssignment = await insertAssignment(
+        assignmentInput,
+        assignedByUserId,
+        client
+      );
+      const assignment = await findAssignmentById(insertedAssignment.id, client);
+
+      await createAuditLog({
+        action: 'ASSIGNMENT_CREATED',
+        actorUserId: assignedByUserId,
+        afterState: assignment,
+        beforeState: null,
+        client,
+        entityId: assignment.id,
+        entityType: 'ASSIGNMENT',
+        summary: `Assigned staff profile ${assignment.staffProfileId} to shift ${assignment.shiftId}.`
+      });
+
+      return {
+        assignment,
+        missingResource: null,
+        warnings
+      };
+    });
+  } catch (error) {
+    if (error.code === '23505') {
+      throw createConflictError(
+        'SHIFT_ALREADY_ASSIGNED',
+        'This shift already has an assignment.'
+      );
+    }
+
+    throw error;
   }
-
-  const staffProfile = await findStaffProfileForAssignment(
-    assignmentInput.staffProfileId
-  );
-
-  if (!staffProfile) {
-    return {
-      assignment: null,
-      missingResource: 'staff'
-    };
-  }
-
-  const existingAssignment = await findAssignmentByShiftId(assignmentInput.shiftId);
-
-  if (existingAssignment) {
-    throw createConflictError(
-      'SHIFT_ALREADY_ASSIGNED',
-      'This shift already has an assignment.'
-    );
-  }
-
-  await assertNoAssignmentConflicts(assignmentInput, shift, staffProfile);
-
-  const warnings = await buildContractHoursWarnings(staffProfile, shift);
-  const insertedAssignment = await insertAssignment(
-    assignmentInput,
-    assignedByUserId
-  );
-  const assignment = await findAssignmentById(insertedAssignment.id);
-
-  await createAuditLog({
-    action: 'ASSIGNMENT_CREATED',
-    actorUserId: assignedByUserId,
-    afterState: assignment,
-    beforeState: null,
-    entityId: assignment.id,
-    entityType: 'ASSIGNMENT',
-    summary: `Assigned staff profile ${assignment.staffProfileId} to shift ${assignment.shiftId}.`
-  });
-
-  return {
-    assignment,
-    missingResource: null,
-    warnings
-  };
 };
 
 const updateAssignment = async (assignmentId, assignmentInput, assignedByUserId) => {
-  const existingAssignment = await findAssignmentById(assignmentId);
+  return withAssignmentTransaction(async (client) => {
+    const existingAssignment = await findAssignmentById(
+      assignmentId,
+      client,
+      { forUpdate: true }
+    );
 
-  if (!existingAssignment) {
+    if (!existingAssignment) {
+      return {
+        assignment: null,
+        missingResource: 'assignment'
+      };
+    }
+
+    assertAssignmentCanBeChanged(existingAssignment);
+
+    const shift = await findShiftForAssignment(
+      existingAssignment.shiftId,
+      client,
+      { forUpdate: true }
+    );
+    const staffProfile = await findStaffProfileForAssignment(
+      assignmentInput.staffProfileId,
+      client
+    );
+
+    if (!staffProfile) {
+      return {
+        assignment: null,
+        missingResource: 'staff'
+      };
+    }
+
+    await assertNoAssignmentConflicts(
+      {
+        shiftId: existingAssignment.shiftId,
+        staffProfileId: assignmentInput.staffProfileId
+      },
+      shift,
+      staffProfile,
+      client
+    );
+
+    const warnings = await buildContractHoursWarnings(staffProfile, shift, client);
+
+    await executeQuery(
+      client,
+      `
+        UPDATE shift_assignments
+        SET
+          staff_profile_id = $1,
+          assigned_by_user_id = $2,
+          assigned_at = NOW(),
+          updated_at = NOW()
+        WHERE id = $3
+      `,
+      [assignmentInput.staffProfileId, assignedByUserId, assignmentId]
+    );
+
+    const assignment = await findAssignmentById(assignmentId, client);
+
+    await createAuditLog({
+      action: 'ASSIGNMENT_UPDATED',
+      actorUserId: assignedByUserId,
+      afterState: assignment,
+      beforeState: existingAssignment,
+      client,
+      entityId: assignment.id,
+      entityType: 'ASSIGNMENT',
+      summary: `Changed assignment ${assignment.id} to staff profile ${assignment.staffProfileId}.`
+    });
+
     return {
-      assignment: null,
-      missingResource: 'assignment'
+      assignment,
+      missingResource: null,
+      warnings
     };
-  }
-
-  assertAssignmentCanBeChanged(existingAssignment);
-
-  const shift = await findShiftForAssignment(existingAssignment.shiftId);
-  const staffProfile = await findStaffProfileForAssignment(
-    assignmentInput.staffProfileId
-  );
-
-  if (!staffProfile) {
-    return {
-      assignment: null,
-      missingResource: 'staff'
-    };
-  }
-
-  await assertNoAssignmentConflicts(
-    {
-      shiftId: existingAssignment.shiftId,
-      staffProfileId: assignmentInput.staffProfileId
-    },
-    shift,
-    staffProfile
-  );
-
-  const warnings = await buildContractHoursWarnings(staffProfile, shift);
-
-  await query(
-    `
-      UPDATE shift_assignments
-      SET
-        staff_profile_id = $1,
-        assigned_by_user_id = $2,
-        assigned_at = NOW(),
-        updated_at = NOW()
-      WHERE id = $3
-    `,
-    [assignmentInput.staffProfileId, assignedByUserId, assignmentId]
-  );
-
-  const assignment = await findAssignmentById(assignmentId);
-
-  await createAuditLog({
-    action: 'ASSIGNMENT_UPDATED',
-    actorUserId: assignedByUserId,
-    afterState: assignment,
-    beforeState: existingAssignment,
-    entityId: assignment.id,
-    entityType: 'ASSIGNMENT',
-    summary: `Changed assignment ${assignment.id} to staff profile ${assignment.staffProfileId}.`
   });
-
-  return {
-    assignment,
-    missingResource: null,
-    warnings
-  };
 };
 
 const deleteAssignment = async (assignmentId, actorUserId) => {
-  const existingAssignment = await findAssignmentById(assignmentId);
+  return withAssignmentTransaction(async (client) => {
+    const existingAssignment = await findAssignmentById(
+      assignmentId,
+      client,
+      { forUpdate: true }
+    );
 
-  if (!existingAssignment) {
-    return false;
-  }
+    if (!existingAssignment) {
+      return false;
+    }
 
-  assertAssignmentCanBeChanged(existingAssignment);
+    assertAssignmentCanBeChanged(existingAssignment);
 
-  await query('DELETE FROM shift_assignments WHERE id = $1', [assignmentId]);
-  await createAuditLog({
-    action: 'ASSIGNMENT_DELETED',
-    actorUserId,
-    afterState: null,
-    beforeState: existingAssignment,
-    entityId: existingAssignment.id,
-    entityType: 'ASSIGNMENT',
-    summary: `Removed assignment ${existingAssignment.id} from shift ${existingAssignment.shiftId}.`
+    await executeQuery(client, 'DELETE FROM shift_assignments WHERE id = $1', [
+      assignmentId
+    ]);
+    await createAuditLog({
+      action: 'ASSIGNMENT_DELETED',
+      actorUserId,
+      afterState: null,
+      beforeState: existingAssignment,
+      client,
+      entityId: existingAssignment.id,
+      entityType: 'ASSIGNMENT',
+      summary: `Removed assignment ${existingAssignment.id} from shift ${existingAssignment.shiftId}.`
+    });
+    return true;
   });
-  return true;
 };
 
 module.exports = {

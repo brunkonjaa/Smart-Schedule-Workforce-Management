@@ -2,11 +2,16 @@ window.SmartSchedule = window.SmartSchedule || {};
 
 window.SmartSchedule.previewState = (function createPreviewState() {
   const storageKey = 'smart-schedule-shell-state';
+  const allowedRoles = ['guest', 'manager', 'staff'];
   const fallbackState = {
-    page: 'overview',
-    role: 'manager',
+    page: 'login',
+    role: 'guest',
     theme: 'light'
   };
+
+  function normalizeRole(role) {
+    return allowedRoles.includes(role) ? role : fallbackState.role;
+  }
 
   function readState() {
     try {
@@ -15,7 +20,13 @@ window.SmartSchedule.previewState = (function createPreviewState() {
         return { ...fallbackState };
       }
 
-      return { ...fallbackState, ...JSON.parse(rawState) };
+      const parsedState = JSON.parse(rawState);
+
+      return {
+        ...fallbackState,
+        ...parsedState,
+        role: normalizeRole(parsedState?.role)
+      };
     } catch (error) {
       return { ...fallbackState };
     }

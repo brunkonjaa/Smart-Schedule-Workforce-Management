@@ -20,14 +20,65 @@ const parseSessionIdleTimeoutMinutes = (value) => {
   return Math.floor(parsedValue);
 };
 
+const parsePositiveInteger = (value, fallbackValue) => {
+  const parsedValue = Number(value);
+
+  if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
+    return fallbackValue;
+  }
+
+  return Math.floor(parsedValue);
+};
+
+const hasExplicitEnvValue = (name) => {
+  return typeof process.env[name] === 'string' && process.env[name].trim() !== '';
+};
+
+const legacySessionIdleTimeoutMinutes = parseSessionIdleTimeoutMinutes(
+  process.env.SESSION_IDLE_TIMEOUT_MINUTES
+);
+const productionSessionEnvNames = [
+  'SESSION_SECRET',
+  'SESSION_MANAGER_IDLE_TIMEOUT_MINUTES',
+  'SESSION_STAFF_IDLE_TIMEOUT_MINUTES',
+  'SESSION_REMEMBER_MANAGER_IDLE_TIMEOUT_MINUTES',
+  'SESSION_REMEMBER_STAFF_IDLE_TIMEOUT_MINUTES',
+  'SESSION_ABSOLUTE_LIFETIME_HOURS',
+  'SESSION_REMEMBER_ABSOLUTE_LIFETIME_HOURS'
+];
+
 const config = {
   databaseUrl: process.env.DATABASE_URL || '',
+  firstManagerBootstrapToken: process.env.FIRST_MANAGER_BOOTSTRAP_TOKEN || '',
   nodeEnv: process.env.NODE_ENV || 'development',
   port: Number(process.env.PORT) || 3000,
-  sessionIdleTimeoutMinutes: parseSessionIdleTimeoutMinutes(
-    process.env.SESSION_IDLE_TIMEOUT_MINUTES
+  productionSessionEnvNames,
+  sessionAbsoluteLifetimeHours: parsePositiveInteger(
+    process.env.SESSION_ABSOLUTE_LIFETIME_HOURS,
+    24 * 7
   ),
-  sessionSecret: process.env.SESSION_SECRET || ''
+  sessionManagerIdleTimeoutMinutes: parsePositiveInteger(
+    process.env.SESSION_MANAGER_IDLE_TIMEOUT_MINUTES,
+    Math.min(legacySessionIdleTimeoutMinutes, 120)
+  ),
+  sessionRememberAbsoluteLifetimeHours: parsePositiveInteger(
+    process.env.SESSION_REMEMBER_ABSOLUTE_LIFETIME_HOURS,
+    24 * 30
+  ),
+  sessionRememberManagerIdleTimeoutMinutes: parsePositiveInteger(
+    process.env.SESSION_REMEMBER_MANAGER_IDLE_TIMEOUT_MINUTES,
+    12 * 60
+  ),
+  sessionRememberStaffIdleTimeoutMinutes: parsePositiveInteger(
+    process.env.SESSION_REMEMBER_STAFF_IDLE_TIMEOUT_MINUTES,
+    72 * 60
+  ),
+  sessionSecret: process.env.SESSION_SECRET || '',
+  sessionStaffIdleTimeoutMinutes: parsePositiveInteger(
+    process.env.SESSION_STAFF_IDLE_TIMEOUT_MINUTES,
+    Math.max(legacySessionIdleTimeoutMinutes, 8 * 60)
+  ),
+  sessionProductionConfigReady: productionSessionEnvNames.every(hasExplicitEnvValue)
 };
 
 module.exports = config;

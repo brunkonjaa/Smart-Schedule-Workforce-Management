@@ -64,8 +64,8 @@ window.SmartSchedule.pageConfig = {
           title: 'Account access',
           caption: 'Use your work account to continue.',
           fields: [
-            { label: 'Email address', type: 'email', value: 'manager@example.com', spanClass: 'form-field--span-12' },
-            { label: 'Password', type: 'password', value: 'Password hidden', spanClass: 'form-field--span-12' }
+            { label: 'Email address', type: 'email', value: '', spanClass: 'form-field--span-12' },
+            { label: 'Password', type: 'password', value: '', spanClass: 'form-field--span-12' }
           ],
           actions: [
             { label: 'Sign in', tone: 'primary' },
