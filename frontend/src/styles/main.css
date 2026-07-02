@@ -378,6 +378,29 @@ table {
   font-weight: 600;
 }
 
+.content-panel--login {
+  min-height: 100%;
+}
+
+.login-help-list {
+  margin: 14px 0 0;
+  padding-left: 18px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.login-help-list li + li {
+  margin-top: 10px;
+}
+
+.login-decoy-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .step-list {
   display: grid;
   gap: 10px;

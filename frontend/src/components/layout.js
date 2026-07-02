@@ -234,8 +234,17 @@ window.SmartSchedule.layout = (function createLayout() {
   }
 
   function renderPageIntro(page, role) {
-    const roleLabel = role === 'manager' ? 'Manager' : 'Staff';
+    const roleLabel =
+      role === 'manager' ? 'Manager' : role === 'staff' ? 'Staff' : '';
     const compactClass = page.compactIntro ? ' page-intro--compact' : '';
+    const introMeta = roleLabel
+      ? `
+      <div class="intro-meta">
+        <span class="intro-badge">${roleLabel}</span>
+        <p>${page.context}</p>
+      </div>
+    `
+      : '';
 
     return `
       <div class="intro-copy${compactClass}">
@@ -243,10 +252,7 @@ window.SmartSchedule.layout = (function createLayout() {
         <h2>${page.title}</h2>
         <p class="intro-summary">${page.summary}</p>
       </div>
-      <div class="intro-meta">
-        <span class="intro-badge">${roleLabel}</span>
-        <p>${page.context}</p>
-      </div>
+      ${introMeta}
     `;
   }
 

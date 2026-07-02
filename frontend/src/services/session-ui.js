@@ -38,6 +38,18 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     return workspaceElement.dataset.renderToken === renderToken;
   };
 
+  const clearLoginInputs = (emailInput, passwordInput, rememberInput) => {
+    const clearValues = () => {
+      emailInput.value = '';
+      passwordInput.value = '';
+      rememberInput.checked = false;
+    };
+
+    clearValues();
+    window.requestAnimationFrame(clearValues);
+    window.setTimeout(clearValues, 120);
+  };
+
   const resetGuestState = () => {
     previewState.set({
       ...previewState.get(),
@@ -62,29 +74,6 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
   const renderSignedOutState = (workspaceElement, flashMessage) => {
     workspaceElement.textContent = '';
 
-    const metrics = createElement('div', { className: 'metric-row' });
-    metrics.appendChild(
-      createElement('article', {
-        className: 'metric-pill metric-pill--accent'
-      })
-    ).append(
-      createElement('span', { text: 'Access' }),
-      createElement('strong', { text: 'Sign in' })
-    );
-    metrics.appendChild(
-      createElement('article', { className: 'metric-pill' })
-    ).append(
-      createElement('span', { text: 'Session' }),
-      createElement('strong', { text: 'Kept by server' })
-    );
-    metrics.appendChild(
-      createElement('article', { className: 'metric-pill' })
-    ).append(
-      createElement('span', { text: 'Roles' }),
-      createElement('strong', { text: 'Manager / Staff' })
-    );
-    workspaceElement.appendChild(metrics);
-
     const grid = createElement('div', { className: 'workspace-grid' });
 
     if (flashMessage) {
@@ -101,7 +90,7 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     }
 
     const formPanel = createElement('section', {
-      className: 'content-panel content-panel--span-10'
+      className: 'content-panel content-panel--span-5 content-panel--login'
     });
     const heading = createElement('div', { className: 'panel-heading' });
     heading.appendChild(createElement('h3', { text: 'Account access' }));
@@ -122,6 +111,24 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     });
     const formGrid = createElement('div', { className: 'form-grid' });
 
+    const decoyUsernameInput = createElement('input', {
+      className: 'login-decoy-input',
+      attributes: {
+        autocomplete: 'username',
+        tabindex: -1,
+        type: 'text'
+      }
+    });
+    const decoyPasswordInput = createElement('input', {
+      className: 'login-decoy-input',
+      attributes: {
+        autocomplete: 'current-password',
+        tabindex: -1,
+        type: 'password'
+      }
+    });
+    form.append(decoyUsernameInput, decoyPasswordInput);
+
     const emailField = createElement('label', {
       className: 'form-field form-field--span-12'
     });
@@ -129,7 +136,11 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     const emailInput = createElement('input', {
       className: 'input-control',
       attributes: {
+        autocapitalize: 'none',
+        autocorrect: 'off',
         autocomplete: 'off',
+        inputmode: 'email',
+        name: 'work-account',
         spellcheck: false,
         type: 'email'
       }
@@ -145,6 +156,7 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
       className: 'input-control',
       attributes: {
         autocomplete: 'off',
+        name: 'work-passcode',
         type: 'password'
       }
     });
@@ -162,6 +174,8 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     rememberField.appendChild(rememberInput);
     rememberField.appendChild(createElement('span', { text: 'Remember me' }));
     formGrid.appendChild(rememberField);
+
+    clearLoginInputs(emailInput, passwordInput, rememberInput);
 
     form.appendChild(formGrid);
 
@@ -199,17 +213,27 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     formPanel.appendChild(form);
     grid.appendChild(formPanel);
 
-    const helpPanel = uiHelpers.createStepsPanel(
-      'Before you start',
-      'The account decides what you can see after login.',
-      [
-        'Remember me keeps the server session active for longer without storing your password.',
-        'Managers can update staff records and create shifts.',
-        'Staff can update availability and ask for leave.',
-        'The server checks access again when a live page loads.'
-      ],
-      'content-panel--span-6'
+    const helpPanel = createElement('section', {
+      className: 'content-panel content-panel--span-11'
+    });
+    const helpHeading = createElement('div', { className: 'panel-heading' });
+    helpHeading.appendChild(createElement('h3', { text: 'Before you start' }));
+    helpHeading.appendChild(
+      createElement('p', {
+        className: 'panel-copy',
+        text: 'The account decides what you can see after login.'
+      })
     );
+    helpPanel.appendChild(helpHeading);
+
+    const helpList = createElement('ul', { className: 'login-help-list' });
+    [
+      'Managers can update staff records and create shifts.',
+      'Staff can update availability and ask for leave.'
+    ].forEach((itemText) => {
+      helpList.appendChild(createElement('li', { text: itemText }));
+    });
+    helpPanel.appendChild(helpList);
     grid.appendChild(helpPanel);
 
     workspaceElement.appendChild(grid);

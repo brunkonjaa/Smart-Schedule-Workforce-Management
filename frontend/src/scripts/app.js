@@ -39,9 +39,10 @@
 
   function resolveState() {
     const previousState = stateStore.get();
-    const rolePages = pagesForRole(previousState.role);
-    const fallbackPage = rolePages[0] || allPages.find((page) => page.id === 'login');
     const hashPage = currentHash();
+    const resolvedRole = hashPage === 'login' ? 'guest' : previousState.role;
+    const rolePages = pagesForRole(resolvedRole);
+    const fallbackPage = rolePages[0] || allPages.find((page) => page.id === 'login');
     const allowedPageIds = rolePages.map((page) => page.id);
     const chosenPage = allowedPageIds.includes(hashPage)
       ? hashPage
@@ -49,7 +50,10 @@
         ? previousState.page
         : fallbackPage.id;
 
-    const resolvedState = nextState({ page: chosenPage });
+    const resolvedState = nextState({
+      page: chosenPage,
+      role: chosenPage === 'login' ? 'guest' : resolvedRole
+    });
     if (window.location.hash !== `#${chosenPage}`) {
       window.location.hash = chosenPage;
     }
@@ -75,7 +79,8 @@
   async function renderPage(state) {
     const page = allPages.find((entry) => entry.id === state.page);
     pageIntroElement.innerHTML = layout.renderPageIntro(page, state.role);
-    workspaceElement.innerHTML = layout.renderWorkspace(page);
+    workspaceElement.innerHTML =
+      page.id === 'login' ? '' : layout.renderWorkspace(page);
 
     const renderToken = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     workspaceElement.dataset.renderToken = renderToken;
