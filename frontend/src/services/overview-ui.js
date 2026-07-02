@@ -25,7 +25,7 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
 
   const createDashboardPanel = (title, caption, rows, emptyText, targetPage, actionLabel = 'Open page') => {
     const panel = uiHelpers.createElement('section', {
-      className: 'content-panel content-panel--span-8'
+      className: 'content-panel content-panel--summary content-panel--span-8'
     });
     panel.appendChild(uiHelpers.createPanelHeading(title, caption));
 

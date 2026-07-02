@@ -90,7 +90,7 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     }
 
     const formPanel = createElement('section', {
-      className: 'content-panel content-panel--span-5 content-panel--login'
+      className: 'content-panel content-panel--form content-panel--span-5 content-panel--login'
     });
     const heading = createElement('div', { className: 'panel-heading' });
     heading.appendChild(createElement('h3', { text: 'Account access' }));
@@ -214,7 +214,7 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     grid.appendChild(formPanel);
 
     const helpPanel = createElement('section', {
-      className: 'content-panel content-panel--span-11'
+      className: 'content-panel content-panel--guide content-panel--span-11'
     });
     const helpHeading = createElement('div', { className: 'panel-heading' });
     helpHeading.appendChild(createElement('h3', { text: 'Before you start' }));
@@ -286,7 +286,7 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     }
 
     const panel = createElement('section', {
-      className: 'content-panel content-panel--span-8'
+      className: 'content-panel content-panel--note content-panel--span-8'
     });
     const heading = createElement('div', { className: 'panel-heading' });
     heading.appendChild(createElement('h3', { text: 'Signed in' }));
@@ -334,7 +334,7 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     grid.appendChild(panel);
 
     const passwordPanel = createElement('section', {
-      className: 'content-panel content-panel--span-8'
+      className: 'content-panel content-panel--form content-panel--span-8'
     });
     const passwordHeading = createElement('div', { className: 'panel-heading' });
     passwordHeading.appendChild(createElement('h3', { text: 'Password' }));

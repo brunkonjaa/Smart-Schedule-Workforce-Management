@@ -113,7 +113,7 @@ window.SmartSchedule.layout = (function createLayout() {
 
   function renderListBlock(block) {
     return `
-      <section class="content-panel ${block.spanClass}">
+      <section class="content-panel content-panel--list ${block.spanClass}">
         <div class="panel-heading">
           <h3>${block.title}</h3>
           ${block.caption ? `<p class="panel-copy">${block.caption}</p>` : ''}
@@ -164,7 +164,7 @@ window.SmartSchedule.layout = (function createLayout() {
 
   function renderForm(block) {
     return `
-      <section class="content-panel ${block.spanClass}">
+      <section class="content-panel content-panel--form ${block.spanClass}">
         <div class="panel-heading">
           <h3>${block.title}</h3>
           ${block.caption ? `<p class="panel-copy">${block.caption}</p>` : ''}
@@ -197,7 +197,7 @@ window.SmartSchedule.layout = (function createLayout() {
 
   function renderNote(block) {
     return `
-      <section class="content-panel ${block.spanClass}">
+      <section class="content-panel content-panel--note ${block.spanClass}">
         <div class="panel-heading">
           <h3>${block.title}</h3>
         </div>

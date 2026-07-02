@@ -183,7 +183,7 @@ window.SmartSchedule.liveUiHelpers = (function createLiveUiHelpers() {
     spanClass = 'content-panel--span-6'
   ) => {
     const panel = createElement('section', {
-      className: `content-panel ${spanClass}`
+      className: `content-panel content-panel--guide ${spanClass}`
     });
     panel.appendChild(createPanelHeading(title, caption));
 
