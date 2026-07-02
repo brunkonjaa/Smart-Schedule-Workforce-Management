@@ -1291,6 +1291,10 @@ body[data-theme='dark'] .rota-day-cell {
   display: none;
 }
 
+.rota-mobile-panel-header {
+  display: none;
+}
+
 .rota-sheet-backdrop {
   position: fixed;
   inset: 0;
@@ -1381,73 +1385,71 @@ body[data-theme='dark'] .rota-day-cell {
 
 @media (max-width: 900px) {
   .rota-toolbar {
-    align-items: stretch;
-    flex-direction: column;
+    display: none;
   }
 
-  .rota-week-controls .action-button {
-    flex: 1 1 140px;
+  .rota-tabs,
+  .rota-legend {
+    display: none;
   }
 
   .rota-grid-shell {
     display: none;
   }
 
-  .rota-mobile-days,
   .rota-mobile-panel {
     display: grid;
   }
 
-  .rota-mobile-days {
-    grid-template-columns: repeat(7, minmax(88px, 1fr));
-    gap: 8px;
-    overflow-x: auto;
-    padding-bottom: 4px;
-  }
-
-  .rota-mobile-day {
-    display: grid;
-    gap: 3px;
-    min-height: 74px;
-    padding: 10px;
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    background: var(--bg-strong);
-    color: var(--text);
-    cursor: pointer;
-    text-align: left;
-  }
-
-  .rota-mobile-day.is-active {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px var(--accent-soft);
-  }
-
-  .rota-mobile-day.has-gap {
-    border-color: #f97316;
-    background: #fff7ed;
-    color: #7c2d12;
-  }
-
-  .rota-mobile-day.has-leave {
-    border-color: #86efac;
-    background: #dcfce7;
-    color: #14532d;
-  }
-
-  .rota-mobile-day span,
-  .rota-mobile-day em {
-    color: var(--text-muted);
-    font-size: 0.75rem;
-    font-style: normal;
-  }
-
   .rota-mobile-panel {
-    gap: 10px;
+    gap: 12px;
     padding: 14px;
     border: 1px solid var(--line);
     border-radius: 16px;
     background: var(--bg-strong);
+  }
+
+  .rota-mobile-panel-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .rota-mobile-panel-title {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .rota-mobile-panel-title span {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .rota-mobile-panel-title strong {
+    font-size: 1rem;
+  }
+
+  .rota-mobile-day-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  .rota-mobile-day-button {
+    min-height: 38px;
+    padding: 0 12px;
+  }
+
+  .rota-mobile-more-button {
+    min-height: 38px;
+    padding: 0 12px;
   }
 
   .rota-mobile-row {
@@ -1460,15 +1462,106 @@ body[data-theme='dark'] .rota-day-cell {
   }
 
   .rota-mobile-row-heading {
+    display: grid;
+    gap: 4px;
+  }
+
+  .rota-mobile-row-heading strong {
+    font-size: 0.9rem;
+  }
+
+  .rota-mobile-cell {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--bg-strong);
+  }
+
+  .rota-mobile-cell-text {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .rota-mobile-cell-top {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
   }
 
-  .rota-mobile-row-heading span {
+  .rota-mobile-cell-top strong {
+    font-size: 0.9rem;
+  }
+
+  .rota-mobile-cell-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--surface-soft);
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    white-space: nowrap;
+  }
+
+  .rota-mobile-cell-subtext {
     color: var(--text-muted);
     font-size: 0.78rem;
+  }
+
+  .rota-mobile-controls-group {
+    padding: 2px 2px 0;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .rota-mobile-department {
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .rota-mobile-department.is-active {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+
+  .rota-mobile-cell.rota-cell--assigned {
+    border-color: #60a5fa;
+    background: #dbeafe;
+    color: #172554;
+  }
+
+  .rota-mobile-cell.rota-cell--open {
+    border-color: #9ca3af;
+    background: #e5e7eb;
+    color: #111827;
+  }
+
+  .rota-mobile-cell.rota-cell--approved-leave {
+    border-color: #4ade80;
+    background: #dcfce7;
+    color: #14532d;
+  }
+
+  .rota-mobile-cell.rota-cell--empty {
+    border-color: rgba(148, 163, 184, 0.24);
+    background: #ffffff;
+    color: #64748b;
+  }
+
+  .rota-mobile-cell.rota-cell--conflict {
+    border-color: #f97316;
+    background: #fff7ed;
+    color: #7c2d12;
   }
 
   .rota-cell-block {
@@ -1525,20 +1618,6 @@ body[data-theme='dark'] .rota-day-cell {
   .rota-toolbar,
   .rota-mobile-panel {
     border-radius: 12px;
-  }
-
-  .rota-tabs {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .rota-tab {
-    width: 100%;
-  }
-
-  .rota-week-controls {
-    display: grid;
-    grid-template-columns: 1fr;
   }
 
   .rota-sheet-backdrop {

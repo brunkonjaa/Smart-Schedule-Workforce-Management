@@ -51,8 +51,21 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     return date.toISOString().slice(0, 10);
   };
 
-  const formatDayShort = (day) => {
-    return day.label.slice(0, 3);
+  const getCurrentIsoDate = () => {
+    return new Date().toISOString().slice(0, 10);
+  };
+
+  const getInitialSelectedDay = (days, selectedDay) => {
+    if (selectedDay && days.some((day) => day.date === selectedDay)) {
+      return selectedDay;
+    }
+
+    const currentDay = getCurrentIsoDate();
+    if (days.some((day) => day.date === currentDay)) {
+      return currentDay;
+    }
+
+    return days[0]?.date || null;
   };
 
   const getCellLabel = (cell) => {
@@ -226,6 +239,30 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     return legend;
   };
 
+  const getMobileCellStatusLabel = (cell) => {
+    if (!cell || cell.state === 'EMPTY') {
+      return 'No shift';
+    }
+
+    if (cell.state === 'OPEN') {
+      return 'Open';
+    }
+
+    if (cell.state === 'APPROVED_LEAVE') {
+      return 'Leave';
+    }
+
+    if (cell.state === 'ASSIGNED') {
+      return 'Assigned';
+    }
+
+    if (cell.state === 'CONFLICT') {
+      return 'Conflict';
+    }
+
+    return uiHelpers.formatStatus(cell.state);
+  };
+
   const renderCellBlock = (state, row, day, cell, actions) => {
     const block = uiHelpers.createElement('div', {
       className: `rota-cell-block ${getStateClass(cell)}`
@@ -251,6 +288,47 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
 
   const renderEmptyCellBlock = (state, row, day, actions) => {
     return renderCellBlock(state, row, day, emptyCell, actions);
+  };
+
+  const renderMobileCellBlock = (state, row, day, cell, actions) => {
+    const block = uiHelpers.createElement('div', {
+      className: `rota-mobile-cell ${getStateClass(cell)}`
+    });
+
+    const content = uiHelpers.createElement('div', { className: 'rota-mobile-cell-text' });
+    const topRow = uiHelpers.createElement('div', { className: 'rota-mobile-cell-top' });
+    topRow.appendChild(
+      uiHelpers.createElement('strong', {
+        text: getCellLabel(cell)
+      })
+    );
+    topRow.appendChild(
+      uiHelpers.createElement('span', {
+        className: 'rota-mobile-cell-status',
+        text: getMobileCellStatusLabel(cell)
+      })
+    );
+    content.appendChild(topRow);
+
+    const subLabel = getCellSubLabel(cell, row);
+    if (subLabel) {
+      content.appendChild(
+        uiHelpers.createElement('span', {
+          className: 'rota-mobile-cell-subtext',
+          text: subLabel
+        })
+      );
+    }
+
+    block.appendChild(content);
+    block.appendChild(
+      createIconButton('Open cell actions', () => {
+        state.activeContext = { cell, day, row };
+        state.modal = null;
+        actions.render();
+      })
+    );
+    return block;
   };
 
   const renderDesktopGrid = (state, actions) => {
@@ -295,58 +373,110 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     return shell;
   };
 
-  const renderMobileDayStrip = (state, actions) => {
-    const strip = uiHelpers.createElement('div', { className: 'rota-mobile-days' });
-    state.rota.days.forEach((day) => {
-      const dayCells = state.rota.rows.flatMap((row) => row.days[day.date] || []);
-      const openCount = dayCells.filter((cell) => cell.state === 'OPEN').length;
-      const leaveCount = dayCells.filter((cell) => cell.state === 'APPROVED_LEAVE').length;
-      const button = uiHelpers.createElement('button', {
-        className: `rota-mobile-day${state.selectedDay === day.date ? ' is-active' : ''}${openCount ? ' has-gap' : ''}${leaveCount && !openCount ? ' has-leave' : ''}`,
-        attributes: { type: 'button' }
-      });
-      button.appendChild(uiHelpers.createElement('strong', { text: formatDayShort(day) }));
-      button.appendChild(uiHelpers.createElement('span', { text: day.date.slice(5) }));
-      button.appendChild(
-        uiHelpers.createElement('em', {
-          text: openCount ? `${openCount} open` : leaveCount ? `${leaveCount} leave` : 'covered'
-        })
-      );
-      button.addEventListener('click', () => {
-        state.selectedDay = day.date;
-        state.activeContext = null;
-        actions.render();
-      });
-      strip.appendChild(button);
-    });
-    return strip;
-  };
-
   const renderMobileDayPanel = (state, actions) => {
     const selectedDay = state.rota.days.find((day) => day.date === state.selectedDay) || state.rota.days[0];
+    const selectedDayIndex = state.rota.days.findIndex((day) => day.date === selectedDay.date);
+    const previousDay = selectedDayIndex > 0 ? state.rota.days[selectedDayIndex - 1] : null;
+    const nextDay =
+      selectedDayIndex >= 0 && selectedDayIndex < state.rota.days.length - 1
+        ? state.rota.days[selectedDayIndex + 1]
+        : null;
     const panel = uiHelpers.createElement('section', { className: 'rota-mobile-panel' });
-    panel.appendChild(
-      uiHelpers.createPanelHeading(
-        `${selectedDay.label} ${selectedDay.date}`,
-        `${uiHelpers.formatRole(state.department)} rota for the selected day.`
-      )
-    );
+
+    const header = uiHelpers.createElement('div', { className: 'rota-mobile-panel-header' });
+    const title = uiHelpers.createElement('div', { className: 'rota-mobile-panel-title' });
+    title.appendChild(uiHelpers.createElement('span', { text: selectedDay.label }));
+    title.appendChild(uiHelpers.createElement('strong', { text: selectedDay.date }));
+    header.appendChild(title);
+
+    const controls = uiHelpers.createElement('div', { className: 'rota-mobile-day-controls' });
+
+    const prevButton = uiHelpers.createElement('button', {
+      className: 'action-button button-secondary rota-mobile-day-button',
+      text: 'Prev',
+      attributes: {
+        disabled: !previousDay,
+        type: 'button'
+      }
+    });
+    prevButton.addEventListener('click', () => {
+      if (!previousDay) {
+        return;
+      }
+
+      state.selectedDay = previousDay.date;
+      state.activeContext = null;
+      actions.render();
+    });
+    controls.appendChild(prevButton);
+
+    const todayButton = uiHelpers.createElement('button', {
+      className: 'action-button button-ghost rota-mobile-day-button',
+      text: 'Today',
+      attributes: { type: 'button' }
+    });
+    todayButton.addEventListener('click', () => {
+      state.activeContext = null;
+      const currentDay = getCurrentIsoDate();
+
+      if (state.rota.days.some((day) => day.date === currentDay)) {
+        state.selectedDay = currentDay;
+        actions.render();
+        return;
+      }
+
+      state.weekStart = uiHelpers.getCurrentWeekStart();
+      state.selectedDay = null;
+      actions.loadRota();
+    });
+    controls.appendChild(todayButton);
+
+    const nextButton = uiHelpers.createElement('button', {
+      className: 'action-button button-secondary rota-mobile-day-button',
+      text: 'Next',
+      attributes: {
+        disabled: !nextDay,
+        type: 'button'
+      }
+    });
+    nextButton.addEventListener('click', () => {
+      if (!nextDay) {
+        return;
+      }
+
+      state.selectedDay = nextDay.date;
+      state.activeContext = null;
+      actions.render();
+    });
+    controls.appendChild(nextButton);
+
+    const moreButton = uiHelpers.createElement('button', {
+      className: 'action-button button-secondary rota-mobile-more-button',
+      text: 'More',
+      attributes: { type: 'button' }
+    });
+    moreButton.addEventListener('click', () => {
+      state.modal = { type: 'mobile-controls' };
+      state.activeContext = null;
+      actions.render();
+    });
+    controls.appendChild(moreButton);
+
+    header.appendChild(controls);
+    panel.appendChild(header);
 
     state.rota.rows.forEach((row) => {
       const item = uiHelpers.createElement('div', { className: 'rota-mobile-row' });
       const heading = uiHelpers.createElement('div', { className: 'rota-mobile-row-heading' });
       heading.appendChild(uiHelpers.createElement('strong', { text: row.staffName }));
-      if (row.contractHours !== null && typeof row.contractHours !== 'undefined') {
-        heading.appendChild(uiHelpers.createElement('span', { text: `${row.contractHours} hrs` }));
-      }
       item.appendChild(heading);
 
       const cells = row.days[selectedDay.date] || [];
       if (cells.length === 0) {
-        item.appendChild(renderEmptyCellBlock(state, row, selectedDay, actions));
+        item.appendChild(renderMobileCellBlock(state, row, selectedDay, emptyCell, actions));
       } else {
         cells.forEach((cell) => {
-          item.appendChild(renderCellBlock(state, row, selectedDay, cell, actions));
+          item.appendChild(renderMobileCellBlock(state, row, selectedDay, cell, actions));
         });
       }
 
@@ -354,6 +484,88 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     });
 
     return panel;
+  };
+
+  const renderMobileControlsModal = (state, actions) => {
+    const { backdrop, panel } = createModalShell('Rota controls', state, actions);
+    panel.appendChild(
+      uiHelpers.createPanelHeading(
+        'Week and department',
+        'Use this sheet to move the rota without putting every control on the mobile screen.'
+      )
+    );
+
+    const list = uiHelpers.createElement('div', { className: 'rota-action-list' });
+    [
+      {
+        label: 'Previous week',
+        onClick: () => {
+          state.weekStart = addDays(state.weekStart, -7);
+          state.selectedDay = null;
+          state.modal = null;
+          actions.loadRota();
+        }
+      },
+      {
+        label: 'Current week',
+        onClick: () => {
+          state.weekStart = uiHelpers.getCurrentWeekStart();
+          state.selectedDay = null;
+          state.modal = null;
+          actions.loadRota();
+        }
+      },
+      {
+        label: 'Next week',
+        onClick: () => {
+          state.weekStart = addDays(state.weekStart, 7);
+          state.selectedDay = null;
+          state.modal = null;
+          actions.loadRota();
+        }
+      }
+    ].forEach((item) => {
+      const button = uiHelpers.createElement('button', {
+        className: 'rota-action-row',
+        text: item.label,
+        attributes: { type: 'button' }
+      });
+      button.addEventListener('click', item.onClick);
+      list.appendChild(button);
+    });
+
+    panel.appendChild(list);
+
+    const departmentList = uiHelpers.createElement('div', { className: 'rota-staff-choice-list' });
+    departments.forEach((department) => {
+      const button = uiHelpers.createElement('button', {
+        className: `rota-staff-choice rota-mobile-department${state.department === department ? ' is-active' : ''}`,
+        text: uiHelpers.formatRole(department),
+        attributes: { type: 'button' }
+      });
+      button.addEventListener('click', () => {
+        if (state.department === department) {
+          state.modal = null;
+          actions.render();
+          return;
+        }
+
+        state.department = department;
+        state.selectedDay = null;
+        state.modal = null;
+        actions.loadRota();
+      });
+      departmentList.appendChild(button);
+    });
+
+    panel.appendChild(
+      uiHelpers.createElement('div', {
+        className: 'rota-mobile-controls-group',
+        text: 'Department'
+      })
+    );
+    panel.appendChild(departmentList);
+    return backdrop;
   };
 
   const getActionItems = (state, actions) => {
@@ -675,6 +887,8 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
         return renderDetailsModal(state, actions);
       case 'employee':
         return renderEmployeeModal(state, actions);
+      case 'mobile-controls':
+        return renderMobileControlsModal(state, actions);
       case 'shift':
         return renderShiftModal(state, actions);
       default:
@@ -711,7 +925,6 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       grid.appendChild(renderDepartmentTabs(state, actions));
       grid.appendChild(renderLegend());
       grid.appendChild(renderDesktopGrid(state, actions));
-      grid.appendChild(renderMobileDayStrip(state, actions));
       grid.appendChild(renderMobileDayPanel(state, actions));
       workspaceElement.appendChild(grid);
 
@@ -759,7 +972,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
         }
 
         state.rota = result.rota;
-        state.selectedDay = state.selectedDay || result.rota.days[0].date;
+        state.selectedDay = getInitialSelectedDay(result.rota.days, state.selectedDay);
         state.loading = false;
         state.flash = nextFlash;
         render();
