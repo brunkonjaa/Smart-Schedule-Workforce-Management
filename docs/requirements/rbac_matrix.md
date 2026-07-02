@@ -34,6 +34,7 @@ It is important to say this clearly as well. A lot of this matrix is already wir
 | `POST /api/v1/shifts` | Deny | Deny | Allow | Manager only |
 | `PUT /api/v1/shifts/{shiftId}` | Deny | Deny | Allow | Manager only |
 | `DELETE /api/v1/shifts/{shiftId}` | Deny | Deny | Allow | Manager only |
+| `GET /api/v1/shifts/{shiftId}/recommendations` | Deny | Deny | Allow | Manager only advisory read |
 | `POST /api/v1/assignments` | Deny | Deny | Allow | Manager only |
 | `PUT /api/v1/assignments/{assignmentId}` | Deny | Deny | Allow | Manager only |
 | `DELETE /api/v1/assignments/{assignmentId}` | Deny | Deny | Allow | Manager only |

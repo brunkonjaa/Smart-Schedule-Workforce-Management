@@ -61,10 +61,12 @@ Built now:
 29. `OTHER` work role support for the fourth rota tab
 30. demo-history seed support with a reset script for rebuilding fake rota evidence data
 31. `audit_logs` schema migration and audit writes for manager shift and assignment changes
-32. shared workflow helper logic for the route layer
-33. screenshot evidence through `080`
-34. Jest and Supertest coverage now including availability, leave, shift, assignment, rota, and audit-write route flows
-35. exported SRS diagrams under `docs/SRS/diagrams/`
+32. manager-only shift recommendation route that reuses the assignment conflict rules and ranks eligible staff for one open shift
+33. rota recommendation modal for open shifts without turning the flow into auto-scheduling
+34. shared workflow helper logic for the route layer
+35. screenshot evidence through `080`
+36. Jest and Supertest coverage now including availability, leave, shift, assignment, rota, recommendation, and audit-write route flows
+37. exported SRS diagrams under `docs/SRS/diagrams/`
 
 Not built yet:
 
@@ -89,7 +91,7 @@ These are still the active MVP features I am building toward:
 8. staff rota view
 9. basic conflict checks
 
-What matters here is that the rota is no longer only a planned screen. It now reads live shifts, assignments, approved leave markers, and open shift gaps from the backend. Contract-hours warnings now come back when a saved assignment pushes a staff member over their weekly hours, and manager shift or assignment changes now leave audit records. The audit screen itself is still not built.
+What matters here is that the rota is no longer only a planned screen. It now reads live shifts, assignments, approved leave markers, and open shift gaps from the backend. Managers can also ask for a rule-based staff recommendation for one open shift before they save the final assignment. Contract-hours warnings still come back as warnings instead of hard blocks, and manager shift or assignment changes now leave audit records. The audit screen itself is still not built.
 
 ## Current Stack
 

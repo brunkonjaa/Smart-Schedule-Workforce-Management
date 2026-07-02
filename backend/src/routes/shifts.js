@@ -10,6 +10,9 @@ const {
   updateShift,
   validateShiftInput
 } = require('../services/shift-service');
+const {
+  getShiftRecommendations: buildShiftRecommendations
+} = require('../services/shift-recommendation-service');
 
 const router = express.Router();
 const uuidPattern =
@@ -51,6 +54,39 @@ router.get(
     return response.status(200).json({
       shifts
     });
+  })
+);
+
+router.get(
+  '/:shiftId/recommendations',
+  requireRole('MANAGER'),
+  asyncHandler(async (request, response) => {
+    if (!uuidPattern.test(String(request.params.shiftId || ''))) {
+      return sendValidationError(response, ['shiftId must be a valid UUID']);
+    }
+
+    try {
+      const recommendation = await buildShiftRecommendations(request.params.shiftId);
+
+      if (recommendation.missingResource) {
+        return response.status(404).json({
+          error: 'Not Found',
+          message: 'The requested shift could not be found.'
+        });
+      }
+
+      return response.status(200).json({
+        excluded: recommendation.excluded,
+        recommendations: recommendation.recommendations,
+        shift: recommendation.shift
+      });
+    } catch (error) {
+      if (error.code === 'SHIFT_ALREADY_ASSIGNED' || error.code === 'SHIFT_NOT_OPEN') {
+        return sendConflictError(response, error.message);
+      }
+
+      throw error;
+    }
   })
 );
 

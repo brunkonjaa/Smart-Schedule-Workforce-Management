@@ -994,3 +994,52 @@ Each entry should answer four practical things:
 1. capture more rota evidence screenshots for mobile and staff read-only view
 2. start deployment setup after the current backend checkpoint is committed
 3. keep audit viewing out unless there is time after deployment and UAT
+
+## 2026-07-02
+
+### Snapshot
+
+- Phase: Manager recommendation flow
+- Sprint: Sprint 2 still active
+- Status: manager recommendation route, scoring, tests, and rota modal added
+
+### What Changed
+
+1. I added a manager-only recommendation read route at `GET /api/v1/shifts/{shiftId}/recommendations`.
+2. I kept it under the shifts route because the manager asks for a recommendation from one selected open shift, not from a separate scheduling module.
+3. I reused the current assignment conflict checks first, then ranked only the eligible staff with a small score based on weekly hours and contract hours.
+4. I added machine-readable exclusions for inactive staff, role mismatch, approved leave, unavailable windows, missing availability, and overlapping or touching same-day shifts.
+5. I added a rota recommendation modal so the manager can open one open shift, review the ranked staff, then hand off to the normal assignment save flow.
+6. I added focused recommendation route and service tests, then reran the existing assignment and rota tests plus the full backend suite.
+
+### Why It Changed
+
+1. The rota already worked as the first screen after login, so the next useful step was to cut down manual checking on one open shift without pretending the project had become a full automatic scheduler.
+2. I kept the real hard rules inside the assignment service because otherwise the recommendation result and the final assignment save could drift apart.
+3. The score had to stay small and explainable. I did not want fake precision or hidden weighting that would be harder to defend in the report.
+
+### Drawback Accepted
+
+1. This still is not automatic rota generation.
+2. The recommendation is only a snapshot, so a manager can still get a later conflict if availability, leave, or another assignment changes before save.
+3. Manual screenshots and UAT evidence for the new modal still come later, because this checkpoint was the backend and frontend implementation first.
+
+### Evidence
+
+1. `backend/src/services/assignment-service.js`
+2. `backend/src/services/shift-recommendation-service.js`
+3. `backend/src/routes/shifts.js`
+4. `backend/src/__tests__/shift-recommendation-service.test.js`
+5. `backend/src/__tests__/shift-recommendation-routes.test.js`
+6. `frontend/src/services/rota-ui.js`
+7. `frontend/src/styles/main.css`
+8. `npm test -- --runInBand backend/src/__tests__/shift-recommendation-service.test.js backend/src/__tests__/shift-recommendation-routes.test.js`
+9. `npm test -- --runInBand backend/src/__tests__/assignment-routes.test.js backend/src/__tests__/rota-routes.test.js`
+10. `npm test`
+11. full backend suite now passes locally with `88` tests
+
+### Next Steps
+
+1. capture useful screenshots for the recommendation modal on desktop and mobile
+2. run the manual recommendation scenarios and record the simple evaluation table
+3. keep deployment and hosted checks after the current local evidence is in place

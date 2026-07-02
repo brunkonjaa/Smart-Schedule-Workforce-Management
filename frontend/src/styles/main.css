@@ -1509,6 +1509,13 @@ body[data-theme='dark'] .rota-day-cell {
   padding: 16px;
 }
 
+.rota-modal-panel .panel-heading,
+.rota-modal-panel .panel-copy,
+.rota-recommendation-list,
+.rota-recommendation-excluded {
+  padding: 0 16px 16px;
+}
+
 .rota-staff-choice {
   display: grid;
   gap: 3px;
@@ -1521,6 +1528,53 @@ body[data-theme='dark'] .rota-day-cell {
 .rota-staff-choice span {
   color: var(--text-muted);
   font-size: 0.86rem;
+}
+
+.rota-recommendation-list {
+  display: grid;
+  gap: 12px;
+}
+
+.rota-recommendation-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+
+.rota-recommendation-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rota-recommendation-title {
+  display: grid;
+  gap: 3px;
+}
+
+.rota-recommendation-title span,
+.rota-recommendation-summary,
+.rota-recommendation-excluded h4 {
+  color: var(--text-muted);
+}
+
+.rota-recommendation-summary {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.rota-recommendation-warnings li::before {
+  background: #f97316;
+}
+
+.rota-recommendation-excluded h4 {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
 }
 
 @media (max-width: 900px) {
@@ -1736,6 +1790,11 @@ body[data-theme='dark'] .rota-day-cell {
     border-color: #f97316;
     background: #fff7ed;
     color: #7c2d12;
+  }
+
+  .rota-recommendation-header {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .rota-cell-menu-button {

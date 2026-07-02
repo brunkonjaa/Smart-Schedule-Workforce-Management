@@ -342,6 +342,12 @@ const findSameDayTimeConflictAssignment = async (
 };
 
 const buildContractHoursWarnings = async (staffProfile, shift, client = null) => {
+  const weeklyHours = await getWeeklyHoursSummary(staffProfile, shift, client);
+
+  return buildContractHoursWarningsFromSummary(staffProfile, weeklyHours);
+};
+
+const getWeeklyHoursSummary = async (staffProfile, shift, client = null) => {
   const { weekStart } = getDateDetails(shift.shift_date);
   const weekStartDate = new Date(`${weekStart}T00:00:00Z`);
   const weekEndDate = new Date(weekStartDate.getTime());
@@ -370,20 +376,30 @@ const buildContractHoursWarnings = async (staffProfile, shift, client = null) =>
   const projectedHours = roundHours(assignedHoursBefore + shiftHours);
   const contractHours = roundHours(staffProfile.contract_hours);
 
-  if (projectedHours <= contractHours) {
+  return {
+    assignedHoursBefore,
+    contractHours,
+    projectedHours,
+    shiftHours,
+    weekStart
+  };
+};
+
+const buildContractHoursWarningsFromSummary = (staffProfile, weeklyHours) => {
+  if (weeklyHours.projectedHours <= weeklyHours.contractHours) {
     return [];
   }
 
   return [
     {
-      assignedHoursBefore,
+      assignedHoursBefore: weeklyHours.assignedHoursBefore,
       code: 'CONTRACT_HOURS_EXCEEDED',
-      contractHours,
-      message: `${staffProfile.full_name} would be assigned ${projectedHours} hours this week, which is ${roundHours(projectedHours - contractHours)} hours over their contract.`,
-      overByHours: roundHours(projectedHours - contractHours),
-      projectedHours,
-      shiftHours,
-      weekStart
+      contractHours: weeklyHours.contractHours,
+      message: `${staffProfile.full_name} would be assigned ${weeklyHours.projectedHours} hours this week, which is ${roundHours(weeklyHours.projectedHours - weeklyHours.contractHours)} hours over their contract.`,
+      overByHours: roundHours(weeklyHours.projectedHours - weeklyHours.contractHours),
+      projectedHours: weeklyHours.projectedHours,
+      shiftHours: weeklyHours.shiftHours,
+      weekStart: weeklyHours.weekStart
     }
   ];
 };
@@ -442,31 +458,31 @@ const findAvailableWindowForShift = async (staffProfileId, shift, client = null)
   return result.rows[0] || null;
 };
 
-const assertNoAssignmentConflicts = async (
+const getAssignmentConflict = async (
   assignmentInput,
   shift,
   staffProfile,
   client = null
 ) => {
   if (shift.status !== 'OPEN') {
-    throw createConflictError(
-      'SHIFT_NOT_OPEN',
-      'Only open shifts can be assigned.'
-    );
+    return {
+      code: 'SHIFT_NOT_OPEN',
+      message: 'Only open shifts can be assigned.'
+    };
   }
 
   if (!staffProfile.is_active || !staffProfile.user_is_active) {
-    throw createConflictError(
-      'STAFF_NOT_ACTIVE',
-      'Only active staff can be assigned to shifts.'
-    );
+    return {
+      code: 'STAFF_NOT_ACTIVE',
+      message: 'Only active staff can be assigned to shifts.'
+    };
   }
 
   if (staffProfile.primary_role !== shift.required_role) {
-    throw createConflictError(
-      'ASSIGNMENT_ROLE_CONFLICT',
-      'This staff member role does not match the shift role.'
-    );
+    return {
+      code: 'ASSIGNMENT_ROLE_CONFLICT',
+      message: 'This staff member role does not match the shift role.'
+    };
   }
 
   const approvedLeave = await findApprovedLeaveForShift(
@@ -476,10 +492,10 @@ const assertNoAssignmentConflicts = async (
   );
 
   if (approvedLeave) {
-    throw createConflictError(
-      'ASSIGNMENT_LEAVE_CONFLICT',
-      'This staff member has approved leave on this shift date.'
-    );
+    return {
+      code: 'ASSIGNMENT_LEAVE_CONFLICT',
+      message: 'This staff member has approved leave on this shift date.'
+    };
   }
 
   const sameDayTimeConflict = await findSameDayTimeConflictAssignment(
@@ -489,10 +505,10 @@ const assertNoAssignmentConflicts = async (
   );
 
   if (sameDayTimeConflict) {
-    throw createConflictError(
-      'ASSIGNMENT_OVERLAP_CONFLICT',
-      'This staff member already has a shift that overlaps or touches this shift time.'
-    );
+    return {
+      code: 'ASSIGNMENT_OVERLAP_CONFLICT',
+      message: 'This staff member already has a shift that overlaps or touches this shift time.'
+    };
   }
 
   const unavailableWindow = await findUnavailableWindowForShift(
@@ -502,10 +518,10 @@ const assertNoAssignmentConflicts = async (
   );
 
   if (unavailableWindow) {
-    throw createConflictError(
-      'ASSIGNMENT_AVAILABILITY_CONFLICT',
-      'This staff member is marked unavailable for this shift time.'
-    );
+    return {
+      code: 'ASSIGNMENT_UNAVAILABLE_CONFLICT',
+      message: 'This staff member is marked unavailable for this shift time.'
+    };
   }
 
   const availableWindow = await findAvailableWindowForShift(
@@ -515,10 +531,62 @@ const assertNoAssignmentConflicts = async (
   );
 
   if (!availableWindow) {
-    throw createConflictError(
-      'ASSIGNMENT_AVAILABILITY_CONFLICT',
-      'This staff member does not have availability covering this shift time.'
-    );
+    return {
+      code: 'ASSIGNMENT_AVAILABILITY_CONFLICT',
+      message: 'This staff member does not have availability covering this shift time.'
+    };
+  }
+
+  return null;
+};
+
+const evaluateAssignmentEligibility = async (
+  assignmentInput,
+  shift,
+  staffProfile,
+  client = null
+) => {
+  const exclusionReason = await getAssignmentConflict(
+    assignmentInput,
+    shift,
+    staffProfile,
+    client
+  );
+
+  if (exclusionReason) {
+    return {
+      eligible: false,
+      exclusionReason,
+      warnings: [],
+      weeklyHours: null
+    };
+  }
+
+  const weeklyHours = await getWeeklyHoursSummary(staffProfile, shift, client);
+
+  return {
+    eligible: true,
+    exclusionReason: null,
+    warnings: buildContractHoursWarningsFromSummary(staffProfile, weeklyHours),
+    weeklyHours
+  };
+};
+
+const assertNoAssignmentConflicts = async (
+  assignmentInput,
+  shift,
+  staffProfile,
+  client = null
+) => {
+  const conflict = await getAssignmentConflict(
+    assignmentInput,
+    shift,
+    staffProfile,
+    client
+  );
+
+  if (conflict) {
+    throw createConflictError(conflict.code, conflict.message);
   }
 };
 
@@ -795,8 +863,16 @@ module.exports = {
   buildAssignmentListFilters,
   createAssignment,
   deleteAssignment,
+  evaluateAssignmentEligibility,
   findAssignmentById,
+  findAssignmentByShiftId,
+  findShiftForAssignment,
+  findStaffProfileForAssignment,
+  getDateDetails,
+  getShiftHours,
+  getWeeklyHoursSummary,
   listAssignments,
+  roundHours,
   updateAssignment,
   validateAssignmentInput,
   validateAssignmentUpdateInput

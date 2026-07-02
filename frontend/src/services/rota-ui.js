@@ -45,6 +45,14 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       .filter(Boolean);
   };
 
+  const formatHours = (value) => {
+    if (typeof value !== 'number' || Number.isNaN(value)) {
+      return '0';
+    }
+
+    return Number.isInteger(value) ? String(value) : value.toFixed(2);
+  };
+
   const addDays = (dateValue, offsetDays) => {
     const date = new Date(`${dateValue}T00:00:00Z`);
     date.setUTCDate(date.getUTCDate() + offsetDays);
@@ -594,9 +602,9 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     if (cell.state === 'OPEN') {
       return [
         { label: 'Assign employee', onClick: () => actions.openAssignModal('assign') },
+        { label: 'Recommend staff', onClick: () => actions.openRecommendationModal() },
         { label: 'Edit required shift', onClick: () => actions.openShiftModal('edit') },
-        { label: 'Remove required shift', danger: true, onClick: () => actions.removeShift() },
-        { label: 'View available staff', onClick: () => actions.openAvailableStaffModal() }
+        { label: 'Remove required shift', danger: true, onClick: () => actions.removeShift() }
       ];
     }
 
@@ -759,6 +767,210 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     return backdrop;
   };
 
+  const renderRecommendationModal = (state, actions) => {
+    const { backdrop, panel } = createModalShell('Recommended staff', state, actions);
+
+    panel.appendChild(
+      uiHelpers.createPanelHeading(
+        'Rule-based recommendation',
+        'Hard conflicts are removed first. The final assignment still runs the backend checks again when you save it.'
+      )
+    );
+
+    if (state.modal.loading) {
+      panel.appendChild(
+        uiHelpers.createElement('p', {
+          className: 'panel-copy',
+          text: 'Checking staff role, leave, availability, overlap, touching shifts, and weekly hours...'
+        })
+      );
+      return backdrop;
+    }
+
+    if (state.modal.error) {
+      panel.appendChild(
+        uiHelpers.createElement('p', {
+          className: 'panel-copy',
+          text: state.modal.error.text
+        })
+      );
+
+      if (Array.isArray(state.modal.error.details) && state.modal.error.details.length > 0) {
+        const detailsList = uiHelpers.createElement('ul', {
+          className: 'detail-list detail-list--dense'
+        });
+        state.modal.error.details.forEach((detail) => {
+          detailsList.appendChild(uiHelpers.createElement('li', { text: detail }));
+        });
+        panel.appendChild(detailsList);
+      }
+
+      const retryRow = uiHelpers.createElement('div', { className: 'actions-row' });
+      const retryButton = uiHelpers.createElement('button', {
+        className: 'action-button button-secondary',
+        text: 'Retry',
+        attributes: { type: 'button' }
+      });
+      retryButton.addEventListener('click', () => {
+        actions.reloadRecommendations();
+      });
+      retryRow.appendChild(retryButton);
+      panel.appendChild(retryRow);
+      return backdrop;
+    }
+
+    const recommendationData = state.modal.data;
+    panel.appendChild(
+      uiHelpers.createReviewList([
+        { label: 'Date', value: recommendationData.shift.date },
+        {
+          label: 'Time',
+          value: `${recommendationData.shift.startTime} - ${recommendationData.shift.endTime}`
+        },
+        {
+          label: 'Required role',
+          value: uiHelpers.formatRole(recommendationData.shift.requiredRole)
+        },
+        {
+          label: 'Eligible staff',
+          value: String(recommendationData.recommendations.length)
+        }
+      ])
+    );
+
+    if (recommendationData.recommendations.length === 0) {
+      panel.appendChild(
+        uiHelpers.createElement('p', {
+          className: 'panel-copy',
+          text: 'No eligible staff were found for this shift.'
+        })
+      );
+    } else {
+      const recommendationList = uiHelpers.createElement('div', {
+        className: 'rota-recommendation-list'
+      });
+
+      recommendationData.recommendations.forEach((recommendation, index) => {
+        const card = uiHelpers.createElement('article', {
+          className: 'rota-recommendation-card'
+        });
+        const header = uiHelpers.createElement('div', {
+          className: 'rota-recommendation-header'
+        });
+        const title = uiHelpers.createElement('div', {
+          className: 'rota-recommendation-title'
+        });
+        title.appendChild(
+          uiHelpers.createElement('strong', {
+            text: `${index + 1}. ${recommendation.name}`
+          })
+        );
+        title.appendChild(
+          uiHelpers.createElement('span', {
+            text: uiHelpers.formatRole(recommendation.role)
+          })
+        );
+        header.appendChild(title);
+        header.appendChild(
+          uiHelpers.createElement('span', {
+            className: 'status-tag status-tag--info',
+            text: `Score ${recommendation.score}`
+          })
+        );
+        card.appendChild(header);
+
+        card.appendChild(
+          uiHelpers.createElement('p', {
+            className: 'rota-recommendation-summary',
+            text: `${formatHours(recommendation.currentWeeklyHours)} of ${formatHours(recommendation.contractHours)} hrs now. ${formatHours(recommendation.projectedWeeklyHours)} hrs after this shift.`
+          })
+        );
+
+        if (recommendation.reasons.length > 0) {
+          const reasonsList = uiHelpers.createElement('ul', {
+            className: 'detail-list detail-list--dense'
+          });
+          recommendation.reasons.forEach((reason) => {
+            const scoreLabel =
+              reason.scoreChange > 0
+                ? `+${reason.scoreChange}`
+                : String(reason.scoreChange);
+            reasonsList.appendChild(
+              uiHelpers.createElement('li', {
+                text: `${reason.message} (${scoreLabel})`
+              })
+            );
+          });
+          card.appendChild(reasonsList);
+        }
+
+        if (recommendation.warnings.length > 0) {
+          const warningList = uiHelpers.createElement('ul', {
+            className: 'detail-list detail-list--dense rota-recommendation-warnings'
+          });
+          recommendation.warnings.forEach((warning) => {
+            warningList.appendChild(
+              uiHelpers.createElement('li', {
+                text: warning.message
+              })
+            );
+          });
+          card.appendChild(warningList);
+        }
+
+        const useButton = uiHelpers.createElement('button', {
+          className: 'action-button button-primary',
+          text: 'Use this staff',
+          attributes: { type: 'button' }
+        });
+        useButton.addEventListener('click', () => {
+          actions.openAssignModal('assign', {
+            context: state.modal.context,
+            staffProfileId: recommendation.staffId
+          });
+        });
+        card.appendChild(useButton);
+        recommendationList.appendChild(card);
+      });
+
+      panel.appendChild(recommendationList);
+    }
+
+    if (recommendationData.excluded.length > 0) {
+      const excludedSection = uiHelpers.createElement('section', {
+        className: 'rota-recommendation-excluded'
+      });
+      excludedSection.appendChild(
+        uiHelpers.createElement('h4', {
+          text: 'Excluded staff'
+        })
+      );
+      const excludedList = uiHelpers.createElement('div', {
+        className: 'rota-staff-choice-list'
+      });
+      recommendationData.excluded.forEach((staffMember) => {
+        const item = uiHelpers.createElement('div', {
+          className: 'rota-staff-choice'
+        });
+        item.appendChild(
+          uiHelpers.createElement('strong', {
+            text: staffMember.name
+          })
+        );
+        item.appendChild(
+          uiHelpers.createElement('span', {
+            text: staffMember.reason.message
+          })
+        );
+        excludedList.appendChild(item);
+      });
+      excludedSection.appendChild(excludedList);
+      panel.appendChild(excludedSection);
+    }
+
+    return backdrop;
+  };
+
   const renderAssignModal = (state, actions) => {
     const cell = getContextCell(state.modal.context);
     const title = state.modal.mode === 'change' ? 'Change employee' : 'Assign employee';
@@ -784,7 +996,8 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
         text: `${staffMember.fullName} - ${uiHelpers.formatRole(staffMember.primaryRole)}`
       });
       option.value = staffMember.id;
-      option.selected = staffMember.id === cell.staffProfileId;
+      option.selected =
+        staffMember.id === (state.modal.selectedStaffProfileId || cell.staffProfileId);
       select.appendChild(option);
     });
     field.appendChild(select);
@@ -889,6 +1102,8 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
         return renderEmployeeModal(state, actions);
       case 'mobile-controls':
         return renderMobileControlsModal(state, actions);
+      case 'recommendations':
+        return renderRecommendationModal(state, actions);
       case 'shift':
         return renderShiftModal(state, actions);
       default:
@@ -1019,11 +1234,75 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       render();
     };
 
-    const openAssignModal = async (mode) => {
-      state.modal = { context: state.activeContext, mode, type: 'assign' };
+    const openAssignModal = async (mode, options = {}) => {
+      state.modal = {
+        context: options.context || state.activeContext,
+        mode,
+        selectedStaffProfileId: options.staffProfileId || null,
+        type: 'assign'
+      };
       state.activeContext = null;
       await loadStaff();
       render();
+    };
+
+    const loadRecommendations = async () => {
+      const shiftId = state.modal?.context?.cell?.shiftId;
+
+      if (!shiftId) {
+        return;
+      }
+
+      try {
+        const result = await apiClient.get(
+          `/api/v1/shifts/${shiftId}/recommendations`
+        );
+
+        if (!isActiveRender(workspaceElement, renderToken)) {
+          return;
+        }
+
+        if (state.modal?.type !== 'recommendations' || state.modal.context?.cell?.shiftId !== shiftId) {
+          return;
+        }
+
+        state.modal = {
+          ...state.modal,
+          data: result,
+          error: null,
+          loading: false
+        };
+        render();
+      } catch (error) {
+        if (!isActiveRender(workspaceElement, renderToken)) {
+          return;
+        }
+
+        if (state.modal?.type !== 'recommendations' || state.modal.context?.cell?.shiftId !== shiftId) {
+          return;
+        }
+
+        state.modal = {
+          ...state.modal,
+          data: null,
+          error: uiHelpers.getErrorFeedback(error, 'Could not load staff recommendations.'),
+          loading: false
+        };
+        render();
+      }
+    };
+
+    const openRecommendationModal = async () => {
+      state.modal = {
+        context: state.activeContext,
+        data: null,
+        error: null,
+        loading: true,
+        type: 'recommendations'
+      };
+      state.activeContext = null;
+      render();
+      await loadRecommendations();
     };
 
     const openShiftModal = (mode) => {
@@ -1144,7 +1423,9 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       openDepartmentModal,
       openDetailsModal,
       openEmployeeModal,
+      openRecommendationModal,
       openShiftModal,
+      reloadRecommendations: loadRecommendations,
       removeAssignment,
       removeShift,
       render,
