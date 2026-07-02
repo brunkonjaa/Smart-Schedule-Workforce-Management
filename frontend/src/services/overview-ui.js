@@ -23,9 +23,17 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
     });
   };
 
-  const createDashboardPanel = (title, caption, rows, emptyText, targetPage, actionLabel = 'Open page') => {
+  const createDashboardPanel = (
+    title,
+    caption,
+    rows,
+    emptyText,
+    targetPage,
+    actionLabel = 'Open page',
+    panelClassName = 'content-panel--span-8'
+  ) => {
     const panel = uiHelpers.createElement('section', {
-      className: 'content-panel content-panel--summary content-panel--span-8'
+      className: `content-panel content-panel--summary ${panelClassName}`
     });
     panel.appendChild(uiHelpers.createPanelHeading(title, caption));
 
@@ -48,11 +56,11 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
   const createSignInPanel = (workspaceElement) => {
     workspaceElement.textContent = '';
 
-    const metrics = uiHelpers.createElement('div', { className: 'metric-row' });
-    metrics.appendChild(uiHelpers.createMetric('Dashboard', 'Sign in', 'accent'));
-    metrics.appendChild(uiHelpers.createMetric('Live data', 'Locked'));
-    metrics.appendChild(uiHelpers.createMetric('Role', 'Unknown'));
-    workspaceElement.appendChild(metrics);
+    uiHelpers.renderIntroMetrics([
+      { label: 'Dashboard', value: 'Sign in', tone: 'accent' },
+      { label: 'Live data', value: 'Locked', tone: 'neutral' },
+      { label: 'Role', value: 'Unknown', tone: 'neutral' }
+    ]);
 
     const grid = uiHelpers.createElement('div', { className: 'workspace-grid' });
     const panel = uiHelpers.createElement('section', {
@@ -116,13 +124,13 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
   const renderManagerDashboard = (workspaceElement, weekStart, dashboard) => {
     workspaceElement.textContent = '';
 
-    const metrics = uiHelpers.createElement('div', { className: 'metric-row' });
-    metrics.appendChild(uiHelpers.createMetric('Pending leave', String(dashboard.pendingLeave.length), 'accent'));
-    metrics.appendChild(uiHelpers.createMetric('Open shifts', String(dashboard.openShifts.length)));
-    metrics.appendChild(uiHelpers.createMetric('Missing availability', String(dashboard.missingAvailabilityCount)));
-    workspaceElement.appendChild(metrics);
+    uiHelpers.renderIntroMetrics([
+      { label: 'Pending leave', value: String(dashboard.pendingLeave.length), tone: 'accent' },
+      { label: 'Open shifts', value: String(dashboard.openShifts.length), tone: 'neutral' },
+      { label: 'Missing availability', value: String(dashboard.missingAvailabilityCount), tone: 'neutral' }
+    ]);
 
-    const grid = uiHelpers.createElement('div', { className: 'workspace-grid' });
+    const grid = uiHelpers.createElement('div', { className: 'workspace-grid workspace-grid--overview-manager' });
     grid.appendChild(
       uiHelpers.createStepsPanel(
         'Manager dashboard',
@@ -132,7 +140,7 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
           'Check missing availability before creating more shifts.',
           'Use open shifts to decide what still needs staff.'
         ],
-        'content-panel--span-16'
+        'overview-panel overview-panel--equal'
       )
     );
 
@@ -145,7 +153,8 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
         }),
         'No leave requests are waiting right now.',
         'leave',
-        'Open leave'
+        'Open leave',
+        'overview-panel'
       )
     );
 
@@ -158,7 +167,8 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
         }),
         'No open shifts found for this week.',
         'shifts',
-        'Create shift'
+        'Create shift',
+        'overview-panel'
       )
     );
 
@@ -172,7 +182,8 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
         ],
         'No availability has been added for this week yet.',
         'availability',
-        'Check availability'
+        'Check availability',
+        'overview-panel'
       )
     );
 
@@ -186,7 +197,8 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
         ],
         'The rota is now the main screen after login.',
         'rota',
-        'Open rota'
+        'Open rota',
+        'overview-panel'
       )
     );
 
@@ -199,11 +211,11 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
     const availabilityCount = dashboard.availability.length;
     const approvedLeaveCount = dashboard.leaveRequests.filter((request) => request.status === 'APPROVED').length;
 
-    const metrics = uiHelpers.createElement('div', { className: 'metric-row' });
-    metrics.appendChild(uiHelpers.createMetric('My availability', String(availabilityCount), 'accent'));
-    metrics.appendChild(uiHelpers.createMetric('Leave waiting', String(dashboard.pendingLeave.length)));
-    metrics.appendChild(uiHelpers.createMetric('Approved leave', String(approvedLeaveCount)));
-    workspaceElement.appendChild(metrics);
+    uiHelpers.renderIntroMetrics([
+      { label: 'My availability', value: String(availabilityCount), tone: 'accent' },
+      { label: 'Leave waiting', value: String(dashboard.pendingLeave.length), tone: 'neutral' },
+      { label: 'Approved leave', value: String(approvedLeaveCount), tone: 'neutral' }
+    ]);
 
     const grid = uiHelpers.createElement('div', { className: 'workspace-grid' });
     grid.appendChild(
@@ -270,11 +282,11 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
     const weekStart = uiHelpers.getCurrentWeekStart();
 
     workspaceElement.textContent = '';
-    const metrics = uiHelpers.createElement('div', { className: 'metric-row' });
-    metrics.appendChild(uiHelpers.createMetric('Dashboard', 'Loading...', 'accent'));
-    metrics.appendChild(uiHelpers.createMetric('Week start', weekStart));
-    metrics.appendChild(uiHelpers.createMetric('Live data', 'Checking'));
-    workspaceElement.appendChild(metrics);
+    uiHelpers.renderIntroMetrics([
+      { label: 'Dashboard', value: 'Loading...', tone: 'accent' },
+      { label: 'Week start', value: weekStart, tone: 'neutral' },
+      { label: 'Live data', value: 'Checking', tone: 'neutral' }
+    ]);
 
     try {
       const sessionResult = await apiClient.get('/api/v1/auth/me');
@@ -304,6 +316,12 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
         createSignInPanel(workspaceElement);
         return;
       }
+
+      uiHelpers.renderIntroMetrics([
+        { label: 'Dashboard', value: 'Error', tone: 'accent' },
+        { label: 'Week start', value: weekStart, tone: 'neutral' },
+        { label: 'Live data', value: 'Problem', tone: 'neutral' }
+      ]);
 
       workspaceElement.textContent = '';
       const grid = uiHelpers.createElement('div', { className: 'workspace-grid' });

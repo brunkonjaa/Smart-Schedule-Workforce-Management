@@ -1,9 +1,10 @@
 window.SmartSchedule = window.SmartSchedule || {};
 
 window.SmartSchedule.layout = (function createLayout() {
-  function renderMetrics(metrics) {
+  function renderMetrics(metrics, rowClass = 'metric-row', id = '') {
+    const idAttribute = id ? ` id="${id}"` : '';
     return `
-      <div class="metric-row">
+      <div class="${rowClass}"${idAttribute}>
         ${metrics
           .map(
             (metric) => `
@@ -226,7 +227,6 @@ window.SmartSchedule.layout = (function createLayout() {
 
   function renderWorkspace(page) {
     return `
-      ${renderMetrics(page.metrics)}
       <div class="workspace-grid">
         ${page.blocks.map((block) => renderBlock(block)).join('')}
       </div>
@@ -234,14 +234,15 @@ window.SmartSchedule.layout = (function createLayout() {
   }
 
   function renderPageIntro(page, role) {
-    const roleLabel =
-      role === 'manager' ? 'Manager' : role === 'staff' ? 'Staff' : '';
     const compactClass = page.compactIntro ? ' page-intro--compact' : '';
-    const introMeta = roleLabel
+    const metricRowClass =
+      page.id === 'overview'
+        ? 'metric-row metric-row--overview-manager'
+        : 'metric-row metric-row--intro';
+    const introMeta = page.metrics?.length
       ? `
-      <div class="intro-meta">
-        <span class="intro-badge">${roleLabel}</span>
-        <p>${page.context}</p>
+      <div class="intro-meta intro-meta--page-metrics">
+        ${renderMetrics(page.metrics, metricRowClass, 'page-intro-metrics')}
       </div>
     `
       : '';

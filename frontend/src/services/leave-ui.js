@@ -43,7 +43,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
 
   const renderToolbar = (state, actions) => {
     const panel = uiHelpers.createElement('section', {
-      className: 'content-panel content-panel--toolbar content-panel--span-16'
+      className: 'content-panel content-panel--toolbar content-panel--span-16 leave-toolbar-panel'
     });
     const toolbarRow = uiHelpers.createElement('div', { className: 'toolbar-row' });
     const toolbarTitle = uiHelpers.createElement('div', { className: 'toolbar-title' });
@@ -80,7 +80,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
 
   const renderTable = (state, actions) => {
     const panel = uiHelpers.createElement('section', {
-      className: 'content-panel content-panel--table content-panel--span-10'
+      className: 'content-panel content-panel--table content-panel--span-10 leave-table-panel'
     });
     panel.appendChild(
       uiHelpers.createPanelHeading(
@@ -207,7 +207,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
 
   const renderStaffForm = (state, actions) => {
     const panel = uiHelpers.createElement('section', {
-      className: 'content-panel content-panel--span-6'
+      className: 'content-panel content-panel--span-6 leave-form-panel'
     });
     panel.appendChild(
       uiHelpers.createPanelHeading(
@@ -367,7 +367,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
       return uiHelpers.createEmptyPanel(
         'Select a pending request',
         'Choose a request marked waiting for manager, then approve or reject it.',
-        'content-panel--span-6',
+        'content-panel--span-6 leave-decision-panel',
         {
           label: 'Show waiting requests',
           onClick: () => {
@@ -380,7 +380,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
     }
 
     const panel = uiHelpers.createElement('section', {
-      className: 'content-panel content-panel--span-6'
+      className: 'content-panel content-panel--span-6 leave-decision-panel'
     });
     panel.appendChild(
       uiHelpers.createPanelHeading(
@@ -452,19 +452,25 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
       }
 
       workspaceElement.textContent = '';
-      const metrics = uiHelpers.createElement('div', { className: 'metric-row' });
-      metrics.appendChild(
-        uiHelpers.createMetric(
-          'Role',
-          state.sessionUser ? uiHelpers.formatRole(state.sessionUser.role) : 'Loading',
-          'accent'
-        )
-      );
-      metrics.appendChild(uiHelpers.createMetric('Requests', state.loading ? 'Loading...' : String(state.records.length)));
-      metrics.appendChild(uiHelpers.createMetric('Shown', uiHelpers.formatStatus(state.filters.status)));
-      workspaceElement.appendChild(metrics);
+      uiHelpers.renderIntroMetrics([
+        {
+          label: 'Role',
+          value: state.sessionUser ? uiHelpers.formatRole(state.sessionUser.role) : 'Loading',
+          tone: 'accent'
+        },
+        {
+          label: 'Requests',
+          value: state.loading ? 'Loading...' : String(state.records.length),
+          tone: 'neutral'
+        },
+        {
+          label: 'Shown',
+          value: uiHelpers.formatStatus(state.filters.status),
+          tone: 'neutral'
+        }
+      ]);
 
-      const grid = uiHelpers.createElement('div', { className: 'workspace-grid' });
+      const grid = uiHelpers.createElement('div', { className: 'workspace-grid workspace-grid--leave' });
       const flashPanel = uiHelpers.renderFlash(state.flash);
       if (flashPanel) {
         grid.appendChild(flashPanel);
@@ -487,7 +493,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
                 'Add a short reason so the manager knows what it is for.',
                 'Watch the status change from waiting to approved or rejected.'
               ],
-          'content-panel--span-16'
+          'leave-guide-panel'
         )
       );
       grid.appendChild(renderTable(state, actions));

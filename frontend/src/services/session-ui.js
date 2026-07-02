@@ -246,29 +246,23 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     renderToken = null
   ) => {
     workspaceElement.textContent = '';
-
-    const metrics = createElement('div', { className: 'metric-row' });
-    metrics.appendChild(
-      createElement('article', {
-        className: 'metric-pill metric-pill--accent'
-      })
-    ).append(
-      createElement('span', { text: 'Signed in as' }),
-      createElement('strong', { text: uiHelpers.formatRole(sessionUser.role) })
-    );
-    metrics.appendChild(
-      createElement('article', { className: 'metric-pill' })
-    ).append(
-      createElement('span', { text: 'Email' }),
-      createElement('strong', { text: sessionUser.email })
-    );
-    metrics.appendChild(
-      createElement('article', { className: 'metric-pill' })
-    ).append(
-      createElement('span', { text: 'Session' }),
-      createElement('strong', { text: 'Active' })
-    );
-    workspaceElement.appendChild(metrics);
+    uiHelpers.renderIntroMetrics([
+      {
+        label: 'Signed in as',
+        value: uiHelpers.formatRole(sessionUser.role),
+        tone: 'accent'
+      },
+      {
+        label: 'Email',
+        value: sessionUser.email,
+        tone: 'neutral'
+      },
+      {
+        label: 'Session',
+        value: 'Active',
+        tone: 'neutral'
+      }
+    ]);
 
     const grid = createElement('div', { className: 'workspace-grid' });
 

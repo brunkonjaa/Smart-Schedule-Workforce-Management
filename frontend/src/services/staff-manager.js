@@ -154,7 +154,7 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
 
   const renderToolbar = (state, actions) => {
     const panel = createElement('section', {
-      className: 'content-panel content-panel--toolbar content-panel--span-16'
+      className: 'content-panel content-panel--toolbar staff-toolbar-panel'
     });
     const toolbarRow = createElement('div', { className: 'toolbar-row' });
     const toolbarTitle = createElement('div', { className: 'toolbar-title' });
@@ -381,7 +381,7 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
   const renderForm = (state, actions) => {
     const isEditing = Boolean(state.selectedStaffId);
     const panel = createElement('section', {
-      className: 'content-panel content-panel--span-6'
+      className: 'content-panel content-panel--span-6 staff-form-panel'
     });
     const heading = createElement('div', { className: 'panel-heading' });
     heading.appendChild(
@@ -715,25 +715,23 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
 
       workspaceElement.textContent = '';
 
-      const metrics = createElement('div', { className: 'metric-row' });
       const activeStaffCount = state.records.filter((record) => record.isActive).length;
       const inactiveStaffCount = state.records.filter((record) => !record.isActive).length;
-      metrics.appendChild(createMetric('Owner', 'Manager', 'accent'));
-      metrics.appendChild(
-        createMetric(
-          'Active staff',
-          state.loading ? 'Loading...' : String(activeStaffCount)
-        )
-      );
-      metrics.appendChild(
-        createMetric(
-          'Inactive staff',
-          state.loading ? 'Loading...' : String(inactiveStaffCount)
-        )
-      );
-      workspaceElement.appendChild(metrics);
+      uiHelpers.renderIntroMetrics([
+        { label: 'Owner', value: 'Manager', tone: 'accent' },
+        {
+          label: 'Active staff',
+          value: state.loading ? 'Loading...' : String(activeStaffCount),
+          tone: 'neutral'
+        },
+        {
+          label: 'Inactive staff',
+          value: state.loading ? 'Loading...' : String(inactiveStaffCount),
+          tone: 'neutral'
+        }
+      ]);
 
-      const grid = createElement('div', { className: 'workspace-grid' });
+      const grid = createElement('div', { className: 'workspace-grid workspace-grid--staff-records' });
 
       const flashPanel = renderFlash(state);
       if (flashPanel) {
@@ -741,6 +739,7 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
       }
 
       grid.appendChild(renderToolbar(state, actions));
+      grid.appendChild(renderForm(state, actions));
       grid.appendChild(
         uiHelpers.createStepsPanel(
           'Staff setup order',
@@ -750,11 +749,10 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
             'Set the main role and weekly contract hours.',
             'Save the person before using them in shifts or assignments.'
           ],
-          'content-panel--span-16'
+          'staff-guide-panel'
         )
       );
       grid.appendChild(renderTable(state, actions));
-      grid.appendChild(renderForm(state, actions));
       workspaceElement.appendChild(grid);
     };
 

@@ -206,6 +206,11 @@ textarea {
   will-change: opacity, transform;
 }
 
+#page-intro[data-page='overview'] {
+  grid-template-columns: minmax(0, 1.72fr) minmax(432px, 0.88fr);
+  align-items: start;
+}
+
 .intro-kicker {
   margin: 0 0 10px;
   font-size: 0.78rem;
@@ -260,6 +265,22 @@ textarea {
   line-height: 1.6;
 }
 
+.intro-meta--page-metrics {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.intro-meta--page-metrics .metric-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-bottom: 0;
+}
+
 .intro-badge {
   display: inline-flex;
   align-items: center;
@@ -311,6 +332,58 @@ textarea {
 
 .metric-pill--accent {
   background: linear-gradient(145deg, var(--accent-soft), var(--bg-elevated));
+}
+
+.metric-row--overview-manager {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.metric-row--overview-manager .metric-pill {
+  flex: 0 0 140px;
+  width: 140px;
+  max-width: 140px;
+  min-width: 140px;
+  padding: 9px 10px;
+  border-radius: 12px;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.045);
+}
+
+.metric-row--overview-manager .metric-pill span {
+  margin-bottom: 3px;
+  font-size: 0.74rem;
+}
+
+.metric-row--overview-manager .metric-pill strong {
+  font-size: 0.96rem;
+}
+
+.metric-row--intro {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.metric-row--intro .metric-pill {
+  flex: 0 0 146px;
+  width: 146px;
+  max-width: 146px;
+  min-width: 146px;
+  padding: 10px 11px;
+  border-radius: 12px;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.045);
+}
+
+.metric-row--intro .metric-pill span {
+  margin-bottom: 4px;
+  font-size: 0.76rem;
+}
+
+.metric-row--intro .metric-pill strong {
+  font-size: 0.98rem;
 }
 
 .workspace-grid {
@@ -452,6 +525,234 @@ textarea {
 
 .content-panel--toolbar {
   padding: 12px 14px;
+}
+
+.staff-toolbar-panel {
+  flex: 0 1 420px;
+  width: min(100%, 420px);
+  max-width: 420px;
+}
+
+.workspace-grid--overview-manager {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.workspace-grid--overview-manager .overview-panel {
+  flex: 0 0 312px;
+  width: 312px;
+  min-width: 312px;
+  max-width: 312px;
+  min-height: 248px;
+  padding: 11px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.workspace-grid--overview-manager .overview-panel .panel-heading h3 {
+  font-size: 0.96rem;
+}
+
+.workspace-grid--overview-manager .overview-panel .panel-copy {
+  margin-top: 3px;
+  font-size: 0.9rem;
+  line-height: 1.38;
+}
+
+.workspace-grid--overview-manager .overview-panel .step-list,
+.workspace-grid--overview-manager .overview-panel .detail-list {
+  margin-top: 0;
+}
+
+.workspace-grid--overview-manager .overview-panel .step-list {
+  gap: 6px;
+}
+
+.workspace-grid--overview-manager .overview-panel .step-item {
+  grid-template-columns: 22px 1fr;
+  gap: 7px;
+  line-height: 1.34;
+}
+
+.workspace-grid--overview-manager .overview-panel .step-marker {
+  width: 22px;
+  height: 22px;
+  font-size: 0.72rem;
+}
+
+.workspace-grid--overview-manager .overview-panel .detail-list li {
+  line-height: 1.4;
+  font-size: 0.9rem;
+}
+
+.workspace-grid--overview-manager .overview-panel .detail-list li + li {
+  margin-top: 6px;
+}
+
+.workspace-grid--overview-manager .overview-panel .actions-row {
+  margin-top: auto;
+}
+
+.workspace-grid--overview-manager .overview-panel .action-button {
+  min-height: 34px;
+  padding: 7px 12px;
+}
+
+.workspace-grid--overview-manager .overview-panel--equal {
+  flex-basis: 312px;
+}
+
+.workspace-grid--staff-records .content-panel--alert,
+.workspace-grid--shift-builder .content-panel--alert {
+  order: 0;
+  flex: 1 1 100%;
+  max-width: none;
+}
+
+.workspace-grid--staff-records .content-panel--toolbar {
+  order: 1;
+  flex: 0 0 420px;
+  width: 420px;
+  min-width: 420px;
+  max-width: 420px;
+}
+
+.workspace-grid--staff-records .staff-form-panel {
+  order: 2;
+}
+
+.workspace-grid--staff-records .staff-guide-panel {
+  order: 3;
+}
+
+.workspace-grid--shift-builder .shift-form-panel {
+  order: 1;
+}
+
+.workspace-grid--shift-builder .shift-guide-panel {
+  order: 2;
+}
+
+.workspace-grid--shift-builder .content-panel--toolbar {
+  order: 3;
+  flex: 1 1 100%;
+  width: 100%;
+  max-width: none;
+}
+
+.workspace-grid--staff-records .content-panel--table,
+.workspace-grid--shift-builder .content-panel--table {
+  order: 4;
+  flex: 1 1 100%;
+  width: 100%;
+  max-width: none;
+}
+
+.staff-form-panel,
+.shift-form-panel {
+  flex: 0 1 420px;
+  width: min(100%, 460px);
+  max-width: 460px;
+}
+
+.staff-guide-panel,
+.shift-guide-panel {
+  flex: 1 1 520px;
+  width: min(100%, 700px);
+  max-width: 700px;
+}
+
+.workspace-grid--availability,
+.workspace-grid--leave,
+.workspace-grid--assignments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.workspace-grid--availability .availability-form-panel,
+.workspace-grid--availability .availability-summary-panel,
+.workspace-grid--leave .leave-form-panel,
+.workspace-grid--leave .leave-decision-panel {
+  order: 1;
+  flex: 0 0 388px;
+  width: 388px;
+  min-width: 388px;
+  max-width: 388px;
+}
+
+.workspace-grid--availability .availability-guide-panel,
+.workspace-grid--leave .leave-guide-panel,
+.workspace-grid--assignments .assignment-guide-panel {
+  order: 2;
+  flex: 0 0 388px;
+  width: 388px;
+  min-width: 388px;
+  max-width: 388px;
+}
+
+.workspace-grid--availability .content-panel--toolbar,
+.workspace-grid--leave .content-panel--toolbar {
+  order: 3;
+  flex: 1 1 100%;
+  width: 100%;
+  max-width: none;
+}
+
+.workspace-grid--availability .content-panel--table,
+.workspace-grid--leave .content-panel--table {
+  order: 4;
+  flex: 1 1 100%;
+  width: 100%;
+  max-width: none;
+}
+
+.workspace-grid--assignments .content-panel--toolbar {
+  order: 1;
+  flex: 1 1 100%;
+  width: 100%;
+  max-width: none;
+}
+
+.workspace-grid--assignments .assignment-shift-panel {
+  order: 2;
+  flex: 0 0 430px;
+  width: 430px;
+  min-width: 430px;
+  max-width: 430px;
+}
+
+.workspace-grid--assignments .assignment-guide-panel {
+  order: 3;
+}
+
+.workspace-grid--assignments .assignment-staff-panel {
+  order: 4;
+  flex: 1 1 100%;
+  width: 100%;
+  max-width: none;
+}
+
+.workspace-grid--assignments .assignment-saved-panel {
+  order: 5;
+  flex: 1 1 100%;
+  width: 100%;
+  max-width: none;
+}
+
+.workspace-grid--availability .content-panel--alert,
+.workspace-grid--leave .content-panel--alert,
+.workspace-grid--assignments .content-panel--alert {
+  order: 0;
+  flex: 1 1 100%;
+  width: 100%;
+  max-width: none;
 }
 
 .panel-heading h3,
@@ -887,6 +1188,14 @@ td {
     grid-template-columns: 1fr;
   }
 
+  #page-intro[data-page='overview'] {
+    grid-template-columns: 1fr;
+  }
+
+  .intro-meta--page-metrics .metric-row {
+    justify-content: flex-start;
+  }
+
   .top-nav {
     justify-content: flex-start;
   }
@@ -925,6 +1234,106 @@ td {
 
   .toolbar-control {
     flex: 1 1 180px;
+  }
+
+  .intro-meta--page-metrics .metric-row,
+  .metric-row--intro,
+  .metric-row--overview-manager {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .metric-row--intro .metric-pill {
+    flex: 0 0 146px;
+    width: 146px;
+    max-width: 146px;
+    min-width: 146px;
+  }
+
+  .metric-row--overview-manager .metric-pill {
+    flex: 0 0 140px;
+    width: 140px;
+    max-width: 140px;
+    min-width: 140px;
+  }
+
+  .workspace-grid--overview-manager {
+    display: flex;
+    flex-wrap: wrap;
+    grid-template-columns: none;
+  }
+
+  .workspace-grid--overview-manager .overview-panel {
+    flex: 0 0 312px;
+    width: 312px;
+    max-width: 312px;
+    min-width: 312px;
+    grid-column: auto;
+  }
+
+  .workspace-grid--availability,
+  .workspace-grid--leave,
+  .workspace-grid--assignments,
+  .workspace-grid--staff-records,
+  .workspace-grid--shift-builder {
+    display: flex;
+    flex-wrap: wrap;
+    grid-template-columns: none;
+  }
+
+  .workspace-grid--staff-records .content-panel--toolbar,
+  .workspace-grid--staff-records .staff-form-panel,
+  .workspace-grid--staff-records .staff-guide-panel,
+  .workspace-grid--shift-builder .shift-form-panel,
+  .workspace-grid--shift-builder .shift-guide-panel {
+    flex: 0 0 360px;
+    width: 360px;
+    max-width: 360px;
+    min-width: 360px;
+    grid-column: auto;
+  }
+
+  .workspace-grid--availability .availability-form-panel,
+  .workspace-grid--availability .availability-summary-panel,
+  .workspace-grid--leave .leave-form-panel,
+  .workspace-grid--leave .leave-decision-panel,
+  .workspace-grid--availability .availability-guide-panel,
+  .workspace-grid--leave .leave-guide-panel,
+  .workspace-grid--assignments .assignment-guide-panel {
+    flex: 0 0 360px;
+    width: 360px;
+    max-width: 360px;
+    min-width: 360px;
+    grid-column: auto;
+  }
+
+  .workspace-grid--assignments .assignment-shift-panel {
+    flex: 0 0 360px;
+    width: 360px;
+    max-width: 360px;
+    min-width: 360px;
+    grid-column: auto;
+  }
+
+  .workspace-grid--availability .content-panel--toolbar,
+  .workspace-grid--staff-records .content-panel--table,
+  .workspace-grid--availability .content-panel--table,
+  .workspace-grid--leave .content-panel--toolbar,
+  .workspace-grid--leave .content-panel--table,
+  .workspace-grid--shift-builder .content-panel--toolbar,
+  .workspace-grid--shift-builder .content-panel--table,
+  .workspace-grid--assignments .content-panel--toolbar,
+  .workspace-grid--assignments .assignment-staff-panel,
+  .workspace-grid--assignments .assignment-saved-panel,
+  .workspace-grid--staff-records .content-panel--alert,
+  .workspace-grid--availability .content-panel--alert,
+  .workspace-grid--leave .content-panel--alert,
+  .workspace-grid--shift-builder .content-panel--alert,
+  .workspace-grid--assignments .content-panel--alert {
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: none;
+    grid-column: auto;
   }
 }
 
@@ -1030,6 +1439,126 @@ td {
   .metric-row,
   .workspace-grid {
     gap: 8px;
+  }
+
+  .metric-row--intro .metric-pill {
+    flex: 0 0 146px;
+    width: 146px;
+    max-width: 146px;
+    min-width: 146px;
+  }
+
+  .metric-row--overview-manager .metric-pill {
+    flex: 0 0 140px;
+    width: 140px;
+    max-width: 140px;
+    min-width: 140px;
+  }
+
+  .intro-meta--page-metrics .metric-row,
+  .metric-row--intro,
+  .metric-row--overview-manager,
+  .workspace-grid--overview-manager,
+  .workspace-grid--staff-records,
+  .workspace-grid--shift-builder,
+  .workspace-grid--availability,
+  .workspace-grid--leave,
+  .workspace-grid--assignments {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .workspace-grid--overview-manager .overview-panel {
+    flex: 0 0 312px;
+    width: 312px;
+    max-width: 312px;
+    min-width: 312px;
+    min-height: 0;
+  }
+
+  .workspace-grid--staff-records .content-panel--toolbar,
+  .workspace-grid--staff-records .staff-form-panel,
+  .workspace-grid--staff-records .staff-guide-panel,
+  .workspace-grid--shift-builder .shift-form-panel,
+  .workspace-grid--shift-builder .shift-guide-panel {
+    flex: 0 0 312px;
+    width: 312px;
+    max-width: 312px;
+    min-width: 312px;
+    min-height: 0;
+  }
+
+  .workspace-grid--availability .availability-form-panel,
+  .workspace-grid--availability .availability-summary-panel,
+  .workspace-grid--leave .leave-form-panel,
+  .workspace-grid--leave .leave-decision-panel,
+  .workspace-grid--availability .availability-guide-panel,
+  .workspace-grid--leave .leave-guide-panel,
+  .workspace-grid--assignments .assignment-shift-panel,
+  .workspace-grid--assignments .assignment-guide-panel {
+    flex: 0 0 312px;
+    width: 312px;
+    max-width: 312px;
+    min-width: 312px;
+    min-height: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .metric-row--intro .metric-pill {
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+  }
+
+  .metric-row--overview-manager .metric-pill {
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+  }
+
+  .workspace-grid--availability,
+  .workspace-grid--leave,
+  .workspace-grid--assignments,
+  .workspace-grid--staff-records,
+  .workspace-grid--shift-builder {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-grid--staff-records .content-panel--toolbar,
+  .workspace-grid--staff-records .staff-form-panel,
+  .workspace-grid--staff-records .staff-guide-panel,
+  .workspace-grid--shift-builder .shift-form-panel,
+  .workspace-grid--shift-builder .shift-guide-panel,
+  .workspace-grid--availability .availability-form-panel,
+  .workspace-grid--availability .availability-summary-panel,
+  .workspace-grid--leave .leave-form-panel,
+  .workspace-grid--leave .leave-decision-panel,
+  .workspace-grid--availability .availability-guide-panel,
+  .workspace-grid--leave .leave-guide-panel,
+  .workspace-grid--assignments .assignment-shift-panel,
+  .workspace-grid--assignments .assignment-guide-panel {
+    flex: none;
+    width: auto;
+    max-width: none;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .workspace-grid--overview-manager {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-grid--overview-manager .overview-panel {
+    flex: none;
+    width: auto;
+    max-width: none;
+    min-width: 0;
   }
 
   .toolbar-row,

@@ -39,6 +39,18 @@ window.SmartSchedule.liveUiHelpers = (function createLiveUiHelpers() {
     return metric;
   };
 
+  const renderIntroMetrics = (metricsConfig) => {
+    const metricsHost = document.getElementById('page-intro-metrics');
+    if (!metricsHost) {
+      return;
+    }
+
+    metricsHost.textContent = '';
+    (metricsConfig || []).forEach((metric) => {
+      metricsHost.appendChild(createMetric(metric.label, metric.value, metric.tone));
+    });
+  };
+
   const renderUnauthorized = (workspaceElement, headingText, bodyText) => {
     workspaceElement.textContent = '';
 
@@ -457,6 +469,7 @@ window.SmartSchedule.liveUiHelpers = (function createLiveUiHelpers() {
     createElement,
     createEmptyPanel,
     createMetric,
+    renderIntroMetrics,
     createPanelHeading,
     createReviewList,
     createTableCell,

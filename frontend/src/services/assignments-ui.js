@@ -87,7 +87,7 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
 
   const renderToolbar = (state, actions) => {
     const panel = uiHelpers.createElement('section', {
-      className: 'content-panel content-panel--toolbar content-panel--span-16'
+      className: 'content-panel content-panel--toolbar content-panel--span-16 assignment-toolbar-panel'
     });
     const toolbarRow = uiHelpers.createElement('div', { className: 'toolbar-row' });
     const toolbarTitle = uiHelpers.createElement('div', { className: 'toolbar-title' });
@@ -167,7 +167,7 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
       return uiHelpers.createEmptyPanel(
         'No shift selected',
         'Create a shift first, then come back here to save an assignment.',
-        'content-panel--span-6',
+        'content-panel--span-6 assignment-shift-panel',
         {
           label: 'Create shift',
           targetPage: 'shifts',
@@ -177,7 +177,7 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
     }
 
     const panel = uiHelpers.createElement('section', {
-      className: 'content-panel content-panel--span-6'
+      className: 'content-panel content-panel--span-6 assignment-shift-panel'
     });
     panel.appendChild(
       uiHelpers.createPanelHeading(
@@ -247,7 +247,7 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
 
     const assignment = shift ? getAssignmentForShift(state, shift.id) : null;
     const panel = uiHelpers.createElement('section', {
-      className: 'content-panel content-panel--table content-panel--span-10'
+      className: 'content-panel content-panel--table content-panel--span-10 assignment-staff-panel'
     });
     panel.appendChild(
       uiHelpers.createPanelHeading(
@@ -331,6 +331,7 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
     const panel = uiHelpers.createElement('section', {
       className: 'content-panel content-panel--table content-panel--span-16'
     });
+    panel.classList.add('assignment-saved-panel');
     panel.appendChild(
       uiHelpers.createPanelHeading(
         'Saved backend assignments',
@@ -387,13 +388,21 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
       }
 
       workspaceElement.textContent = '';
-      const metrics = uiHelpers.createElement('div', { className: 'metric-row' });
-      metrics.appendChild(uiHelpers.createMetric('Week start', state.weekStart, 'accent'));
-      metrics.appendChild(uiHelpers.createMetric('Shifts', state.loading ? 'Loading...' : String(state.shifts.length)));
-      metrics.appendChild(uiHelpers.createMetric('Saved assignments', state.loading ? 'Loading...' : String(state.assignments.length)));
-      workspaceElement.appendChild(metrics);
+      uiHelpers.renderIntroMetrics([
+        { label: 'Week start', value: state.weekStart, tone: 'accent' },
+        {
+          label: 'Shifts',
+          value: state.loading ? 'Loading...' : String(state.shifts.length),
+          tone: 'neutral'
+        },
+        {
+          label: 'Saved assignments',
+          value: state.loading ? 'Loading...' : String(state.assignments.length),
+          tone: 'neutral'
+        }
+      ]);
 
-      const grid = uiHelpers.createElement('div', { className: 'workspace-grid' });
+      const grid = uiHelpers.createElement('div', { className: 'workspace-grid workspace-grid--assignments' });
       const flashPanel = uiHelpers.renderFlash(state.flash);
       if (flashPanel) {
         grid.appendChild(flashPanel);
@@ -420,7 +429,7 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
             'Select an active staff member from the backend staff list.',
             'Save the assignment. The backend blocks duplicate shifts, role mismatch, approved leave, missing availability, and overlapping or back-to-back shifts. Contract hours return a warning.'
           ],
-          'content-panel--span-16'
+          'assignment-guide-panel'
         )
       );
       grid.appendChild(renderSelectedShift(state, actions));

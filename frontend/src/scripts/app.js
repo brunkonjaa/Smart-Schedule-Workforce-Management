@@ -78,6 +78,7 @@
 
   async function renderPage(state) {
     const page = allPages.find((entry) => entry.id === state.page);
+    pageIntroElement.dataset.page = page.id;
     pageIntroElement.innerHTML = layout.renderPageIntro(page, state.role);
     workspaceElement.innerHTML =
       page.id === 'login' ? '' : layout.renderWorkspace(page);

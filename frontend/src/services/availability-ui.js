@@ -64,7 +64,7 @@ window.SmartSchedule.availabilityUi = (function createAvailabilityUi() {
 
   const renderTable = (state, actions) => {
     const panel = uiHelpers.createElement('section', {
-      className: 'content-panel content-panel--table content-panel--span-10'
+      className: 'content-panel content-panel--table content-panel--span-10 availability-table-panel'
     });
     panel.appendChild(
       uiHelpers.createPanelHeading(
@@ -175,7 +175,7 @@ window.SmartSchedule.availabilityUi = (function createAvailabilityUi() {
 
   const renderToolbar = (state, actions) => {
     const panel = uiHelpers.createElement('section', {
-      className: 'content-panel content-panel--toolbar content-panel--span-16'
+      className: 'content-panel content-panel--toolbar content-panel--span-16 availability-toolbar-panel'
     });
     const toolbarRow = uiHelpers.createElement('div', { className: 'toolbar-row' });
     const toolbarTitle = uiHelpers.createElement('div', { className: 'toolbar-title' });
@@ -227,7 +227,7 @@ window.SmartSchedule.availabilityUi = (function createAvailabilityUi() {
 
   const renderStaffForm = (state, actions) => {
     const panel = uiHelpers.createElement('section', {
-      className: 'content-panel content-panel--span-6'
+      className: 'content-panel content-panel--span-6 availability-form-panel'
     });
     panel.appendChild(
       uiHelpers.createPanelHeading(
@@ -434,7 +434,7 @@ window.SmartSchedule.availabilityUi = (function createAvailabilityUi() {
     return uiHelpers.createEmptyPanel(
       'Manager view only',
       'Managers can check staff availability here. Staff add and change their own times from the staff role view.',
-      'content-panel--span-6',
+      'content-panel--span-6 availability-summary-panel',
       {
         label: 'Open staff role',
         onClick: () => {
@@ -464,23 +464,21 @@ window.SmartSchedule.availabilityUi = (function createAvailabilityUi() {
       }
 
       workspaceElement.textContent = '';
-      const metrics = uiHelpers.createElement('div', { className: 'metric-row' });
-      metrics.appendChild(uiHelpers.createMetric('Week start', state.weekStart, 'accent'));
-      metrics.appendChild(
-        uiHelpers.createMetric(
-          'Role',
-          state.sessionUser ? uiHelpers.formatRole(state.sessionUser.role) : 'Loading'
-        )
-      );
-      metrics.appendChild(
-        uiHelpers.createMetric(
-          'Entries',
-          state.loading ? 'Loading...' : String(state.records.length)
-        )
-      );
-      workspaceElement.appendChild(metrics);
+      uiHelpers.renderIntroMetrics([
+        { label: 'Week start', value: state.weekStart, tone: 'accent' },
+        {
+          label: 'Role',
+          value: state.sessionUser ? uiHelpers.formatRole(state.sessionUser.role) : 'Loading',
+          tone: 'neutral'
+        },
+        {
+          label: 'Entries',
+          value: state.loading ? 'Loading...' : String(state.records.length),
+          tone: 'neutral'
+        }
+      ]);
 
-      const grid = uiHelpers.createElement('div', { className: 'workspace-grid' });
+      const grid = uiHelpers.createElement('div', { className: 'workspace-grid workspace-grid--availability' });
       const flashPanel = uiHelpers.renderFlash(state.flash);
       if (flashPanel) {
         grid.appendChild(flashPanel);
@@ -504,7 +502,7 @@ window.SmartSchedule.availabilityUi = (function createAvailabilityUi() {
                 'Check who has missing or unavailable time.',
                 'Use this before creating shifts and assigning staff.'
               ],
-          'content-panel--span-16'
+          'availability-guide-panel'
         )
       );
       grid.appendChild(renderTable(state, actions));

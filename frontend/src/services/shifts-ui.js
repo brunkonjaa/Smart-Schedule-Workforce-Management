@@ -217,7 +217,7 @@ window.SmartSchedule.shiftsUi = (function createShiftsUi() {
 
   const renderForm = (state, actions) => {
     const panel = uiHelpers.createElement('section', {
-      className: 'content-panel content-panel--span-6'
+      className: 'content-panel content-panel--span-6 shift-form-panel'
     });
     panel.appendChild(
       uiHelpers.createPanelHeading(
@@ -448,18 +448,26 @@ window.SmartSchedule.shiftsUi = (function createShiftsUi() {
       }
 
       workspaceElement.textContent = '';
-      const metrics = uiHelpers.createElement('div', { className: 'metric-row' });
-      metrics.appendChild(uiHelpers.createMetric('Week start', state.weekStart, 'accent'));
-      metrics.appendChild(uiHelpers.createMetric('Shifts', state.loading ? 'Loading...' : String(state.records.length)));
-      metrics.appendChild(uiHelpers.createMetric('Shown', uiHelpers.formatRole(state.filters.requiredRole)));
-      workspaceElement.appendChild(metrics);
+      uiHelpers.renderIntroMetrics([
+        { label: 'Week start', value: state.weekStart, tone: 'accent' },
+        {
+          label: 'Shifts',
+          value: state.loading ? 'Loading...' : String(state.records.length),
+          tone: 'neutral'
+        },
+        {
+          label: 'Shown',
+          value: uiHelpers.formatRole(state.filters.requiredRole),
+          tone: 'neutral'
+        }
+      ]);
 
-      const grid = uiHelpers.createElement('div', { className: 'workspace-grid' });
+      const grid = uiHelpers.createElement('div', { className: 'workspace-grid workspace-grid--shift-builder' });
       const flashPanel = uiHelpers.renderFlash(state.flash);
       if (flashPanel) {
         grid.appendChild(flashPanel);
       }
-      grid.appendChild(renderToolbar(state, actions));
+      grid.appendChild(renderForm(state, actions));
       grid.appendChild(
         uiHelpers.createStepsPanel(
           'How to build shifts',
@@ -469,11 +477,11 @@ window.SmartSchedule.shiftsUi = (function createShiftsUi() {
             'Create the shift date, start time, end time, and role needed.',
             'Leave it open or draft until you are ready to assign staff.'
           ],
-          'content-panel--span-16'
+          'shift-guide-panel'
         )
       );
+      grid.appendChild(renderToolbar(state, actions));
       grid.appendChild(renderTable(state, actions));
-      grid.appendChild(renderForm(state, actions));
       workspaceElement.appendChild(grid);
     };
 
