@@ -125,6 +125,10 @@ Examples:
 - `078` assignment API duplicate conflict
 - `079` assignment route test suite passing
 - `080` rota first weekly view manager
+- `081` rota manager desktop clean
+- `082` rota manager cell actions
+- `083` rota staff read only view
+- `084` rota manager mobile day view
 
 ## Practical Reminder
 
