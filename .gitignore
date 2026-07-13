@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+backend/local-evidence.env
 node_modules/
 coverage/
 dist/

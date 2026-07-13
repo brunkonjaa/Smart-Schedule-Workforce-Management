@@ -11,6 +11,11 @@
     "db:migrate:status": "node src/scripts/run-migrations.js status",
     "db:seed:demo-history": "node src/scripts/seed-demo-history.js",
     "db:seed:demo-history:reset": "node src/scripts/seed-demo-history.js --reset",
+    "local:evidence:check": "node src/scripts/prepare-local-evidence.js check",
+    "local:evidence:migrate": "node src/scripts/prepare-local-evidence.js migrate",
+    "local:evidence:seed": "node src/scripts/prepare-local-evidence.js seed-recommendation",
+    "local:evidence:all": "node src/scripts/prepare-local-evidence.js all",
+    "local:evidence:start": "node -r dotenv/config src/server.js dotenv_config_path=local-evidence.env",
     "test": "jest --runInBand",
     "test:watch": "jest --watch"
   },
