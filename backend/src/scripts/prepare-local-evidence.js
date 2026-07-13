@@ -174,85 +174,97 @@ const staffEmail = (name) => {
 const buildStaffSeeds = () => {
   return [
     {
+      key: 'bestCandidate',
       contractHours: 30,
-      fullName: 'Best Candidate',
+      fullName: 'Liam Carter',
       isActive: true,
       primaryRole: 'BAR',
       userIsActive: true
     },
     {
+      key: 'aaronTie',
       contractHours: 24,
-      fullName: 'Aaron Tie',
+      fullName: 'Aaron Doyle',
       isActive: true,
       primaryRole: 'BAR',
       userIsActive: true
     },
     {
+      key: 'zoeTie',
       contractHours: 24,
-      fullName: 'Zoe Tie',
+      fullName: 'Zoe Walsh',
       isActive: true,
       primaryRole: 'BAR',
       userIsActive: true
     },
     {
+      key: 'overContract',
       contractHours: 8,
-      fullName: 'Over Contract Staff',
+      fullName: 'Owen Murphy',
       isActive: true,
       primaryRole: 'BAR',
       userIsActive: true
     },
     {
+      key: 'heavyWorkload',
       contractHours: 18,
-      fullName: 'Heavy Workload Staff',
+      fullName: 'Niamh Kelly',
       isActive: true,
       primaryRole: 'BAR',
       userIsActive: true
     },
     {
+      key: 'inactive',
       contractHours: 24,
-      fullName: 'Inactive Staff',
+      fullName: 'Mark Hayes',
       isActive: false,
       primaryRole: 'BAR',
       userIsActive: true
     },
     {
+      key: 'wrongRole',
       contractHours: 24,
-      fullName: 'Wrong Role Staff',
+      fullName: 'Claire Ryan',
       isActive: true,
       primaryRole: 'FLOOR',
       userIsActive: true
     },
     {
+      key: 'leave',
       contractHours: 24,
-      fullName: 'Leave Staff',
+      fullName: 'Emma Collins',
       isActive: true,
       primaryRole: 'BAR',
       userIsActive: true
     },
     {
+      key: 'barReserveOne',
       contractHours: 24,
-      fullName: 'Missing Availability Staff',
+      fullName: 'Ryan Byrne',
       isActive: true,
       primaryRole: 'BAR',
       userIsActive: true
     },
     {
+      key: 'barReserveTwo',
       contractHours: 24,
-      fullName: 'Unavailable Staff',
+      fullName: 'Chloe Flynn',
       isActive: true,
       primaryRole: 'BAR',
       userIsActive: true
     },
     {
+      key: 'overlap',
       contractHours: 24,
-      fullName: 'Overlap Staff',
+      fullName: 'Daniel Quinn',
       isActive: true,
       primaryRole: 'BAR',
       userIsActive: true
     },
     {
+      key: 'touching',
       contractHours: 24,
-      fullName: 'Touching Staff',
+      fullName: 'Sophie Nolan',
       isActive: true,
       primaryRole: 'BAR',
       userIsActive: true
@@ -330,7 +342,7 @@ const seedRecommendationEvidence = async () => {
   const managerPasswordHash = await bcrypt.hash(evidenceManagerPassword, 10);
   const staffPasswordHash = await bcrypt.hash(evidenceStaffPassword, 10);
   const staffSeeds = buildStaffSeeds();
-  const staffByName = new Map(staffSeeds.map((staffMember) => [staffMember.fullName, staffMember]));
+  const staffByKey = new Map(staffSeeds.map((staffMember) => [staffMember.key, staffMember]));
 
   const shiftIds = {
     aaronHours: crypto.randomUUID(),
@@ -532,54 +544,6 @@ const seedRecommendationEvidence = async () => {
       ]
     );
 
-    const availabilityRows = [
-      'Best Candidate',
-      'Aaron Tie',
-      'Zoe Tie',
-      'Over Contract Staff',
-      'Heavy Workload Staff',
-      'Leave Staff',
-      'Unavailable Staff',
-      'Overlap Staff',
-      'Touching Staff'
-    ].map((name) => ({
-      created_at: new Date(),
-      day_of_week: 3,
-      end_time: '23:00',
-      staff_profile_id: staffByName.get(name).id,
-      start_time: '12:00',
-      status: 'AVAILABLE',
-      updated_at: new Date(),
-      week_start: evidenceWeekStart
-    }));
-
-    availabilityRows.push({
-      created_at: new Date(),
-      day_of_week: 3,
-      end_time: '18:00',
-      staff_profile_id: staffByName.get('Unavailable Staff').id,
-      start_time: '14:00',
-      status: 'UNAVAILABLE',
-      updated_at: new Date(),
-      week_start: evidenceWeekStart
-    });
-
-    await insertRows(
-      client,
-      'availability_entries',
-      [
-        'staff_profile_id',
-        'week_start',
-        'day_of_week',
-        'start_time',
-        'end_time',
-        'status',
-        'created_at',
-        'updated_at'
-      ],
-      availabilityRows
-    );
-
     await insertRows(
       client,
       'leave_requests',
@@ -603,7 +567,7 @@ const seedRecommendationEvidence = async () => {
           end_date: evidenceTargetShiftDate,
           manager_comment: 'Approved for local recommendation evidence',
           reason: 'Local recommendation evidence leave',
-          staff_profile_id: staffByName.get('Leave Staff').id,
+          staff_profile_id: staffByKey.get('leave').id,
           start_date: evidenceTargetShiftDate,
           status: 'APPROVED',
           updated_at: new Date()
@@ -628,7 +592,7 @@ const seedRecommendationEvidence = async () => {
           assigned_by_user_id: managerUserId,
           created_at: new Date(),
           shift_id: shiftIds.aaronHours,
-          staff_profile_id: staffByName.get('Aaron Tie').id,
+          staff_profile_id: staffByKey.get('aaronTie').id,
           updated_at: new Date()
         },
         {
@@ -636,7 +600,7 @@ const seedRecommendationEvidence = async () => {
           assigned_by_user_id: managerUserId,
           created_at: new Date(),
           shift_id: shiftIds.zoeHours,
-          staff_profile_id: staffByName.get('Zoe Tie').id,
+          staff_profile_id: staffByKey.get('zoeTie').id,
           updated_at: new Date()
         },
         {
@@ -644,7 +608,7 @@ const seedRecommendationEvidence = async () => {
           assigned_by_user_id: managerUserId,
           created_at: new Date(),
           shift_id: shiftIds.overContractHours,
-          staff_profile_id: staffByName.get('Over Contract Staff').id,
+          staff_profile_id: staffByKey.get('overContract').id,
           updated_at: new Date()
         },
         {
@@ -652,7 +616,7 @@ const seedRecommendationEvidence = async () => {
           assigned_by_user_id: managerUserId,
           created_at: new Date(),
           shift_id: shiftIds.heavyHoursOne,
-          staff_profile_id: staffByName.get('Heavy Workload Staff').id,
+          staff_profile_id: staffByKey.get('heavyWorkload').id,
           updated_at: new Date()
         },
         {
@@ -660,7 +624,7 @@ const seedRecommendationEvidence = async () => {
           assigned_by_user_id: managerUserId,
           created_at: new Date(),
           shift_id: shiftIds.heavyHoursTwo,
-          staff_profile_id: staffByName.get('Heavy Workload Staff').id,
+          staff_profile_id: staffByKey.get('heavyWorkload').id,
           updated_at: new Date()
         },
         {
@@ -668,7 +632,7 @@ const seedRecommendationEvidence = async () => {
           assigned_by_user_id: managerUserId,
           created_at: new Date(),
           shift_id: shiftIds.overlapExisting,
-          staff_profile_id: staffByName.get('Overlap Staff').id,
+          staff_profile_id: staffByKey.get('overlap').id,
           updated_at: new Date()
         },
         {
@@ -676,7 +640,7 @@ const seedRecommendationEvidence = async () => {
           assigned_by_user_id: managerUserId,
           created_at: new Date(),
           shift_id: shiftIds.touchingExisting,
-          staff_profile_id: staffByName.get('Touching Staff').id,
+          staff_profile_id: staffByKey.get('touching').id,
           updated_at: new Date()
         }
       ]

@@ -6,7 +6,6 @@
   const overviewUi = shell.overviewUi;
   const sessionUi = shell.sessionUi;
   const staffManager = shell.staffManager;
-  const availabilityUi = shell.availabilityUi;
   const leaveUi = shell.leaveUi;
   const shiftsUi = shell.shiftsUi;
   const assignmentsUi = shell.assignmentsUi;
@@ -19,6 +18,10 @@
   const workspaceElement = document.getElementById('workspace');
   let suppressNextHashChange = false;
   let renderQueue = Promise.resolve();
+
+  function clearTransientOverlays() {
+    document.getElementById('rota-modal-host')?.remove();
+  }
 
   function pagesForRole(role) {
     if (role === 'guest') {
@@ -78,6 +81,7 @@
 
   async function renderPage(state) {
     const page = allPages.find((entry) => entry.id === state.page);
+    clearTransientOverlays();
     pageIntroElement.dataset.page = page.id;
     pageIntroElement.innerHTML = layout.renderPageIntro(page, state.role);
     workspaceElement.innerHTML =
@@ -97,15 +101,6 @@
 
     if (overviewUi) {
       await overviewUi.mount({
-        page,
-        renderToken,
-        role: state.role,
-        workspaceElement
-      });
-    }
-
-    if (availabilityUi) {
-      await availabilityUi.mount({
         page,
         renderToken,
         role: state.role,

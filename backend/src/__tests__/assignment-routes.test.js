@@ -782,7 +782,259 @@ describe('assignment routes', () => {
     }
   });
 
-  test('rejects assignment when availability does not cover the shift time', async () => {
+  test('rejects assignment when staff would go over five shifts in the same week', async () => {
+    const limitUserId = crypto.randomUUID();
+    const limitStaffProfileId = crypto.randomUUID();
+    const targetShiftId = crypto.randomUUID();
+    const existingShiftIds = Array.from({ length: 5 }, () => crypto.randomUUID());
+    const existingAssignmentIds = Array.from({ length: 5 }, () => crypto.randomUUID());
+    const limitEmail = `assignment-weekly-shift-limit-${Date.now()}@example.com`;
+    const limitPasswordHash = await bcrypt.hash('AssignmentShiftLimit123!', 10);
+    const existingShiftDates = Array.from({ length: 5 }, (_, index) => {
+      return getDateFromWeek(nextWeekStart, index);
+    });
+    const targetShiftDate = getDateFromWeek(nextWeekStart, 6);
+    const agent = await loginAsManager();
+
+    try {
+      await query(
+        `
+          INSERT INTO users (id, email, password_hash, role, is_active, created_at, updated_at)
+          VALUES ($1, $2, $3, 'STAFF', TRUE, NOW(), NOW())
+        `,
+        [limitUserId, limitEmail, limitPasswordHash]
+      );
+      await query(
+        `
+          INSERT INTO staff_profiles (
+            id,
+            user_id,
+            full_name,
+            primary_role,
+            contract_hours,
+            phone_number,
+            is_active,
+            created_at,
+            updated_at
+          )
+          VALUES ($1, $2, 'Weekly Shift Limit Staff', 'BAR', 40.00, '0855000100', TRUE, NOW(), NOW())
+        `,
+        [limitStaffProfileId, limitUserId]
+      );
+
+      const shiftValues = [];
+      const shiftPlaceholders = existingShiftIds
+        .map((shiftId, index) => {
+          const dateValue = existingShiftDates[index];
+          shiftValues.push(shiftId, dateValue);
+          return `($${shiftValues.length - 1}, $${shiftValues.length}, '09:00', '15:00', 'BAR', 'OPEN', 'Weekly shift limit existing ${index + 1}', NOW(), NOW())`;
+        })
+        .join(', ');
+
+      shiftValues.push(targetShiftId, targetShiftDate);
+      await query(
+        `
+          INSERT INTO shifts (
+            id,
+            shift_date,
+            start_time,
+            end_time,
+            required_role,
+            status,
+            notes,
+            created_at,
+            updated_at
+          )
+          VALUES
+            ${shiftPlaceholders},
+            ($${shiftValues.length - 1}, $${shiftValues.length}, '10:00', '16:00', 'BAR', 'OPEN', 'Weekly shift limit target', NOW(), NOW())
+        `,
+        shiftValues
+      );
+
+      const assignmentValues = [];
+      const assignmentPlaceholders = existingAssignmentIds
+        .map((assignmentId, index) => {
+          assignmentValues.push(
+            assignmentId,
+            existingShiftIds[index],
+            limitStaffProfileId,
+            managerId
+          );
+          return `($${assignmentValues.length - 3}, $${assignmentValues.length - 2}, $${assignmentValues.length - 1}, $${assignmentValues.length}, NOW(), NOW(), NOW())`;
+        })
+        .join(', ');
+
+      await query(
+        `
+          INSERT INTO shift_assignments (
+            id,
+            shift_id,
+            staff_profile_id,
+            assigned_by_user_id,
+            assigned_at,
+            created_at,
+            updated_at
+          )
+          VALUES ${assignmentPlaceholders}
+        `,
+        assignmentValues
+      );
+
+      const response = await agent
+        .post('/api/v1/assignments')
+        .set(mutationHeader)
+        .send({
+          shiftId: targetShiftId,
+          staffProfileId: limitStaffProfileId
+        });
+
+      expect(response.status).toBe(409);
+      expect(response.body).toEqual({
+        error: 'Conflict',
+        message: 'This staff member would go over 5 shifts for the week.'
+      });
+    } finally {
+      await query(
+        'DELETE FROM shift_assignments WHERE shift_id = ANY($1::uuid[])',
+        [[...existingShiftIds, targetShiftId]]
+      );
+      await query(
+        'DELETE FROM shifts WHERE id = ANY($1::uuid[])',
+        [[...existingShiftIds, targetShiftId]]
+      );
+      await query('DELETE FROM staff_profiles WHERE id = $1', [limitStaffProfileId]);
+      await query('DELETE FROM users WHERE id = $1', [limitUserId]);
+    }
+  });
+
+  test('rejects assignment when staff would go over forty hours in the same week', async () => {
+    const hoursUserId = crypto.randomUUID();
+    const hoursStaffProfileId = crypto.randomUUID();
+    const targetShiftId = crypto.randomUUID();
+    const existingShiftIds = Array.from({ length: 4 }, () => crypto.randomUUID());
+    const existingAssignmentIds = Array.from({ length: 4 }, () => crypto.randomUUID());
+    const hoursEmail = `assignment-weekly-hours-limit-${Date.now()}@example.com`;
+    const hoursPasswordHash = await bcrypt.hash('AssignmentHoursLimit123!', 10);
+    const existingShiftDates = Array.from({ length: 4 }, (_, index) => {
+      return getDateFromWeek(nextWeekStart, index);
+    });
+    const targetShiftDate = getDateFromWeek(nextWeekStart, 4);
+    const agent = await loginAsManager();
+
+    try {
+      await query(
+        `
+          INSERT INTO users (id, email, password_hash, role, is_active, created_at, updated_at)
+          VALUES ($1, $2, $3, 'STAFF', TRUE, NOW(), NOW())
+        `,
+        [hoursUserId, hoursEmail, hoursPasswordHash]
+      );
+      await query(
+        `
+          INSERT INTO staff_profiles (
+            id,
+            user_id,
+            full_name,
+            primary_role,
+            contract_hours,
+            phone_number,
+            is_active,
+            created_at,
+            updated_at
+          )
+          VALUES ($1, $2, 'Weekly Hours Limit Staff', 'BAR', 40.00, '0855000101', TRUE, NOW(), NOW())
+        `,
+        [hoursStaffProfileId, hoursUserId]
+      );
+
+      const shiftValues = [];
+      const shiftPlaceholders = existingShiftIds
+        .map((shiftId, index) => {
+          const dateValue = existingShiftDates[index];
+          shiftValues.push(shiftId, dateValue);
+          return `($${shiftValues.length - 1}, $${shiftValues.length}, '09:00', '18:00', 'BAR', 'OPEN', 'Weekly hours limit existing ${index + 1}', NOW(), NOW())`;
+        })
+        .join(', ');
+
+      shiftValues.push(targetShiftId, targetShiftDate);
+      await query(
+        `
+          INSERT INTO shifts (
+            id,
+            shift_date,
+            start_time,
+            end_time,
+            required_role,
+            status,
+            notes,
+            created_at,
+            updated_at
+          )
+          VALUES
+            ${shiftPlaceholders},
+            ($${shiftValues.length - 1}, $${shiftValues.length}, '12:00', '18:00', 'BAR', 'OPEN', 'Weekly hours limit target', NOW(), NOW())
+        `,
+        shiftValues
+      );
+
+      const assignmentValues = [];
+      const assignmentPlaceholders = existingAssignmentIds
+        .map((assignmentId, index) => {
+          assignmentValues.push(
+            assignmentId,
+            existingShiftIds[index],
+            hoursStaffProfileId,
+            managerId
+          );
+          return `($${assignmentValues.length - 3}, $${assignmentValues.length - 2}, $${assignmentValues.length - 1}, $${assignmentValues.length}, NOW(), NOW(), NOW())`;
+        })
+        .join(', ');
+
+      await query(
+        `
+          INSERT INTO shift_assignments (
+            id,
+            shift_id,
+            staff_profile_id,
+            assigned_by_user_id,
+            assigned_at,
+            created_at,
+            updated_at
+          )
+          VALUES ${assignmentPlaceholders}
+        `,
+        assignmentValues
+      );
+
+      const response = await agent
+        .post('/api/v1/assignments')
+        .set(mutationHeader)
+        .send({
+          shiftId: targetShiftId,
+          staffProfileId: hoursStaffProfileId
+        });
+
+      expect(response.status).toBe(409);
+      expect(response.body).toEqual({
+        error: 'Conflict',
+        message: 'This staff member would go over 40 hours for the week.'
+      });
+    } finally {
+      await query(
+        'DELETE FROM shift_assignments WHERE shift_id = ANY($1::uuid[])',
+        [[...existingShiftIds, targetShiftId]]
+      );
+      await query(
+        'DELETE FROM shifts WHERE id = ANY($1::uuid[])',
+        [[...existingShiftIds, targetShiftId]]
+      );
+      await query('DELETE FROM staff_profiles WHERE id = $1', [hoursStaffProfileId]);
+      await query('DELETE FROM users WHERE id = $1', [hoursUserId]);
+    }
+  });
+
+  test('allows assignment when no availability window is saved', async () => {
     const agent = await loginAsManager();
     const response = await agent
       .post('/api/v1/assignments')
@@ -792,11 +1044,14 @@ describe('assignment routes', () => {
         staffProfileId
       });
 
-    expect(response.status).toBe(409);
-    expect(response.body).toEqual({
-      error: 'Conflict',
-      message: 'This staff member does not have availability covering this shift time.'
-    });
+    expect(response.status).toBe(201);
+    expect(response.body.assignment).toEqual(
+      expect.objectContaining({
+        shiftId: availabilityConflictShiftId,
+        staffProfileId
+      })
+    );
+    expect(response.body.warnings).toEqual([]);
   });
 
   test('rejects invalid assignment payloads', async () => {

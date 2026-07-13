@@ -88,7 +88,7 @@ describe('shift recommendation routes', () => {
           ($1, $2, 'Recommendation Route Manager', 'FLOOR', 40.00, '0857200001', TRUE, NOW(), NOW()),
           ($3, $4, 'Recommendation Route Staff', 'BAR', 24.00, '0857200002', TRUE, NOW(), NOW()),
           ($5, $6, 'Recommendation Route Inactive', 'BAR', 24.00, '0857200003', TRUE, NOW(), NOW()),
-          ($7, $8, 'Recommendation Route Wrong Role', 'FLOOR', 24.00, '0857200004', TRUE, NOW(), NOW())
+          ($7, $8, 'Recommendation Route Wrong Role', 'KITCHEN', 24.00, '0857200004', TRUE, NOW(), NOW())
       `,
       [
         managerStaffProfileId,
@@ -135,25 +135,6 @@ describe('shift recommendation routes', () => {
 
     await query(
       `
-        INSERT INTO availability_entries (
-          staff_profile_id,
-          week_start,
-          day_of_week,
-          start_time,
-          end_time,
-          status,
-          created_at,
-          updated_at
-        )
-        VALUES
-          ($1, $2, 2, '12:00', '23:00', 'AVAILABLE', NOW(), NOW()),
-          ($1, $2, 3, '10:00', '22:00', 'AVAILABLE', NOW(), NOW())
-      `,
-      [staffProfileId, nextWeekStart]
-    );
-
-    await query(
-      `
         INSERT INTO shift_assignments (
           id,
           shift_id,
@@ -177,10 +158,6 @@ describe('shift recommendation routes', () => {
     await query(
       'DELETE FROM shift_assignments WHERE shift_id = $1',
       [assignedShiftId]
-    );
-    await query(
-      'DELETE FROM availability_entries WHERE staff_profile_id = $1',
-      [staffProfileId]
     );
     await query(
       'DELETE FROM shifts WHERE id IN ($1, $2, $3, $4)',
@@ -257,18 +234,20 @@ describe('shift recommendation routes', () => {
         startTime: '14:00'
       })
     );
-    expect(response.body.recommendations).toEqual([
+    const routeStaffRecommendation = response.body.recommendations.find((candidate) => {
+      return candidate.staffId === staffProfileId;
+    });
+    expect(routeStaffRecommendation).toEqual(
       expect.objectContaining({
         contractHours: 24,
         currentWeeklyHours: 8,
         name: 'Recommendation Route Staff',
         projectedWeeklyHours: 16,
-        score: 125,
         staffId: staffProfileId
       })
-    ]);
-    expect(response.body.recommendations[0].email).toBeUndefined();
-    expect(response.body.recommendations[0].userId).toBeUndefined();
+    );
+    expect(routeStaffRecommendation.email).toBeUndefined();
+    expect(routeStaffRecommendation.userId).toBeUndefined();
     expect(response.body.excluded).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -328,14 +307,21 @@ describe('shift recommendation routes', () => {
     });
   });
 
-  test('returns an empty eligible list when no staff can take the shift', async () => {
+  test('returns matching-role staff without saved availability records', async () => {
     const agent = await loginAsManager();
     const response = await agent.get(
       `/api/v1/shifts/${noEligibleShiftId}/recommendations`
     );
 
     expect(response.status).toBe(200);
-    expect(response.body.recommendations).toEqual([]);
+    expect(response.body.recommendations).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'Recommendation Route Wrong Role',
+          staffId: wrongRoleStaffProfileId
+        })
+      ])
+    );
     expect(response.body.excluded.length).toBeGreaterThan(0);
   });
 });

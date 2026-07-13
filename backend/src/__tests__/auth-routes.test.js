@@ -92,6 +92,7 @@ describe('auth routes', () => {
         email: testEmail,
         id: testUserId,
         mustChangePassword: false,
+        primaryRole: 'FLOOR',
         role: 'MANAGER',
         staffProfileId: testStaffProfileId
       }
@@ -161,6 +162,7 @@ describe('auth routes', () => {
         email: testEmail,
         id: testUserId,
         mustChangePassword: false,
+        primaryRole: 'FLOOR',
         role: 'MANAGER',
         staffProfileId: testStaffProfileId
       }
@@ -235,6 +237,7 @@ describe('auth routes', () => {
         email: testEmail,
         id: testUserId,
         mustChangePassword: false,
+        primaryRole: 'FLOOR',
         role: 'MANAGER',
         staffProfileId: testStaffProfileId
       }

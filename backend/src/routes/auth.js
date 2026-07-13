@@ -248,6 +248,7 @@ router.post(
     request.session.user = {
       email: authenticatedUser.email,
       id: authenticatedUser.id,
+      primaryRole: authenticatedUser.primaryRole,
       role: authenticatedUser.role,
       staffProfileId: authenticatedUser.staffProfileId
     };

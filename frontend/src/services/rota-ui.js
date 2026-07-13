@@ -5,11 +5,16 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
   const uiHelpers = window.SmartSchedule.liveUiHelpers;
 
   const departments = ['BAR', 'FLOOR', 'KITCHEN', 'OTHER'];
-  const emptyCell = { state: 'EMPTY' };
+  const defaultShiftTimesByDepartment = {
+    BAR: { endTime: '17:00', startTime: '10:00' },
+    FLOOR: { endTime: '17:00', startTime: '12:00' },
+    KITCHEN: { endTime: '21:00', startTime: '12:00' },
+    OTHER: { endTime: '17:00', startTime: '12:00' }
+  };
+  const modalHostId = 'rota-modal-host';
 
   const buildState = () => {
     return {
-      activeContext: null,
       department: 'BAR',
       flash: null,
       loading: true,
@@ -35,22 +40,8 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     };
   };
 
-  const getAssignmentWarningDetails = (result) => {
-    if (!Array.isArray(result?.warnings)) {
-      return [];
-    }
-
-    return result.warnings
-      .map((warning) => warning.message)
-      .filter(Boolean);
-  };
-
-  const formatHours = (value) => {
-    if (typeof value !== 'number' || Number.isNaN(value)) {
-      return '0';
-    }
-
-    return Number.isInteger(value) ? String(value) : value.toFixed(2);
+  const clearModalHost = () => {
+    document.getElementById(modalHostId)?.remove();
   };
 
   const addDays = (dateValue, offsetDays) => {
@@ -76,78 +67,286 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     return days[0]?.date || null;
   };
 
-  const getCellLabel = (cell) => {
-    if (!cell || cell.state === 'EMPTY') {
-      return 'No shift required';
-    }
-
-    if (cell.state === 'OPEN') {
-      return `${cell.startTime} - ${cell.endTime}`;
-    }
-
-    if (cell.state === 'APPROVED_LEAVE') {
-      return 'Approved leave';
-    }
-
-    return `${cell.startTime} - ${cell.endTime}`;
-  };
-
-  const getCellSubLabel = (cell, row) => {
-    if (!cell || cell.state === 'EMPTY') {
-      return '';
-    }
-
-    if (cell.state === 'OPEN') {
-      return 'Unassigned';
-    }
-
-    if (cell.state === 'APPROVED_LEAVE') {
-      return row.staffName;
-    }
-
-    return cell.staffName || row.staffName;
-  };
-
-  const getStateClass = (cell) => {
-    const state = cell?.state || 'EMPTY';
-    return `rota-cell--${state.toLowerCase().replace('_', '-')}`;
-  };
-
-  const getContextCells = (context) => {
-    if (!context?.row || !context?.day) {
+  const getAssignmentWarningDetails = (result) => {
+    if (!Array.isArray(result?.warnings)) {
       return [];
     }
 
-    return context.row.days[context.day.date] || [];
+    return result.warnings
+      .map((warning) => warning.message)
+      .filter(Boolean);
   };
 
-  const getContextCell = (context) => {
-    return context?.cell || getContextCells(context)[0] || emptyCell;
+  const sortCells = (cells) => {
+    return [...cells].sort((left, right) => {
+      const leftTime = left.startTime || '99:99';
+      const rightTime = right.startTime || '99:99';
+      return leftTime.localeCompare(rightTime);
+    });
+  };
+
+  const formatClock = (timeValue) => {
+    if (!timeValue) {
+      return '';
+    }
+
+    const [hourText, minuteText = '00'] = String(timeValue).split(':');
+    const hour = Number(hourText);
+
+    if (Number.isNaN(hour)) {
+      return String(timeValue);
+    }
+
+    const suffix = hour >= 12 ? 'pm' : 'am';
+    const displayHour = hour % 12 || 12;
+    return minuteText === '00'
+      ? `${displayHour}${suffix}`
+      : `${displayHour}:${minuteText}${suffix}`;
+  };
+
+  const formatCompactClock = (timeValue) => {
+    if (!timeValue) {
+      return '';
+    }
+
+    const [hourText, minuteText = '00'] = String(timeValue).split(':');
+    const hour = Number(hourText);
+
+    if (Number.isNaN(hour)) {
+      return String(timeValue);
+    }
+
+    const displayHour = hour % 12 || 12;
+    return minuteText === '00' ? `${displayHour}` : `${displayHour}:${minuteText}`;
+  };
+
+  const formatShiftTime = (cell) => {
+    if (!cell?.startTime || !cell?.endTime) {
+      return '';
+    }
+
+    return `${formatClock(cell.startTime)}-${formatClock(cell.endTime)}`;
+  };
+
+  const formatTableShiftTime = (cell) => {
+    if (!cell?.startTime || !cell?.endTime) {
+      return '';
+    }
+
+    return `${formatCompactClock(cell.startTime)}-${formatCompactClock(cell.endTime)}`;
+  };
+
+  const formatShortDate = (dateValue) => {
+    if (!dateValue || typeof dateValue !== 'string' || dateValue.length < 10) {
+      return dateValue || '';
+    }
+
+    return `${dateValue.slice(5, 7)}/${dateValue.slice(8, 10)}`;
+  };
+
+  const getVisibleRows = (state) => {
+    return (state.rota?.rows || []).filter((row) => !row.systemRow);
+  };
+
+  const getOpenShiftRow = (state) => {
+    return (state.rota?.rows || []).find((row) => row.systemRow === 'OPEN_SHIFTS') || null;
+  };
+
+  const getOpenShiftItems = (state) => {
+    const openRow = getOpenShiftRow(state);
+
+    if (!openRow || !state.rota) {
+      return [];
+    }
+
+    return state.rota.days.flatMap((day) => {
+      return sortCells(openRow.days[day.date] || []).map((cell) => {
+        return {
+          cell,
+          day,
+          kind: 'open',
+          label: formatShiftTime(cell) || 'Open shift',
+          row: openRow
+        };
+      });
+    });
+  };
+
+  const getCellsForDay = (row, dayDate) => {
+    return Array.isArray(row?.days?.[dayDate]) ? row.days[dayDate] : [];
+  };
+
+  const getCellEntries = (row, dayDate) => {
+    const cells = sortCells(getCellsForDay(row, dayDate));
+    const leaveCell = cells.find((cell) => cell.state === 'APPROVED_LEAVE');
+
+    if (leaveCell) {
+      return [
+        {
+          cell: leaveCell,
+          kind: 'leave',
+          label: 'H'
+        }
+      ];
+    }
+
+    const shiftCells = cells.filter((cell) => cell.state !== 'APPROVED_LEAVE');
+
+    if (shiftCells.length > 0) {
+      return shiftCells.map((cell) => {
+        return {
+          cell,
+          kind: cell.state === 'OPEN' ? 'open' : 'assigned',
+          label: formatTableShiftTime(cell) || 'Shift'
+        };
+      });
+    }
+
+    return [
+      {
+        cell: null,
+        kind: 'off',
+        label: 'OFF'
+      }
+    ];
+  };
+
+  const canOpenEntryMenu = (state, row, item) => {
+    if (state.sessionUser?.role === 'MANAGER') {
+      return true;
+    }
+
+    return (
+      item.kind === 'assigned' &&
+      row.staffProfileId === state.sessionUser?.staffProfileId
+    );
   };
 
   const getContextTitle = (context) => {
-    const cell = getContextCell(context);
-    const dayLabel = context?.day ? `${context.day.label} ${context.day.date}` : 'Rota cell';
+    const dayText = `${context.day.label} ${context.day.date}`;
 
-    if (cell.state === 'OPEN') {
-      return `Open ${dayLabel}`;
+    if (context.kind === 'open') {
+      return `${dayText} ${context.label}`.trim();
     }
 
-    if (cell.state === 'APPROVED_LEAVE') {
-      return `Leave on ${dayLabel}`;
+    if (context.kind === 'off') {
+      return `${context.row.staffName} ${dayText}`;
     }
 
-    if (cell.state === 'ASSIGNED') {
-      return `${cell.staffName || context.row.staffName} on ${dayLabel}`;
-    }
-
-    return `${context?.row?.staffName || 'Rota'} on ${dayLabel}`;
+    return `${context.row.staffName} ${dayText}`.trim();
   };
 
-  const createIconButton = (label, onClick) => {
+  const getDefaultShiftTimes = (department, context) => {
+    if (context?.cell?.startTime && context?.cell?.endTime) {
+      return {
+        endTime: context.cell.endTime,
+        startTime: context.cell.startTime
+      };
+    }
+
+    return defaultShiftTimesByDepartment[department] || defaultShiftTimesByDepartment.OTHER;
+  };
+
+  const findRowByStaffProfileId = (rows, staffProfileId) => {
+    return rows.find((row) => row.staffProfileId === staffProfileId) || null;
+  };
+
+  const findShiftCellForStaff = (rows, dayDate, staffProfileId, startTime, endTime) => {
+    const row = findRowByStaffProfileId(rows, staffProfileId);
+
+    if (!row) {
+      return null;
+    }
+
+    return sortCells(getCellsForDay(row, dayDate)).find((cell) => {
+      return (
+        cell.state !== 'APPROVED_LEAVE' &&
+        cell.startTime === startTime &&
+        cell.endTime === endTime
+      );
+    }) || null;
+  };
+
+  const findOpenShiftCell = (state, dayDate, startTime, endTime) => {
+    const openRow = getOpenShiftRow(state);
+
+    if (!openRow) {
+      return null;
+    }
+
+    return sortCells(getCellsForDay(openRow, dayDate)).find((cell) => {
+      return cell.startTime === startTime && cell.endTime === endTime;
+    }) || null;
+  };
+
+  const getDepartmentStaff = (state, selectedStaffProfileId = null) => {
+    const matchingStaff = state.staff.filter((staffMember) => {
+      return staffMember.primaryRole === state.department;
+    });
+
+    const staffToShow = matchingStaff.length > 0 ? matchingStaff : state.staff;
+
+    return [...staffToShow].sort((left, right) => {
+      const leftPriority = left.id === selectedStaffProfileId ? 0 : 1;
+      const rightPriority = right.id === selectedStaffProfileId ? 0 : 1;
+
+      if (leftPriority !== rightPriority) {
+        return leftPriority - rightPriority;
+      }
+
+      return left.fullName.localeCompare(right.fullName);
+    });
+  };
+
+  const buildManagerChoices = (state, context) => {
+    const isOpenContext = context.cell?.state === 'OPEN';
+    const hasLockedTime = Boolean(context.cell?.startTime && context.cell?.endTime);
+
+    return getDepartmentStaff(state, context.row?.staffProfileId || null).map((staffMember) => {
+      const matchingCell = hasLockedTime
+        ? findShiftCellForStaff(
+            state.rota.rows,
+            context.day.date,
+            staffMember.id,
+            context.cell.startTime,
+            context.cell.endTime
+          )
+        : null;
+
+      if (isOpenContext) {
+        return {
+          buttonLabel: matchingCell ? 'Busy' : 'Add',
+          disabled: Boolean(matchingCell),
+          existingCell: matchingCell,
+          mode: 'add',
+          staffMember
+        };
+      }
+
+      if (matchingCell) {
+        return {
+          buttonLabel: 'Remove',
+          disabled: false,
+          existingCell: matchingCell,
+          mode: 'remove',
+          staffMember
+        };
+      }
+
+      return {
+        buttonLabel: 'Add',
+        disabled: false,
+        existingCell: null,
+        mode: 'add',
+        staffMember
+      };
+    });
+  };
+
+  const createMenuButton = (label, onClick) => {
     const button = uiHelpers.createElement('button', {
       className: 'rota-cell-menu-button',
-      text: '...',
+      text: '*',
       attributes: {
         'aria-label': label,
         type: 'button'
@@ -159,11 +358,18 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
 
   const renderWeekControls = (state, actions) => {
     const panel = uiHelpers.createElement('section', {
-      className: 'rota-toolbar content-panel--span-16'
+      className: 'rota-toolbar'
     });
 
     const title = uiHelpers.createElement('div', { className: 'rota-toolbar-title' });
-    title.appendChild(uiHelpers.createElement('span', { text: 'Weekly rota' }));
+    title.appendChild(
+      uiHelpers.createElement('span', {
+        text:
+          state.sessionUser?.role === 'STAFF'
+            ? 'Full roster'
+            : `${uiHelpers.formatRole(state.department)} rota`
+      })
+    );
     title.appendChild(
       uiHelpers.createElement('strong', {
         text: `${state.weekStart} to ${state.rota?.weekEnd || addDays(state.weekStart, 6)}`
@@ -173,9 +379,9 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
 
     const controls = uiHelpers.createElement('div', { className: 'rota-week-controls' });
     [
-      { label: 'Previous Week', offset: -7 },
-      { label: 'Current Week', current: true },
-      { label: 'Next Week', offset: 7 }
+      { label: 'Prev', offset: -7 },
+      { label: 'This week', current: true },
+      { label: 'Next', offset: 7 }
     ].forEach((control) => {
       const button = uiHelpers.createElement('button', {
         className: 'action-button button-secondary',
@@ -186,7 +392,6 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
         state.weekStart = control.current
           ? uiHelpers.getCurrentWeekStart()
           : addDays(state.weekStart, control.offset);
-        state.activeContext = null;
         state.modal = null;
         state.selectedDay = null;
         actions.loadRota();
@@ -199,6 +404,10 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
   };
 
   const renderDepartmentTabs = (state, actions) => {
+    if (state.sessionUser?.role !== 'MANAGER') {
+      return null;
+    }
+
     const tabs = uiHelpers.createElement('div', {
       className: 'rota-tabs',
       attributes: { role: 'tablist' }
@@ -219,7 +428,6 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
         }
 
         state.department = department;
-        state.activeContext = null;
         state.modal = null;
         state.selectedDay = null;
         actions.loadRota();
@@ -230,331 +438,177 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     return tabs;
   };
 
-  const renderLegend = () => {
-    const legend = uiHelpers.createElement('div', { className: 'rota-legend' });
-    [
-      ['Assigned', 'assigned'],
-      ['Open', 'open'],
-      ['Leave', 'leave'],
-      ['Conflict', 'conflict'],
-      ['No shift', 'empty']
-    ].forEach(([label, tone]) => {
-      const item = uiHelpers.createElement('span', { className: 'rota-legend-item' });
-      item.appendChild(uiHelpers.createElement('span', { className: `rota-legend-swatch rota-legend-swatch--${tone}` }));
-      item.appendChild(uiHelpers.createElement('span', { text: label }));
-      legend.appendChild(item);
-    });
-    return legend;
-  };
-
-  const getMobileCellStatusLabel = (cell) => {
-    if (!cell || cell.state === 'EMPTY') {
-      return 'No shift';
+  const renderOpenShiftStrip = (state, actions, selectedDayOnly = false) => {
+    if (state.sessionUser?.role !== 'MANAGER') {
+      return null;
     }
 
-    if (cell.state === 'OPEN') {
-      return 'Open';
-    }
-
-    if (cell.state === 'APPROVED_LEAVE') {
-      return 'Leave';
-    }
-
-    if (cell.state === 'ASSIGNED') {
-      return 'Assigned';
-    }
-
-    if (cell.state === 'CONFLICT') {
-      return 'Conflict';
-    }
-
-    return uiHelpers.formatStatus(cell.state);
-  };
-
-  const renderCellBlock = (state, row, day, cell, actions) => {
-    const block = uiHelpers.createElement('div', {
-      className: `rota-cell-block ${getStateClass(cell)}`
-    });
-    const cellText = uiHelpers.createElement('div', { className: 'rota-cell-text' });
-    cellText.appendChild(uiHelpers.createElement('strong', { text: getCellLabel(cell) }));
-
-    const subLabel = getCellSubLabel(cell, row);
-    if (subLabel) {
-      cellText.appendChild(uiHelpers.createElement('span', { text: subLabel }));
-    }
-
-    block.appendChild(cellText);
-    block.appendChild(
-      createIconButton('Open cell actions', () => {
-        state.activeContext = { cell, day, row };
-        state.modal = null;
-        actions.render();
-      })
-    );
-    return block;
-  };
-
-  const renderEmptyCellBlock = (state, row, day, actions) => {
-    return renderCellBlock(state, row, day, emptyCell, actions);
-  };
-
-  const renderMobileCellBlock = (state, row, day, cell, actions) => {
-    const block = uiHelpers.createElement('div', {
-      className: `rota-mobile-cell ${getStateClass(cell)}`
+    const items = getOpenShiftItems(state).filter((item) => {
+      return !selectedDayOnly || item.day.date === selectedDayOnly;
     });
 
-    const content = uiHelpers.createElement('div', { className: 'rota-mobile-cell-text' });
-    const topRow = uiHelpers.createElement('div', { className: 'rota-mobile-cell-top' });
-    topRow.appendChild(
-      uiHelpers.createElement('strong', {
-        text: getCellLabel(cell)
-      })
-    );
-    topRow.appendChild(
+    if (items.length === 0) {
+      return null;
+    }
+
+    const section = uiHelpers.createElement('section', {
+      className: 'rota-open-strip'
+    });
+    const heading = uiHelpers.createElement('div', { className: 'rota-open-heading' });
+    heading.appendChild(uiHelpers.createElement('strong', { text: 'Open shifts' }));
+    section.appendChild(heading);
+
+    const list = uiHelpers.createElement('div', { className: 'rota-open-list' });
+    items.forEach((item) => {
+      const row = uiHelpers.createElement('div', { className: 'rota-open-item' });
+      const copy = uiHelpers.createElement('div', { className: 'rota-open-copy' });
+      copy.appendChild(
+        uiHelpers.createElement('strong', {
+          text: `${item.day.label} ${formatShortDate(item.day.date)}`
+        })
+      );
+      copy.appendChild(uiHelpers.createElement('span', { text: item.label }));
+      row.appendChild(copy);
+      row.appendChild(
+        createMenuButton('Open shift options', () => {
+          actions.openEntryContext(item);
+        })
+      );
+      list.appendChild(row);
+    });
+    section.appendChild(list);
+
+    return section;
+  };
+
+  const renderCellEntry = (state, row, day, item, actions) => {
+    const entry = uiHelpers.createElement('div', {
+      className: `rota-entry rota-entry--${item.kind}`
+    });
+    entry.appendChild(
       uiHelpers.createElement('span', {
-        className: 'rota-mobile-cell-status',
-        text: getMobileCellStatusLabel(cell)
+        className: 'rota-entry-text',
+        text: item.label
       })
     );
-    content.appendChild(topRow);
 
-    const subLabel = getCellSubLabel(cell, row);
-    if (subLabel) {
-      content.appendChild(
-        uiHelpers.createElement('span', {
-          className: 'rota-mobile-cell-subtext',
-          text: subLabel
+    if (canOpenEntryMenu(state, row, item)) {
+      entry.appendChild(
+        createMenuButton('Open rota options', () => {
+          actions.openEntryContext({
+            cell: item.cell,
+            day,
+            kind: item.kind,
+            label: item.label,
+            row
+          });
         })
       );
     }
 
-    block.appendChild(content);
-    block.appendChild(
-      createIconButton('Open cell actions', () => {
-        state.activeContext = { cell, day, row };
-        state.modal = null;
-        actions.render();
-      })
-    );
-    return block;
+    return entry;
   };
 
   const renderDesktopGrid = (state, actions) => {
     const shell = uiHelpers.createElement('section', { className: 'rota-grid-shell' });
-    const grid = uiHelpers.createElement('div', { className: 'rota-grid' });
-    grid.appendChild(uiHelpers.createElement('div', { className: 'rota-grid-corner', text: 'Staff' }));
+    const rows = getVisibleRows(state);
 
-    state.rota.days.forEach((day) => {
-      const header = uiHelpers.createElement('div', { className: 'rota-day-header' });
-      header.appendChild(uiHelpers.createElement('strong', { text: day.label }));
-      header.appendChild(uiHelpers.createElement('span', { text: day.date.slice(5) }));
-      grid.appendChild(header);
+    if (rows.length === 0) {
+      shell.appendChild(
+        uiHelpers.createElement('p', {
+          className: 'panel-copy',
+          text: 'No rota rows found for this week.'
+        })
+      );
+      return shell;
+    }
+
+    const table = uiHelpers.createElement('table', { className: 'rota-table' });
+    const colgroup = uiHelpers.createElement('colgroup');
+    colgroup.appendChild(uiHelpers.createElement('col', { className: 'rota-table-staff-col' }));
+    state.rota.days.forEach(() => {
+      colgroup.appendChild(uiHelpers.createElement('col', { className: 'rota-table-day-col' }));
     });
+    table.appendChild(colgroup);
 
-    state.rota.rows.forEach((row) => {
-      const staffCell = uiHelpers.createElement('div', {
-        className: `rota-staff-header${row.systemRow ? ' rota-staff-header--system' : ''}`
+    const thead = uiHelpers.createElement('thead');
+    const headRow = uiHelpers.createElement('tr');
+    headRow.appendChild(
+      uiHelpers.createElement('th', {
+        className: 'rota-table-staff-heading',
+        text: ''
+      })
+    );
+    state.rota.days.forEach((day) => {
+      const headingClasses = [
+        'rota-table-day-heading',
+        day.dayOfWeek >= 6 ? 'rota-table-day-heading--weekend' : '',
+        day.date === getCurrentIsoDate() ? 'rota-table-day-heading--today' : ''
+      ]
+        .filter(Boolean)
+        .join(' ');
+      headRow.appendChild(
+        uiHelpers.createElement('th', {
+          className: headingClasses,
+          text: day.label
+        })
+      );
+    });
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    const tbody = uiHelpers.createElement('tbody');
+    rows.forEach((row) => {
+      const isOwnRow = row.staffProfileId && row.staffProfileId === state.sessionUser?.staffProfileId;
+      const tableRow = uiHelpers.createElement('tr', {
+        className: isOwnRow ? 'rota-table-row rota-table-row--current' : 'rota-table-row'
       });
-      staffCell.appendChild(uiHelpers.createElement('strong', { text: row.staffName }));
-      if (row.contractHours !== null && typeof row.contractHours !== 'undefined') {
-        staffCell.appendChild(uiHelpers.createElement('span', { text: `${row.contractHours} hrs` }));
-      }
-      grid.appendChild(staffCell);
+      const nameCell = uiHelpers.createElement('th', {
+        className: 'rota-table-staff-name',
+        text: row.staffName,
+        attributes: { scope: 'row' }
+      });
+      tableRow.appendChild(nameCell);
 
       state.rota.days.forEach((day) => {
-        const dayCell = uiHelpers.createElement('div', { className: 'rota-day-cell' });
-        const cells = row.days[day.date] || [];
-
-        if (cells.length === 0) {
-          dayCell.appendChild(renderEmptyCellBlock(state, row, day, actions));
-        } else {
-          cells.forEach((cell) => {
-            dayCell.appendChild(renderCellBlock(state, row, day, cell, actions));
-          });
-        }
-
-        grid.appendChild(dayCell);
+        const dayClasses = [
+          'rota-table-cell',
+          day.dayOfWeek >= 6 ? 'rota-table-cell--weekend' : '',
+          day.date === getCurrentIsoDate() ? 'rota-table-cell--today' : ''
+        ]
+          .filter(Boolean)
+          .join(' ');
+        const cell = uiHelpers.createElement('td', { className: dayClasses });
+        const entryList = uiHelpers.createElement('div', { className: 'rota-day-cell' });
+        getCellEntries(row, day.date).forEach((item) => {
+          entryList.appendChild(renderCellEntry(state, row, day, item, actions));
+        });
+        cell.appendChild(entryList);
+        tableRow.appendChild(cell);
       });
+
+      tbody.appendChild(tableRow);
     });
 
-    shell.appendChild(grid);
+    table.appendChild(tbody);
+    shell.appendChild(table);
     return shell;
   };
 
-  const renderMobileDayPanel = (state, actions) => {
-    const selectedDay = state.rota.days.find((day) => day.date === state.selectedDay) || state.rota.days[0];
-    const selectedDayIndex = state.rota.days.findIndex((day) => day.date === selectedDay.date);
-    const previousDay = selectedDayIndex > 0 ? state.rota.days[selectedDayIndex - 1] : null;
-    const nextDay =
-      selectedDayIndex >= 0 && selectedDayIndex < state.rota.days.length - 1
-        ? state.rota.days[selectedDayIndex + 1]
-        : null;
-    const panel = uiHelpers.createElement('section', { className: 'rota-mobile-panel' });
+  const renderMobileDepartmentTabs = (state, actions) => {
+    if (state.sessionUser?.role !== 'MANAGER') {
+      return null;
+    }
 
-    const header = uiHelpers.createElement('div', { className: 'rota-mobile-panel-header' });
-    const title = uiHelpers.createElement('div', { className: 'rota-mobile-panel-title' });
-    title.appendChild(uiHelpers.createElement('span', { text: selectedDay.label }));
-    title.appendChild(uiHelpers.createElement('strong', { text: selectedDay.date }));
-    header.appendChild(title);
-
-    const controls = uiHelpers.createElement('div', { className: 'rota-mobile-day-controls' });
-
-    const prevButton = uiHelpers.createElement('button', {
-      className: 'action-button button-secondary rota-mobile-day-button',
-      text: 'Prev',
-      attributes: {
-        disabled: !previousDay,
-        type: 'button'
-      }
-    });
-    prevButton.addEventListener('click', () => {
-      if (!previousDay) {
-        return;
-      }
-
-      state.selectedDay = previousDay.date;
-      state.activeContext = null;
-      actions.render();
-    });
-    controls.appendChild(prevButton);
-
-    const todayButton = uiHelpers.createElement('button', {
-      className: 'action-button button-ghost rota-mobile-day-button',
-      text: 'Today',
-      attributes: { type: 'button' }
-    });
-    todayButton.addEventListener('click', () => {
-      state.activeContext = null;
-      const currentDay = getCurrentIsoDate();
-
-      if (state.rota.days.some((day) => day.date === currentDay)) {
-        state.selectedDay = currentDay;
-        actions.render();
-        return;
-      }
-
-      state.weekStart = uiHelpers.getCurrentWeekStart();
-      state.selectedDay = null;
-      actions.loadRota();
-    });
-    controls.appendChild(todayButton);
-
-    const nextButton = uiHelpers.createElement('button', {
-      className: 'action-button button-secondary rota-mobile-day-button',
-      text: 'Next',
-      attributes: {
-        disabled: !nextDay,
-        type: 'button'
-      }
-    });
-    nextButton.addEventListener('click', () => {
-      if (!nextDay) {
-        return;
-      }
-
-      state.selectedDay = nextDay.date;
-      state.activeContext = null;
-      actions.render();
-    });
-    controls.appendChild(nextButton);
-
-    const moreButton = uiHelpers.createElement('button', {
-      className: 'action-button button-secondary rota-mobile-more-button',
-      text: 'More',
-      attributes: { type: 'button' }
-    });
-    moreButton.addEventListener('click', () => {
-      state.modal = { type: 'mobile-controls' };
-      state.activeContext = null;
-      actions.render();
-    });
-    controls.appendChild(moreButton);
-
-    header.appendChild(controls);
-    panel.appendChild(header);
-
-    state.rota.rows.forEach((row) => {
-      const item = uiHelpers.createElement('div', { className: 'rota-mobile-row' });
-      const heading = uiHelpers.createElement('div', { className: 'rota-mobile-row-heading' });
-      heading.appendChild(uiHelpers.createElement('strong', { text: row.staffName }));
-      item.appendChild(heading);
-
-      const cells = row.days[selectedDay.date] || [];
-      if (cells.length === 0) {
-        item.appendChild(renderMobileCellBlock(state, row, selectedDay, emptyCell, actions));
-      } else {
-        cells.forEach((cell) => {
-          item.appendChild(renderMobileCellBlock(state, row, selectedDay, cell, actions));
-        });
-      }
-
-      panel.appendChild(item);
-    });
-
-    return panel;
-  };
-
-  const renderMobileControlsModal = (state, actions) => {
-    const { backdrop, panel } = createModalShell('Rota controls', state, actions);
-    panel.appendChild(
-      uiHelpers.createPanelHeading(
-        'Week and department',
-        'Use this sheet to move the rota without putting every control on the mobile screen.'
-      )
-    );
-
-    const list = uiHelpers.createElement('div', { className: 'rota-action-list' });
-    [
-      {
-        label: 'Previous week',
-        onClick: () => {
-          state.weekStart = addDays(state.weekStart, -7);
-          state.selectedDay = null;
-          state.modal = null;
-          actions.loadRota();
-        }
-      },
-      {
-        label: 'Current week',
-        onClick: () => {
-          state.weekStart = uiHelpers.getCurrentWeekStart();
-          state.selectedDay = null;
-          state.modal = null;
-          actions.loadRota();
-        }
-      },
-      {
-        label: 'Next week',
-        onClick: () => {
-          state.weekStart = addDays(state.weekStart, 7);
-          state.selectedDay = null;
-          state.modal = null;
-          actions.loadRota();
-        }
-      }
-    ].forEach((item) => {
-      const button = uiHelpers.createElement('button', {
-        className: 'rota-action-row',
-        text: item.label,
-        attributes: { type: 'button' }
-      });
-      button.addEventListener('click', item.onClick);
-      list.appendChild(button);
-    });
-
-    panel.appendChild(list);
-
-    const departmentList = uiHelpers.createElement('div', { className: 'rota-staff-choice-list' });
+    const tabs = uiHelpers.createElement('div', { className: 'rota-mobile-tabs' });
     departments.forEach((department) => {
       const button = uiHelpers.createElement('button', {
-        className: `rota-staff-choice rota-mobile-department${state.department === department ? ' is-active' : ''}`,
+        className: `rota-mobile-tab${state.department === department ? ' is-active' : ''}`,
         text: uiHelpers.formatRole(department),
         attributes: { type: 'button' }
       });
       button.addEventListener('click', () => {
         if (state.department === department) {
-          state.modal = null;
-          actions.render();
           return;
         }
 
@@ -563,98 +617,100 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
         state.modal = null;
         actions.loadRota();
       });
-      departmentList.appendChild(button);
+      tabs.appendChild(button);
     });
-
-    panel.appendChild(
-      uiHelpers.createElement('div', {
-        className: 'rota-mobile-controls-group',
-        text: 'Department'
-      })
-    );
-    panel.appendChild(departmentList);
-    return backdrop;
+    return tabs;
   };
 
-  const getActionItems = (state, actions) => {
-    const context = state.activeContext;
-    const cell = getContextCell(context);
-    const isManager = state.sessionUser?.role === 'MANAGER';
+  const renderMobilePanel = (state, actions) => {
+    const selectedDay = state.rota.days.find((day) => day.date === state.selectedDay) || state.rota.days[0];
+    const selectedDayIndex = state.rota.days.findIndex((day) => day.date === selectedDay.date);
+    const previousDay = selectedDayIndex > 0 ? state.rota.days[selectedDayIndex - 1] : null;
+    const nextDay =
+      selectedDayIndex >= 0 && selectedDayIndex < state.rota.days.length - 1
+        ? state.rota.days[selectedDayIndex + 1]
+        : null;
 
-    if (!isManager) {
-      if (cell.state === 'EMPTY') {
-        return [{ label: 'View day details', onClick: () => actions.openDetailsModal() }];
-      }
+    const panel = uiHelpers.createElement('section', { className: 'rota-mobile-panel' });
+    const header = uiHelpers.createElement('div', { className: 'rota-mobile-panel-header' });
+    const title = uiHelpers.createElement('div', { className: 'rota-mobile-panel-title' });
+    title.appendChild(uiHelpers.createElement('span', { text: selectedDay.label }));
+    title.appendChild(uiHelpers.createElement('strong', { text: selectedDay.date }));
+    header.appendChild(title);
 
-      return [
-        { label: 'View shift details', onClick: () => actions.openDetailsModal() },
-        { label: 'View department', onClick: () => actions.openDepartmentModal() }
-      ];
-    }
+    const controls = uiHelpers.createElement('div', { className: 'rota-mobile-day-controls' });
+    [
+      { label: 'Prev', nextDate: previousDay?.date || null },
+      { label: 'Today', current: true },
+      { label: 'Next', nextDate: nextDay?.date || null }
+    ].forEach((control) => {
+      const button = uiHelpers.createElement('button', {
+        className: `action-button ${control.current ? 'button-ghost' : 'button-secondary'} rota-mobile-day-button`,
+        text: control.label,
+        attributes: {
+          disabled: !control.current && !control.nextDate,
+          type: 'button'
+        }
+      });
+      button.addEventListener('click', () => {
+        if (control.current) {
+          const currentDay = getCurrentIsoDate();
 
-    if (cell.state === 'EMPTY') {
-      return [
-        { label: 'Add shift', onClick: () => actions.openShiftModal('create') },
-        { label: 'View day details', onClick: () => actions.openDetailsModal() }
-      ];
-    }
+          if (state.rota.days.some((day) => day.date === currentDay)) {
+            state.selectedDay = currentDay;
+            state.modal = null;
+            actions.render();
+            return;
+          }
 
-    if (cell.state === 'OPEN') {
-      return [
-        { label: 'Assign employee', onClick: () => actions.openAssignModal('assign') },
-        { label: 'Recommend staff', onClick: () => actions.openRecommendationModal() },
-        { label: 'Edit required shift', onClick: () => actions.openShiftModal('edit') },
-        { label: 'Remove required shift', danger: true, onClick: () => actions.removeShift() }
-      ];
-    }
+          state.weekStart = uiHelpers.getCurrentWeekStart();
+          state.selectedDay = null;
+          state.modal = null;
+          actions.loadRota();
+          return;
+        }
 
-    if (cell.state === 'ASSIGNED') {
-      return [
-        { label: 'Edit assignment', onClick: () => actions.openAssignModal('change') },
-        { label: 'Change employee', onClick: () => actions.openAssignModal('change') },
-        { label: 'Remove assignment', danger: true, onClick: () => actions.removeAssignment() },
-        { label: 'View employee details', onClick: () => actions.openEmployeeModal() },
-        { label: 'View conflicts', onClick: () => actions.openConflictModal() }
-      ];
-    }
+        if (!control.nextDate) {
+          return;
+        }
 
-    return [{ label: 'View leave marker', onClick: () => actions.openDetailsModal() }];
-  };
-
-  const renderActionSheet = (state, actions) => {
-    if (!state.activeContext) {
-      return null;
-    }
-
-    const sheet = uiHelpers.createElement('div', { className: 'rota-sheet-backdrop' });
-    const panel = uiHelpers.createElement('section', { className: 'rota-action-sheet' });
-    const header = uiHelpers.createElement('div', { className: 'rota-sheet-header' });
-    header.appendChild(uiHelpers.createElement('strong', { text: getContextTitle(state.activeContext) }));
-    const closeButton = uiHelpers.createElement('button', {
-      className: 'rota-sheet-close',
-      text: 'Close',
-      attributes: { type: 'button' }
+        state.selectedDay = control.nextDate;
+        state.modal = null;
+        actions.render();
+      });
+      controls.appendChild(button);
     });
-    closeButton.addEventListener('click', () => {
-      state.activeContext = null;
-      actions.render();
-    });
-    header.appendChild(closeButton);
+    header.appendChild(controls);
     panel.appendChild(header);
 
-    const list = uiHelpers.createElement('div', { className: 'rota-action-list' });
-    getActionItems(state, actions).forEach((item) => {
-      const button = uiHelpers.createElement('button', {
-        className: `rota-action-row${item.danger ? ' rota-action-row--danger' : ''}`,
-        text: item.label,
-        attributes: { type: 'button' }
+    const mobileTabs = renderMobileDepartmentTabs(state, actions);
+    if (mobileTabs) {
+      panel.appendChild(mobileTabs);
+    }
+
+    const openShiftStrip = renderOpenShiftStrip(state, actions, selectedDay.date);
+    if (openShiftStrip) {
+      panel.appendChild(openShiftStrip);
+    }
+
+    getVisibleRows(state).forEach((row) => {
+      const item = uiHelpers.createElement('section', { className: 'rota-mobile-row' });
+      item.appendChild(
+        uiHelpers.createElement('strong', {
+          className: 'rota-mobile-row-name',
+          text: row.staffName
+        })
+      );
+
+      const entryList = uiHelpers.createElement('div', { className: 'rota-mobile-entry-list' });
+      getCellEntries(row, selectedDay.date).forEach((entry) => {
+        entryList.appendChild(renderCellEntry(state, row, selectedDay, entry, actions));
       });
-      button.addEventListener('click', item.onClick);
-      list.appendChild(button);
+      item.appendChild(entryList);
+      panel.appendChild(item);
     });
-    panel.appendChild(list);
-    sheet.appendChild(panel);
-    return sheet;
+
+    return panel;
   };
 
   const createModalShell = (title, state, actions) => {
@@ -662,423 +718,326 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     const panel = uiHelpers.createElement('section', { className: 'rota-modal-panel' });
     const header = uiHelpers.createElement('div', { className: 'rota-sheet-header' });
     header.appendChild(uiHelpers.createElement('strong', { text: title }));
-    const closeButton = uiHelpers.createElement('button', {
+
+    const cancelButton = uiHelpers.createElement('button', {
       className: 'rota-sheet-close',
-      text: 'Close',
+      text: 'Cancel',
       attributes: { type: 'button' }
     });
-    closeButton.addEventListener('click', () => {
+    cancelButton.addEventListener('click', () => {
       state.modal = null;
       actions.render();
     });
-    header.appendChild(closeButton);
+    header.appendChild(cancelButton);
+
     panel.appendChild(header);
+    const body = uiHelpers.createElement('div', { className: 'rota-modal-body' });
+    panel.appendChild(body);
     backdrop.appendChild(panel);
-
-    return { backdrop, panel };
-  };
-
-  const renderDetailsModal = (state, actions) => {
-    const cell = getContextCell(state.modal.context);
-    const { backdrop, panel } = createModalShell('Shift details', state, actions);
-    panel.appendChild(
-      uiHelpers.createReviewList([
-        { label: 'Department', value: uiHelpers.formatRole(state.department) },
-        { label: 'Day', value: state.modal.context.day.label },
-        { label: 'Date', value: state.modal.context.day.date },
-        { label: 'Status', value: cell.state === 'EMPTY' ? 'No shift required' : uiHelpers.formatStatus(cell.state) },
-        { label: 'Time', value: cell.startTime ? `${cell.startTime} - ${cell.endTime}` : 'Not set' },
-        { label: 'Staff', value: cell.staffName || state.modal.context.row.staffName }
-      ])
-    );
-    return backdrop;
-  };
-
-  const renderDepartmentModal = (state, actions) => {
-    const { backdrop, panel } = createModalShell('Department details', state, actions);
-    panel.appendChild(
-      uiHelpers.createReviewList([
-        { label: 'Department', value: uiHelpers.formatRole(state.department) },
-        { label: 'Week', value: `${state.weekStart} to ${state.rota.weekEnd}` },
-        { label: 'Assigned shifts', value: String(state.rota.summary.assignedShifts) },
-        { label: 'Open shifts', value: String(state.rota.summary.openShifts) }
-      ])
-    );
-    return backdrop;
-  };
-
-  const renderEmployeeModal = (state, actions) => {
-    const cell = getContextCell(state.modal.context);
-    const row = state.modal.context.row;
-    const { backdrop, panel } = createModalShell('Employee details', state, actions);
-    panel.appendChild(
-      uiHelpers.createReviewList([
-        { label: 'Name', value: cell.staffName || row.staffName },
-        { label: 'Role', value: uiHelpers.formatRole(row.primaryRole || state.department) },
-        { label: 'Contract hours', value: row.contractHours ? `${row.contractHours} hrs` : 'Not shown' },
-        { label: 'Selected shift', value: cell.startTime ? `${cell.startTime} - ${cell.endTime}` : 'Not set' }
-      ])
-    );
-    return backdrop;
-  };
-
-  const renderConflictModal = (state, actions) => {
-    const cell = getContextCell(state.modal.context);
-    const { backdrop, panel } = createModalShell('Conflict check', state, actions);
-    const details = [
-      { label: 'Current marker', value: cell.state === 'OPEN' ? 'Unassigned required shift' : 'No conflict marker saved' },
-      { label: 'Backend check', value: 'Leave, availability, overlap, back-to-back shift, role, active staff, and contract-hours checks run when assignments are saved.' }
-    ];
-    panel.appendChild(uiHelpers.createReviewList(details));
-    return backdrop;
-  };
-
-  const renderAvailableStaffModal = (state, actions) => {
-    const { backdrop, panel } = createModalShell('Available staff', state, actions);
-
-    if (state.staffLoading) {
-      panel.appendChild(uiHelpers.createElement('p', { className: 'panel-copy', text: 'Loading staff...' }));
-      return backdrop;
-    }
-
-    const list = uiHelpers.createElement('div', { className: 'rota-staff-choice-list' });
-    const matchingStaff = state.staff.filter((staffMember) => {
-      return staffMember.primaryRole === state.department;
-    });
-    const staffToShow = matchingStaff.length > 0 ? matchingStaff : state.staff;
-
-    if (staffToShow.length === 0) {
-      panel.appendChild(uiHelpers.createElement('p', { className: 'panel-copy', text: 'No active staff found.' }));
-      return backdrop;
-    }
-
-    staffToShow.forEach((staffMember) => {
-      const item = uiHelpers.createElement('div', { className: 'rota-staff-choice' });
-      item.appendChild(uiHelpers.createElement('strong', { text: staffMember.fullName }));
-      item.appendChild(
-        uiHelpers.createElement('span', {
-          text: `${uiHelpers.formatRole(staffMember.primaryRole)} - ${staffMember.contractHours} hrs`
-        })
-      );
-      list.appendChild(item);
-    });
-
-    panel.appendChild(list);
-    return backdrop;
-  };
-
-  const renderRecommendationModal = (state, actions) => {
-    const { backdrop, panel } = createModalShell('Recommended staff', state, actions);
-
-    panel.appendChild(
-      uiHelpers.createPanelHeading(
-        'Rule-based recommendation',
-        'Hard conflicts are removed first. The final assignment still runs the backend checks again when you save it.'
-      )
-    );
-
-    if (state.modal.loading) {
-      panel.appendChild(
-        uiHelpers.createElement('p', {
-          className: 'panel-copy',
-          text: 'Checking staff role, leave, availability, overlap, touching shifts, and weekly hours...'
-        })
-      );
-      return backdrop;
-    }
-
-    if (state.modal.error) {
-      panel.appendChild(
-        uiHelpers.createElement('p', {
-          className: 'panel-copy',
-          text: state.modal.error.text
-        })
-      );
-
-      if (Array.isArray(state.modal.error.details) && state.modal.error.details.length > 0) {
-        const detailsList = uiHelpers.createElement('ul', {
-          className: 'detail-list detail-list--dense'
-        });
-        state.modal.error.details.forEach((detail) => {
-          detailsList.appendChild(uiHelpers.createElement('li', { text: detail }));
-        });
-        panel.appendChild(detailsList);
+    backdrop.addEventListener('click', (event) => {
+      if (event.target !== backdrop) {
+        return;
       }
 
-      const retryRow = uiHelpers.createElement('div', { className: 'actions-row' });
-      const retryButton = uiHelpers.createElement('button', {
+      state.modal = null;
+      actions.render();
+    });
+
+    return { backdrop, body };
+  };
+
+  const renderModalError = (body, error) => {
+    if (!error) {
+      return;
+    }
+
+    const panel = uiHelpers.createElement('div', { className: 'rota-modal-error' });
+    panel.appendChild(
+      uiHelpers.createElement('p', {
+        className: 'panel-copy panel-copy--strong',
+        text: error.text
+      })
+    );
+
+    if (Array.isArray(error.details) && error.details.length > 0) {
+      const detailsList = uiHelpers.createElement('ul', {
+        className: 'detail-list detail-list--dense'
+      });
+      error.details.forEach((detail) => {
+        detailsList.appendChild(uiHelpers.createElement('li', { text: detail }));
+      });
+      panel.appendChild(detailsList);
+    }
+
+    body.appendChild(panel);
+  };
+
+  const renderManagerMenuModal = (state, actions) => {
+    const context = state.modal.context;
+    const { backdrop, body } = createModalShell(getContextTitle(context), state, actions);
+
+    body.appendChild(
+      uiHelpers.createElement('p', {
+        className: 'panel-copy',
+        text:
+          context.kind === 'off' || context.kind === 'leave'
+            ? 'Pick a name. Add asks for the time next.'
+            : context.label
+      })
+    );
+
+    renderModalError(body, state.modal.error);
+
+    if (context.cell?.shiftId) {
+      const quickActions = uiHelpers.createElement('div', {
+        className: 'actions-row rota-modal-actions'
+      });
+
+      const changeTimeButton = uiHelpers.createElement('button', {
         className: 'action-button button-secondary',
-        text: 'Retry',
+        text: 'Change time',
         attributes: { type: 'button' }
       });
-      retryButton.addEventListener('click', () => {
-        actions.reloadRecommendations();
+      changeTimeButton.addEventListener('click', () => {
+        actions.openEditTimeModal(context);
       });
-      retryRow.appendChild(retryButton);
-      panel.appendChild(retryRow);
+      quickActions.appendChild(changeTimeButton);
+
+      if (context.cell.state === 'OPEN') {
+        const removeShiftButton = uiHelpers.createElement('button', {
+          className: 'action-button button-ghost',
+          text: 'Delete shift',
+          attributes: { type: 'button' }
+        });
+        removeShiftButton.addEventListener('click', async () => {
+          await actions.removeShiftById(context.cell.shiftId, 'Open shift removed.');
+        });
+        quickActions.appendChild(removeShiftButton);
+      }
+
+      body.appendChild(quickActions);
+    }
+
+    if (state.staffLoading) {
+      body.appendChild(
+        uiHelpers.createElement('p', {
+          className: 'panel-copy',
+          text: 'Loading staff...'
+        })
+      );
       return backdrop;
     }
 
-    const recommendationData = state.modal.data;
-    panel.appendChild(
-      uiHelpers.createReviewList([
-        { label: 'Date', value: recommendationData.shift.date },
-        {
-          label: 'Time',
-          value: `${recommendationData.shift.startTime} - ${recommendationData.shift.endTime}`
-        },
-        {
-          label: 'Required role',
-          value: uiHelpers.formatRole(recommendationData.shift.requiredRole)
-        },
-        {
-          label: 'Eligible staff',
-          value: String(recommendationData.recommendations.length)
+    const choices = buildManagerChoices(state, context);
+
+    if (choices.length === 0) {
+      body.appendChild(
+        uiHelpers.createElement('p', {
+          className: 'panel-copy',
+          text: 'No active staff found.'
+        })
+      );
+      return backdrop;
+    }
+
+    const list = uiHelpers.createElement('div', { className: 'rota-choice-list' });
+    choices.forEach((choice) => {
+      const row = uiHelpers.createElement('div', { className: 'rota-choice-row' });
+      row.appendChild(
+        uiHelpers.createElement('strong', {
+          text: choice.staffMember.fullName
+        })
+      );
+
+      const actionButton = uiHelpers.createElement('button', {
+        className: 'action-button button-secondary rota-choice-button',
+        text: choice.buttonLabel,
+        attributes: {
+          disabled: choice.disabled,
+          type: 'button'
         }
+      });
+      actionButton.addEventListener('click', async () => {
+        if (choice.mode === 'remove' && choice.existingCell?.shiftId) {
+          await actions.removeShiftById(choice.existingCell.shiftId, 'Shift removed from the rota.');
+          return;
+        }
+
+        actions.openAddModal(context, choice.staffMember);
+      });
+
+      row.appendChild(actionButton);
+      list.appendChild(row);
+    });
+    body.appendChild(list);
+
+    return backdrop;
+  };
+
+  const renderManagerAddModal = (state, actions) => {
+    const { backdrop, body } = createModalShell(`Add ${state.modal.staffName}`, state, actions);
+
+    body.appendChild(
+      uiHelpers.createReviewList([
+        { label: 'Day', value: state.modal.context.day.label },
+        { label: 'Date', value: state.modal.context.day.date }
       ])
     );
 
-    if (recommendationData.recommendations.length === 0) {
-      panel.appendChild(
-        uiHelpers.createElement('p', {
-          className: 'panel-copy',
-          text: 'No eligible staff were found for this shift.'
-        })
-      );
-    } else {
-      const recommendationList = uiHelpers.createElement('div', {
-        className: 'rota-recommendation-list'
-      });
-
-      recommendationData.recommendations.forEach((recommendation, index) => {
-        const card = uiHelpers.createElement('article', {
-          className: 'rota-recommendation-card'
-        });
-        const header = uiHelpers.createElement('div', {
-          className: 'rota-recommendation-header'
-        });
-        const title = uiHelpers.createElement('div', {
-          className: 'rota-recommendation-title'
-        });
-        title.appendChild(
-          uiHelpers.createElement('strong', {
-            text: `${index + 1}. ${recommendation.name}`
-          })
-        );
-        title.appendChild(
-          uiHelpers.createElement('span', {
-            text: uiHelpers.formatRole(recommendation.role)
-          })
-        );
-        header.appendChild(title);
-        header.appendChild(
-          uiHelpers.createElement('span', {
-            className: 'status-tag status-tag--info',
-            text: `Score ${recommendation.score}`
-          })
-        );
-        card.appendChild(header);
-
-        card.appendChild(
-          uiHelpers.createElement('p', {
-            className: 'rota-recommendation-summary',
-            text: `${formatHours(recommendation.currentWeeklyHours)} of ${formatHours(recommendation.contractHours)} hrs now. ${formatHours(recommendation.projectedWeeklyHours)} hrs after this shift.`
-          })
-        );
-
-        if (recommendation.reasons.length > 0) {
-          const reasonsList = uiHelpers.createElement('ul', {
-            className: 'detail-list detail-list--dense'
-          });
-          recommendation.reasons.forEach((reason) => {
-            const scoreLabel =
-              reason.scoreChange > 0
-                ? `+${reason.scoreChange}`
-                : String(reason.scoreChange);
-            reasonsList.appendChild(
-              uiHelpers.createElement('li', {
-                text: `${reason.message} (${scoreLabel})`
-              })
-            );
-          });
-          card.appendChild(reasonsList);
-        }
-
-        if (recommendation.warnings.length > 0) {
-          const warningList = uiHelpers.createElement('ul', {
-            className: 'detail-list detail-list--dense rota-recommendation-warnings'
-          });
-          recommendation.warnings.forEach((warning) => {
-            warningList.appendChild(
-              uiHelpers.createElement('li', {
-                text: warning.message
-              })
-            );
-          });
-          card.appendChild(warningList);
-        }
-
-        const useButton = uiHelpers.createElement('button', {
-          className: 'action-button button-primary',
-          text: 'Use this staff',
-          attributes: { type: 'button' }
-        });
-        useButton.addEventListener('click', () => {
-          actions.openAssignModal('assign', {
-            context: state.modal.context,
-            staffProfileId: recommendation.staffId
-          });
-        });
-        card.appendChild(useButton);
-        recommendationList.appendChild(card);
-      });
-
-      panel.appendChild(recommendationList);
-    }
-
-    if (recommendationData.excluded.length > 0) {
-      const excludedSection = uiHelpers.createElement('section', {
-        className: 'rota-recommendation-excluded'
-      });
-      excludedSection.appendChild(
-        uiHelpers.createElement('h4', {
-          text: 'Excluded staff'
-        })
-      );
-      const excludedList = uiHelpers.createElement('div', {
-        className: 'rota-staff-choice-list'
-      });
-      recommendationData.excluded.forEach((staffMember) => {
-        const item = uiHelpers.createElement('div', {
-          className: 'rota-staff-choice'
-        });
-        item.appendChild(
-          uiHelpers.createElement('strong', {
-            text: staffMember.name
-          })
-        );
-        item.appendChild(
-          uiHelpers.createElement('span', {
-            text: staffMember.reason.message
-          })
-        );
-        excludedList.appendChild(item);
-      });
-      excludedSection.appendChild(excludedList);
-      panel.appendChild(excludedSection);
-    }
-
-    return backdrop;
-  };
-
-  const renderAssignModal = (state, actions) => {
-    const cell = getContextCell(state.modal.context);
-    const title = state.modal.mode === 'change' ? 'Change employee' : 'Assign employee';
-    const { backdrop, panel } = createModalShell(title, state, actions);
-
-    if (state.staffLoading) {
-      panel.appendChild(uiHelpers.createElement('p', { className: 'panel-copy', text: 'Loading staff...' }));
-      return backdrop;
-    }
+    renderModalError(body, state.modal.error);
 
     const form = uiHelpers.createElement('form', {
       className: 'form-shell',
       attributes: { novalidate: true }
     });
     const grid = uiHelpers.createElement('div', { className: 'form-grid' });
-    const field = uiHelpers.createElement('label', {
-      className: 'form-field form-field--span-12'
-    });
-    field.appendChild(uiHelpers.createElement('span', { text: 'Staff member' }));
-    const select = uiHelpers.createElement('select', { className: 'input-control' });
-    state.staff.forEach((staffMember) => {
-      const option = uiHelpers.createElement('option', {
-        text: `${staffMember.fullName} - ${uiHelpers.formatRole(staffMember.primaryRole)}`
+
+    const createTimeField = (label, value, spanClass, updateField) => {
+      const field = uiHelpers.createElement('label', {
+        className: `form-field ${spanClass}`
       });
-      option.value = staffMember.id;
-      option.selected =
-        staffMember.id === (state.modal.selectedStaffProfileId || cell.staffProfileId);
-      select.appendChild(option);
-    });
-    field.appendChild(select);
-    grid.appendChild(field);
-    form.appendChild(grid);
-
-    const actionsRow = uiHelpers.createElement('div', { className: 'actions-row' });
-    const submitButton = uiHelpers.createElement('button', {
-      className: 'action-button button-primary',
-      text: state.modal.mode === 'change' ? 'Save change' : 'Assign staff',
-      attributes: {
-        disabled: state.staff.length === 0,
-        type: 'submit'
-      }
-    });
-    actionsRow.appendChild(submitButton);
-    form.appendChild(actionsRow);
-    form.addEventListener('submit', async (event) => {
-      event.preventDefault();
-      await actions.saveAssignment(select.value);
-    });
-
-    panel.appendChild(form);
-    return backdrop;
-  };
-
-  const renderShiftModal = (state, actions) => {
-    const context = state.modal.context;
-    const cell = getContextCell(context);
-    const isEdit = state.modal.mode === 'edit';
-    const { backdrop, panel } = createModalShell(isEdit ? 'Edit shift' : 'Add shift', state, actions);
-    const form = uiHelpers.createElement('form', {
-      className: 'form-shell',
-      attributes: { novalidate: true }
-    });
-    const grid = uiHelpers.createElement('div', { className: 'form-grid' });
-
-    const appendInput = (label, type, value, spanClass = 'form-field--span-6') => {
-      const field = uiHelpers.createElement('label', { className: `form-field ${spanClass}` });
       field.appendChild(uiHelpers.createElement('span', { text: label }));
-      const input = uiHelpers.createElement(type === 'textarea' ? 'textarea' : 'input', {
+      const input = uiHelpers.createElement('input', {
         className: 'input-control',
-        text: type === 'textarea' ? value || '' : undefined,
         attributes: {
-          rows: type === 'textarea' ? 3 : undefined,
-          type: type === 'textarea' ? undefined : type,
-          value: type === 'textarea' ? undefined : value
+          type: 'time',
+          value
         }
+      });
+      input.addEventListener('input', () => {
+        state.modal[updateField] = input.value;
+        state.modal.error = null;
       });
       field.appendChild(input);
       grid.appendChild(field);
-      return input;
     };
 
-    const dateInput = appendInput('Date', 'date', cell.shiftDate || context.day.date, 'form-field--span-12');
-    const startInput = appendInput('Start time', 'time', cell.startTime || '09:00');
-    const endInput = appendInput('End time', 'time', cell.endTime || '17:00');
-    const notesInput = appendInput('Notes', 'textarea', cell.notes || '', 'form-field--span-12');
+    createTimeField('Start time', state.modal.startTime, 'form-field--span-6', 'startTime');
+    createTimeField('End time', state.modal.endTime, 'form-field--span-6', 'endTime');
     form.appendChild(grid);
 
-    const actionsRow = uiHelpers.createElement('div', { className: 'actions-row' });
+    const actionsRow = uiHelpers.createElement('div', {
+      className: 'actions-row rota-modal-actions'
+    });
+    const cancelButton = uiHelpers.createElement('button', {
+      className: 'action-button button-ghost',
+      text: 'Cancel',
+      attributes: { type: 'button' }
+    });
+    cancelButton.addEventListener('click', () => {
+      state.modal = null;
+      actions.render();
+    });
+    actionsRow.appendChild(cancelButton);
+
     const submitButton = uiHelpers.createElement('button', {
       className: 'action-button button-primary',
-      text: isEdit ? 'Save shift' : 'Add shift',
+      text: 'Add and save',
       attributes: { type: 'submit' }
     });
     actionsRow.appendChild(submitButton);
     form.appendChild(actionsRow);
+
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
-      await actions.saveShift({
-        endTime: endInput.value,
-        notes: notesInput.value,
-        requiredRole: state.department,
-        shiftDate: dateInput.value,
-        startTime: startInput.value,
-        status: 'OPEN'
-      });
+      await actions.addShiftForStaff();
     });
 
-    panel.appendChild(form);
+    body.appendChild(form);
+    return backdrop;
+  };
+
+  const renderManagerEditModal = (state, actions) => {
+    const { backdrop, body } = createModalShell('Change time', state, actions);
+
+    body.appendChild(
+      uiHelpers.createReviewList([
+        { label: 'Day', value: state.modal.context.day.label },
+        { label: 'Date', value: state.modal.context.day.date }
+      ])
+    );
+
+    renderModalError(body, state.modal.error);
+
+    const form = uiHelpers.createElement('form', {
+      className: 'form-shell',
+      attributes: { novalidate: true }
+    });
+    const grid = uiHelpers.createElement('div', { className: 'form-grid' });
+
+    const createTimeField = (label, value, spanClass, updateField) => {
+      const field = uiHelpers.createElement('label', {
+        className: `form-field ${spanClass}`
+      });
+      field.appendChild(uiHelpers.createElement('span', { text: label }));
+      const input = uiHelpers.createElement('input', {
+        className: 'input-control',
+        attributes: {
+          type: 'time',
+          value
+        }
+      });
+      input.addEventListener('input', () => {
+        state.modal[updateField] = input.value;
+        state.modal.error = null;
+      });
+      field.appendChild(input);
+      grid.appendChild(field);
+    };
+
+    createTimeField('Start time', state.modal.startTime, 'form-field--span-6', 'startTime');
+    createTimeField('End time', state.modal.endTime, 'form-field--span-6', 'endTime');
+    form.appendChild(grid);
+
+    const actionsRow = uiHelpers.createElement('div', {
+      className: 'actions-row rota-modal-actions'
+    });
+    const cancelButton = uiHelpers.createElement('button', {
+      className: 'action-button button-ghost',
+      text: 'Cancel',
+      attributes: { type: 'button' }
+    });
+    cancelButton.addEventListener('click', () => {
+      state.modal = null;
+      actions.render();
+    });
+    actionsRow.appendChild(cancelButton);
+
+    const submitButton = uiHelpers.createElement('button', {
+      className: 'action-button button-primary',
+      text: 'Save time',
+      attributes: { type: 'submit' }
+    });
+    actionsRow.appendChild(submitButton);
+    form.appendChild(actionsRow);
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      await actions.saveEditedTime();
+    });
+
+    body.appendChild(form);
+    return backdrop;
+  };
+
+  const renderStaffSwapModal = (state, actions) => {
+    const { backdrop, body } = createModalShell('Request swap', state, actions);
+    const context = state.modal.context;
+
+    body.appendChild(
+      uiHelpers.createReviewList([
+        { label: 'Day', value: context.day.label },
+        { label: 'Date', value: context.day.date },
+        { label: 'Shift', value: context.label }
+      ])
+    );
+    body.appendChild(
+      uiHelpers.createElement('p', {
+        className: 'panel-copy',
+        text: 'Ask the manager to change this shift.'
+      })
+    );
+
     return backdrop;
   };
 
@@ -1088,24 +1047,14 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     }
 
     switch (state.modal.type) {
-      case 'assign':
-        return renderAssignModal(state, actions);
-      case 'available-staff':
-        return renderAvailableStaffModal(state, actions);
-      case 'conflicts':
-        return renderConflictModal(state, actions);
-      case 'department':
-        return renderDepartmentModal(state, actions);
-      case 'details':
-        return renderDetailsModal(state, actions);
-      case 'employee':
-        return renderEmployeeModal(state, actions);
-      case 'mobile-controls':
-        return renderMobileControlsModal(state, actions);
-      case 'recommendations':
-        return renderRecommendationModal(state, actions);
-      case 'shift':
-        return renderShiftModal(state, actions);
+      case 'manager-menu':
+        return renderManagerMenuModal(state, actions);
+      case 'manager-add':
+        return renderManagerAddModal(state, actions);
+      case 'manager-edit':
+        return renderManagerEditModal(state, actions);
+      case 'staff-swap':
+        return renderStaffSwapModal(state, actions);
       default:
         return null;
     }
@@ -1123,34 +1072,36 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
         return;
       }
 
+      clearModalHost();
       workspaceElement.textContent = '';
       const grid = uiHelpers.createElement('div', { className: 'workspace-grid rota-workspace' });
       const flashPanel = uiHelpers.renderFlash(state.flash);
+
       if (flashPanel) {
         grid.appendChild(flashPanel);
       }
 
       if (state.loading) {
-        grid.appendChild(uiHelpers.createEmptyPanel('Loading rota', 'Loading the weekly rota from live shifts and assignments.'));
+        grid.appendChild(uiHelpers.createEmptyPanel('Loading rota', 'Loading this week.'));
         workspaceElement.appendChild(grid);
         return;
       }
 
       grid.appendChild(renderWeekControls(state, actions));
-      grid.appendChild(renderDepartmentTabs(state, actions));
-      grid.appendChild(renderLegend());
-      grid.appendChild(renderDesktopGrid(state, actions));
-      grid.appendChild(renderMobileDayPanel(state, actions));
-      workspaceElement.appendChild(grid);
 
-      const sheet = renderActionSheet(state, actions);
-      if (sheet) {
-        workspaceElement.appendChild(sheet);
+      const tabs = renderDepartmentTabs(state, actions);
+      if (tabs) {
+        grid.appendChild(tabs);
       }
+
+      grid.appendChild(renderDesktopGrid(state, actions));
+      grid.appendChild(renderMobilePanel(state, actions));
+      workspaceElement.appendChild(grid);
 
       const modal = renderModal(state, actions);
       if (modal) {
-        workspaceElement.appendChild(modal);
+        modal.id = modalHostId;
+        document.body.appendChild(modal);
       }
     };
 
@@ -1203,234 +1154,189 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       }
     };
 
-    const openDetailsModal = () => {
-      state.modal = { context: state.activeContext, type: 'details' };
-      state.activeContext = null;
-      render();
-    };
-
-    const openDepartmentModal = () => {
-      state.modal = { context: state.activeContext, type: 'department' };
-      state.activeContext = null;
-      render();
-    };
-
-    const openEmployeeModal = () => {
-      state.modal = { context: state.activeContext, type: 'employee' };
-      state.activeContext = null;
-      render();
-    };
-
-    const openConflictModal = () => {
-      state.modal = { context: state.activeContext, type: 'conflicts' };
-      state.activeContext = null;
-      render();
-    };
-
-    const openAvailableStaffModal = async () => {
-      state.modal = { context: state.activeContext, type: 'available-staff' };
-      state.activeContext = null;
-      await loadStaff();
-      render();
-    };
-
-    const openAssignModal = async (mode, options = {}) => {
-      state.modal = {
-        context: options.context || state.activeContext,
-        mode,
-        selectedStaffProfileId: options.staffProfileId || null,
-        type: 'assign'
-      };
-      state.activeContext = null;
-      await loadStaff();
-      render();
-    };
-
-    const loadRecommendations = async () => {
-      const shiftId = state.modal?.context?.cell?.shiftId;
-
-      if (!shiftId) {
+    const openEntryContext = async (context) => {
+      if (state.sessionUser?.role === 'MANAGER') {
+        state.modal = {
+          context,
+          error: null,
+          type: 'manager-menu'
+        };
+        render();
+        await loadStaff();
+        render();
         return;
       }
 
+      if (context.kind !== 'assigned') {
+        return;
+      }
+
+      state.modal = {
+        context,
+        type: 'staff-swap'
+      };
+      render();
+    };
+
+    const openAddModal = (context, staffMember) => {
+      const defaultTimes = getDefaultShiftTimes(state.department, context);
+      state.modal = {
+        context,
+        endTime: defaultTimes.endTime,
+        error: null,
+        staffName: staffMember.fullName,
+        staffProfileId: staffMember.id,
+        startTime: defaultTimes.startTime,
+        type: 'manager-add'
+      };
+      render();
+    };
+
+    const openEditTimeModal = (context) => {
+      state.modal = {
+        context,
+        endTime: context.cell?.endTime || '17:00',
+        error: null,
+        startTime: context.cell?.startTime || '09:00',
+        type: 'manager-edit'
+      };
+      render();
+    };
+
+    const removeShiftById = async (shiftId, successText) => {
       try {
-        const result = await apiClient.get(
-          `/api/v1/shifts/${shiftId}/recommendations`
-        );
-
-        if (!isActiveRender(workspaceElement, renderToken)) {
-          return;
-        }
-
-        if (state.modal?.type !== 'recommendations' || state.modal.context?.cell?.shiftId !== shiftId) {
-          return;
-        }
-
-        state.modal = {
-          ...state.modal,
-          data: result,
-          error: null,
-          loading: false
-        };
-        render();
+        await apiClient.delete(`/api/v1/shifts/${shiftId}`);
+        state.modal = null;
+        await loadRota({
+          details: [],
+          text: successText,
+          tone: 'success'
+        });
       } catch (error) {
-        if (!isActiveRender(workspaceElement, renderToken)) {
+        const feedback = uiHelpers.getErrorFeedback(error, 'Could not remove this shift.');
+
+        if (state.modal) {
+          state.modal = {
+            ...state.modal,
+            error: feedback
+          };
+          render();
           return;
         }
 
-        if (state.modal?.type !== 'recommendations' || state.modal.context?.cell?.shiftId !== shiftId) {
-          return;
-        }
-
-        state.modal = {
-          ...state.modal,
-          data: null,
-          error: uiHelpers.getErrorFeedback(error, 'Could not load staff recommendations.'),
-          loading: false
-        };
+        setFlash(state, 'error', feedback.text, feedback.details);
         render();
       }
     };
 
-    const openRecommendationModal = async () => {
-      state.modal = {
-        context: state.activeContext,
-        data: null,
-        error: null,
-        loading: true,
-        type: 'recommendations'
+    const addShiftForStaff = async () => {
+      const modal = state.modal;
+      const context = modal.context;
+      const shiftPayload = {
+        endTime: modal.endTime,
+        notes: null,
+        requiredRole: state.department,
+        shiftDate: context.day.date,
+        startTime: modal.startTime,
+        status: 'OPEN'
       };
-      state.activeContext = null;
-      render();
-      await loadRecommendations();
-    };
 
-    const openShiftModal = (mode) => {
-      state.modal = { context: state.activeContext, mode, type: 'shift' };
-      state.activeContext = null;
-      render();
-    };
-
-    const saveAssignment = async (staffProfileId) => {
-      const cell = getContextCell(state.modal.context);
+      let createdShiftId = null;
 
       try {
-        let result = null;
+        let shiftId = context.cell?.state === 'OPEN' ? context.cell.shiftId : null;
 
-        if (state.modal.mode === 'change') {
-          result = await apiClient.put(`/api/v1/assignments/${cell.assignmentId}`, {
-            staffProfileId
-          });
+        if (shiftId) {
+          if (
+            context.cell.startTime !== modal.startTime ||
+            context.cell.endTime !== modal.endTime
+          ) {
+            await apiClient.put(`/api/v1/shifts/${shiftId}`, {
+              endTime: modal.endTime,
+              startTime: modal.startTime
+            });
+          }
         } else {
-          result = await apiClient.post('/api/v1/assignments', {
-            shiftId: cell.shiftId,
-            staffProfileId
-          });
+          const reusableOpenShift = findOpenShiftCell(
+            state,
+            context.day.date,
+            modal.startTime,
+            modal.endTime
+          );
+
+          if (reusableOpenShift) {
+            shiftId = reusableOpenShift.shiftId;
+          } else {
+            const createdShift = await apiClient.post('/api/v1/shifts', shiftPayload);
+            shiftId = createdShift.shift.id;
+            createdShiftId = shiftId;
+          }
         }
 
+        const result = await apiClient.post('/api/v1/assignments', {
+          shiftId,
+          staffProfileId: modal.staffProfileId
+        });
         const warningDetails = getAssignmentWarningDetails(result);
         state.modal = null;
         await loadRota({
           details: warningDetails,
-          text: warningDetails.length > 0
-            ? 'Assignment saved, but check the contract-hours warning.'
-            : 'Assignment saved.',
+          text:
+            warningDetails.length > 0
+              ? 'Saved, but check the hours warning.'
+              : 'Shift added to the rota.',
           tone: warningDetails.length > 0 ? 'warning' : 'success'
         });
       } catch (error) {
-        const feedback = uiHelpers.getErrorFeedback(error, 'Could not save assignment.');
-        setFlash(state, 'error', feedback.text, feedback.details);
-        state.modal = null;
-        render();
-      }
-    };
-
-    const saveShift = async (payload) => {
-      const cell = getContextCell(state.modal.context);
-
-      try {
-        if (state.modal.mode === 'edit') {
-          await apiClient.put(`/api/v1/shifts/${cell.shiftId}`, payload);
-        } else {
-          await apiClient.post('/api/v1/shifts', payload);
+        if (createdShiftId) {
+          try {
+            await apiClient.delete(`/api/v1/shifts/${createdShiftId}`);
+          } catch (cleanupError) {
+            // Ignore cleanup failures and show the original error.
+          }
         }
 
-        state.modal = null;
-        await loadRota({
-          details: [],
-          text: 'Shift saved.',
-          tone: 'success'
-        });
-      } catch (error) {
-        const feedback = uiHelpers.getErrorFeedback(error, 'Could not save shift.');
-        setFlash(state, 'error', feedback.text, feedback.details);
-        state.modal = null;
+        state.modal = {
+          ...state.modal,
+          error: uiHelpers.getErrorFeedback(error, 'Could not save this shift.')
+        };
         render();
       }
     };
 
-    const removeShift = async () => {
-      const cell = getContextCell(state.activeContext);
-
-      if (!uiHelpers.confirmAction('Remove this required shift?')) {
-        return;
-      }
+    const saveEditedTime = async () => {
+      const modal = state.modal;
 
       try {
-        await apiClient.delete(`/api/v1/shifts/${cell.shiftId}`);
-        state.activeContext = null;
+        await apiClient.put(`/api/v1/shifts/${modal.context.cell.shiftId}`, {
+          endTime: modal.endTime,
+          startTime: modal.startTime
+        });
+
+        state.modal = null;
         await loadRota({
           details: [],
-          text: 'Shift removed.',
+          text: 'Shift time changed.',
           tone: 'success'
         });
       } catch (error) {
-        const feedback = uiHelpers.getErrorFeedback(error, 'Could not remove shift.');
-        setFlash(state, 'error', feedback.text, feedback.details);
-        state.activeContext = null;
-        render();
-      }
-    };
-
-    const removeAssignment = async () => {
-      const cell = getContextCell(state.activeContext);
-
-      if (!uiHelpers.confirmAction('Remove this assignment?')) {
-        return;
-      }
-
-      try {
-        await apiClient.delete(`/api/v1/assignments/${cell.assignmentId}`);
-        state.activeContext = null;
-        await loadRota({
-          details: [],
-          text: 'Assignment removed.',
-          tone: 'success'
-        });
-      } catch (error) {
-        const feedback = uiHelpers.getErrorFeedback(error, 'Could not remove assignment.');
-        setFlash(state, 'error', feedback.text, feedback.details);
-        state.activeContext = null;
+        state.modal = {
+          ...state.modal,
+          error: uiHelpers.getErrorFeedback(error, 'Could not change this shift time.')
+        };
         render();
       }
     };
 
     const actions = {
+      addShiftForStaff,
       loadRota,
-      openAssignModal,
-      openAvailableStaffModal,
-      openConflictModal,
-      openDepartmentModal,
-      openDetailsModal,
-      openEmployeeModal,
-      openRecommendationModal,
-      openShiftModal,
-      reloadRecommendations: loadRecommendations,
-      removeAssignment,
-      removeShift,
+      openAddModal,
+      openEditTimeModal,
+      openEntryContext,
+      removeShiftById,
       render,
-      saveAssignment,
-      saveShift
+      saveEditedTime
     };
 
     try {
@@ -1441,6 +1347,13 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       }
 
       state.sessionUser = result.user;
+
+      if (
+        state.sessionUser.role === 'STAFF'
+      ) {
+        state.department = 'ALL';
+      }
+
       render();
       await loadRota();
     } catch (error) {
@@ -1448,9 +1361,10 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
         return;
       }
 
+      clearModalHost();
       uiHelpers.renderUnauthorized(
         workspaceElement,
-        'Session required',
+        'Sign in needed',
         'Sign in to view the weekly rota.'
       );
     }

@@ -97,7 +97,7 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     heading.appendChild(
       createElement('p', {
         className: 'panel-copy',
-        text: 'Sign in with a work account before using staff, leave, availability, and shifts.'
+        text: 'Use the email and password given by the manager.'
       })
     );
     formPanel.appendChild(heading);
@@ -217,19 +217,19 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
       className: 'content-panel content-panel--guide content-panel--span-11'
     });
     const helpHeading = createElement('div', { className: 'panel-heading' });
-    helpHeading.appendChild(createElement('h3', { text: 'Before you start' }));
+    helpHeading.appendChild(createElement('h3', { text: 'What you can do' }));
     helpHeading.appendChild(
       createElement('p', {
         className: 'panel-copy',
-        text: 'The account decides what you can see after login.'
+        text: 'The app only shows pages your account can use.'
       })
     );
     helpPanel.appendChild(helpHeading);
 
     const helpList = createElement('ul', { className: 'login-help-list' });
     [
-      'Managers can update staff records and create shifts.',
-      'Staff can update availability and ask for leave.'
+      'Managers can add staff and build the rota.',
+      'Staff can check the full rota and ask for time off.'
     ].forEach((itemText) => {
       helpList.appendChild(createElement('li', { text: itemText }));
     });
@@ -287,7 +287,7 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     heading.appendChild(
       createElement('p', {
         className: 'panel-copy',
-        text: 'Use the buttons below to continue into the live workspace or end the current session.'
+        text: 'Open the rota or sign out.'
       })
     );
     panel.appendChild(heading);
@@ -337,7 +337,7 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
         className: 'panel-copy',
         text: sessionUser.mustChangePassword
           ? 'You are signed in with a temporary password. Change it before leaving this session.'
-          : 'Change the current password without leaving the live workspace.'
+          : 'Change your password here when needed.'
       })
     );
     passwordPanel.appendChild(passwordHeading);

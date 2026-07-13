@@ -4,10 +4,6 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
   const apiClient = window.SmartSchedule.apiClient;
   const uiHelpers = window.SmartSchedule.liveUiHelpers;
 
-  const getDayLabel = (dayOfWeek) => {
-    return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][dayOfWeek - 1] || String(dayOfWeek);
-  };
-
   const isActiveRender = (workspaceElement, renderToken) => {
     return workspaceElement.dataset.renderToken === renderToken;
   };
@@ -57,9 +53,9 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
     workspaceElement.textContent = '';
 
     uiHelpers.renderIntroMetrics([
-      { label: 'Dashboard', value: 'Sign in', tone: 'accent' },
-      { label: 'Live data', value: 'Locked', tone: 'neutral' },
-      { label: 'Role', value: 'Unknown', tone: 'neutral' }
+      { label: 'Sign in', value: 'Needed', tone: 'accent' },
+      { label: 'Page', value: 'Locked', tone: 'neutral' },
+      { label: 'Account', value: 'Work', tone: 'neutral' }
     ]);
 
     const grid = uiHelpers.createElement('div', { className: 'workspace-grid' });
@@ -67,10 +63,10 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
       className: 'content-panel content-panel--empty content-panel--span-16'
     });
     const emptyState = uiHelpers.createElement('div', { className: 'empty-state' });
-    emptyState.appendChild(uiHelpers.createElement('h3', { text: 'Sign in to see the live dashboard' }));
+    emptyState.appendChild(uiHelpers.createElement('h3', { text: 'Sign in to see this week' }));
     emptyState.appendChild(
       uiHelpers.createElement('p', {
-        text: 'The dashboard uses the real staff, leave, availability, and shift routes, so it needs a signed-in account first.'
+        text: 'Use your work account first. Then the app shows the pages you can use.'
       })
     );
     emptyState.appendChild(createButton('Go to login', 'login', 'primary'));
@@ -80,25 +76,18 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
   };
 
   const loadManagerDashboard = async (weekStart) => {
-    const [staffResult, leaveResult, availabilityResult, shiftResult] = await Promise.all([
+    const [staffResult, leaveResult, shiftResult] = await Promise.all([
       apiClient.get('/api/v1/staff?status=ALL'),
       apiClient.get('/api/v1/leave-requests?status=ALL'),
-      apiClient.get(`/api/v1/availability?weekStart=${weekStart}`),
       apiClient.get(`/api/v1/shifts?weekStart=${weekStart}`)
     ]);
 
     const activeStaff = staffResult.staff.filter((staff) => staff.isActive);
     const pendingLeave = leaveResult.leaveRequests.filter((request) => request.status === 'PENDING');
     const openShifts = shiftResult.shifts.filter((shift) => shift.status === 'OPEN');
-    const staffWithAvailability = new Set(
-      availabilityResult.availability.map((entry) => entry.staffProfileId)
-    );
-    const missingAvailabilityCount = Math.max(activeStaff.length - staffWithAvailability.size, 0);
 
     return {
       activeStaff,
-      availability: availabilityResult.availability,
-      missingAvailabilityCount,
       openShifts,
       pendingLeave,
       recentLeave: pendingLeave.slice(0, 4),
@@ -106,16 +95,11 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
     };
   };
 
-  const loadStaffDashboard = async (weekStart) => {
-    const [leaveResult, availabilityResult] = await Promise.all([
-      apiClient.get('/api/v1/leave-requests?status=ALL'),
-      apiClient.get(`/api/v1/availability?weekStart=${weekStart}`)
-    ]);
-
+  const loadStaffDashboard = async () => {
+    const leaveResult = await apiClient.get('/api/v1/leave-requests?status=ALL');
     const pendingLeave = leaveResult.leaveRequests.filter((request) => request.status === 'PENDING');
 
     return {
-      availability: availabilityResult.availability,
       leaveRequests: leaveResult.leaveRequests,
       pendingLeave
     };
@@ -125,20 +109,19 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
     workspaceElement.textContent = '';
 
     uiHelpers.renderIntroMetrics([
-      { label: 'Pending leave', value: String(dashboard.pendingLeave.length), tone: 'accent' },
+      { label: 'Time off waiting', value: String(dashboard.pendingLeave.length), tone: 'accent' },
       { label: 'Open shifts', value: String(dashboard.openShifts.length), tone: 'neutral' },
-      { label: 'Missing availability', value: String(dashboard.missingAvailabilityCount), tone: 'neutral' }
+      { label: 'Active staff', value: String(dashboard.activeStaff.length), tone: 'neutral' }
     ]);
 
     const grid = uiHelpers.createElement('div', { className: 'workspace-grid workspace-grid--overview-manager' });
     grid.appendChild(
       uiHelpers.createStepsPanel(
-        'Manager dashboard',
-        `Live summary for the week starting ${weekStart}.`,
+        'Start here',
+        `Week starting ${weekStart}.`,
         [
-          'Check leave requests before final planning.',
-          'Check missing availability before creating more shifts.',
-          'Use open shifts to decide what still needs staff.'
+          'Check time off first.',
+          'Open the rota to change the week.'
         ],
         'overview-panel overview-panel--equal'
       )
@@ -146,14 +129,14 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
 
     grid.appendChild(
       createDashboardPanel(
-        'Leave waiting for manager',
-        'These requests still need a decision.',
+        'Time off waiting',
+        'These still need a yes or no.',
         dashboard.recentLeave.map((request) => {
           return `${request.fullName || 'Staff member'}: ${request.startDate} to ${request.endDate} (${request.reason})`;
         }),
-        'No leave requests are waiting right now.',
+        'No time off requests are waiting right now.',
         'leave',
-        'Open leave',
+        'Open time off',
         'overview-panel'
       )
     );
@@ -161,39 +144,24 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
     grid.appendChild(
       createDashboardPanel(
         'Open shifts this week',
-        'These shifts exist but are not fully handled yet.',
+        'Open the rota and use the * menu to place someone on them.',
         dashboard.openShifts.slice(0, 4).map((shift) => {
           return `${shift.shiftDate} ${shift.startTime.slice(0, 5)}-${shift.endTime.slice(0, 5)} needs ${uiHelpers.formatRole(shift.requiredRole)}`;
         }),
         'No open shifts found for this week.',
-        'shifts',
-        'Create shift',
+        'rota',
+        'Open rota',
         'overview-panel'
       )
     );
 
     grid.appendChild(
       createDashboardPanel(
-        'Availability check',
-        'Use this before building or changing shifts.',
+        'Rota',
+        'Open the rota to change names or times.',
         [
-          `${dashboard.availability.length} availability entries saved for this week.`,
-          `${dashboard.missingAvailabilityCount} active staff still have no entry this week.`
-        ],
-        'No availability has been added for this week yet.',
-        'availability',
-        'Check availability',
-        'overview-panel'
-      )
-    );
-
-    grid.appendChild(
-      createDashboardPanel(
-        'Rota boundary',
-        'The dashboard can show live planning inputs now.',
-        [
-          'Staff, leave, availability, shifts, assignments, and rota are live.',
-          'Contract-hours warnings now show after assignment save. Audit logging still comes later.'
+          'Use the * button inside the rota.',
+          'Open shifts stay at the top until they are filled.'
         ],
         'The rota is now the main screen after login.',
         'rota',
@@ -208,24 +176,22 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
   const renderStaffDashboard = (workspaceElement, weekStart, dashboard) => {
     workspaceElement.textContent = '';
 
-    const availabilityCount = dashboard.availability.length;
     const approvedLeaveCount = dashboard.leaveRequests.filter((request) => request.status === 'APPROVED').length;
 
     uiHelpers.renderIntroMetrics([
-      { label: 'My availability', value: String(availabilityCount), tone: 'accent' },
-      { label: 'Leave waiting', value: String(dashboard.pendingLeave.length), tone: 'neutral' },
-      { label: 'Approved leave', value: String(approvedLeaveCount), tone: 'neutral' }
+      { label: 'My rota', value: 'View', tone: 'accent' },
+      { label: 'Time off waiting', value: String(dashboard.pendingLeave.length), tone: 'neutral' },
+      { label: 'Time off approved', value: String(approvedLeaveCount), tone: 'neutral' }
     ]);
 
     const grid = uiHelpers.createElement('div', { className: 'workspace-grid' });
     grid.appendChild(
       uiHelpers.createStepsPanel(
         'My week',
-        `Live summary for the week starting ${weekStart}.`,
+        `Week starting ${weekStart}.`,
         [
-          'Check if your availability is saved for this week.',
-          'Look at leave requests that are still waiting.',
-          'Use the leave and availability pages when something changes.'
+          'Check your rota first.',
+          'Open time off only if you need a day away.'
         ],
         'content-panel--span-16'
       )
@@ -233,39 +199,26 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
 
     grid.appendChild(
       createDashboardPanel(
-        'My availability',
-        'These are the times saved for the selected week.',
-        dashboard.availability.slice(0, 5).map((entry) => {
-          return `${getDayLabel(entry.dayOfWeek)} ${entry.startTime.slice(0, 5)}-${entry.endTime.slice(0, 5)}: ${uiHelpers.formatStatus(entry.status)}`;
-        }),
-        'You have not added availability for this week yet.',
-        'availability',
-        'Add availability'
-      )
-    );
-
-    grid.appendChild(
-      createDashboardPanel(
-        'My leave requests',
-        'This shows your current leave request status.',
+        'My time off',
+        'This shows whether your time off was approved.',
         dashboard.leaveRequests.slice(0, 5).map((request) => {
           return `${request.startDate} to ${request.endDate}: ${uiHelpers.formatStatus(request.status)}`;
         }),
-        'You have not sent any leave requests yet.',
+        'You have not asked for time off yet.',
         'leave',
-        'Ask for leave'
+        'Ask for time off'
       )
     );
 
     grid.appendChild(
       createDashboardPanel(
-        'Assigned shifts',
-        'This now opens the live rota view for the selected week.',
+        'Weekly rota',
+        'Open the rota to check your shift and who else is working.',
         [
-          'Live availability, leave, assignments, and rota records are connected.',
-          'Staff can use the rota page for read-only shift visibility.'
+          'Your own shift still has the * option.',
+          'The full team rota shows there as well.'
         ],
-        'No assigned-shift feed is available yet.',
+        'Your rota is empty for this week.',
         'rota',
         'Open rota'
       )
@@ -283,9 +236,9 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
 
     workspaceElement.textContent = '';
     uiHelpers.renderIntroMetrics([
-      { label: 'Dashboard', value: 'Loading...', tone: 'accent' },
+      { label: 'This week', value: 'Loading...', tone: 'accent' },
       { label: 'Week start', value: weekStart, tone: 'neutral' },
-      { label: 'Live data', value: 'Checking', tone: 'neutral' }
+      { label: 'Page', value: 'Checking', tone: 'neutral' }
     ]);
 
     try {
@@ -318,7 +271,7 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
       }
 
       uiHelpers.renderIntroMetrics([
-        { label: 'Dashboard', value: 'Error', tone: 'accent' },
+        { label: 'This week', value: 'Error', tone: 'accent' },
         { label: 'Week start', value: weekStart, tone: 'neutral' },
         { label: 'Live data', value: 'Problem', tone: 'neutral' }
       ]);
@@ -327,8 +280,8 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
       const grid = uiHelpers.createElement('div', { className: 'workspace-grid' });
       grid.appendChild(
         uiHelpers.createEmptyPanel(
-          'Dashboard could not load',
-          'One of the live summary routes could not be read. Try signing in again or reload the page.',
+          'This week could not load',
+          'Try signing in again or reload the page.',
           'content-panel--span-16',
           {
             label: 'Go to login',

@@ -71,17 +71,17 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
     if (shift && staffMember.primaryRole !== shift.requiredRole) {
       return {
         blocked: true,
-        label: 'Role blocked',
+        label: 'Wrong role',
         tone: 'warning',
-        warning: `Backend blocks this because staff role is ${uiHelpers.formatRole(staffMember.primaryRole)} and shift needs ${uiHelpers.formatRole(shift.requiredRole)}.`
+        warning: `${staffMember.fullName} usually works ${uiHelpers.formatRole(staffMember.primaryRole)}, but this shift needs ${uiHelpers.formatRole(shift.requiredRole)}.`
       };
     }
 
     return {
       blocked: false,
-      label: 'Ready to check',
+      label: 'Looks OK',
       tone: 'success',
-      warning: 'Backend will still check leave, availability, overlapping or back-to-back shifts, and contract hours when saving.'
+      warning: 'The app checks time off, other shifts, role, and hours when you save.'
     };
   };
 
@@ -166,7 +166,7 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
     if (!shift) {
       return uiHelpers.createEmptyPanel(
         'No shift selected',
-        'Create a shift first, then come back here to save an assignment.',
+        'Create a shift first, then come back here to pick staff.',
         'content-panel--span-6 assignment-shift-panel',
         {
           label: 'Create shift',
@@ -183,8 +183,8 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
       uiHelpers.createPanelHeading(
         'Selected shift',
         assignment
-          ? 'This shift already has a saved backend assignment.'
-          : 'Choose staff and save the assignment after backend conflict checks pass.'
+          ? 'This shift already has someone assigned.'
+          : 'Choose staff and save when the check looks OK.'
       )
     );
 
@@ -193,7 +193,7 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
         { label: 'Date', value: shift.shiftDate },
         { label: 'Time', value: `${shift.startTime.slice(0, 5)} - ${shift.endTime.slice(0, 5)}` },
         { label: 'Required role', value: uiHelpers.formatRole(shift.requiredRole) },
-        { label: 'Saved assignment', value: assignment ? assignment.fullName : 'Not assigned yet' },
+        { label: 'Staff on shift', value: assignment ? assignment.fullName : 'No one yet' },
         { label: 'Selected staff', value: selectedStaff ? selectedStaff.fullName : 'None selected' },
         { label: 'Current warning', value: staffStatus ? staffStatus.warning : 'Select staff to check.' }
       ])
@@ -202,7 +202,7 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
     const actionsRow = uiHelpers.createElement('div', { className: 'actions-row' });
     const assignButton = uiHelpers.createElement('button', {
       className: 'action-button button-primary',
-      text: assignment ? 'Already assigned' : 'Save assignment',
+      text: assignment ? 'Already filled' : 'Save shift',
       attributes: {
         disabled: Boolean(assignment) || !selectedStaff || isBlocked,
         type: 'button'
@@ -235,7 +235,7 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
     if (state.staff.length === 0) {
       return uiHelpers.createEmptyPanel(
         'No active staff found',
-        'Add active staff before saving assignments.',
+        'Add active staff before filling shifts.',
         'content-panel--span-10',
         {
           label: 'Add staff',
@@ -252,7 +252,7 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
     panel.appendChild(
       uiHelpers.createPanelHeading(
         'Active staff',
-        'Role, leave, availability, overlap, back-to-back shift, and contract-hours checks now run when the assignment is saved.'
+        'The app checks role, time off, other shifts, and weekly hours when you save.'
       )
     );
 
@@ -322,8 +322,8 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
   const renderSavedAssignments = (state) => {
     if (state.assignments.length === 0) {
       return uiHelpers.createEmptyPanel(
-        'No saved assignments this week',
-        'Assignments saved through the backend will appear here after you assign staff to a shift.',
+        'No filled shifts this week',
+        'Filled shifts appear here after you assign staff.',
         'content-panel--span-16'
       );
     }
@@ -334,8 +334,8 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
     panel.classList.add('assignment-saved-panel');
     panel.appendChild(
       uiHelpers.createPanelHeading(
-        'Saved backend assignments',
-        'These records come from /api/v1/assignments for the selected week.'
+        'Filled shifts',
+        'Shifts already saved for this week.'
       )
     );
 
@@ -343,7 +343,7 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
     const table = uiHelpers.createElement('table');
     const thead = uiHelpers.createElement('thead');
     const headRow = uiHelpers.createElement('tr');
-    ['Shift', 'Role', 'Staff', 'Assigned at'].forEach((title) => {
+    ['Shift', 'Role', 'Staff', 'Saved at'].forEach((title) => {
       headRow.appendChild(uiHelpers.createElement('th', { text: title }));
     });
     thead.appendChild(headRow);
@@ -362,7 +362,7 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
       row.appendChild(uiHelpers.createTableCell('Staff', assignment.fullName));
       row.appendChild(
         uiHelpers.createTableCell(
-          'Assigned at',
+          'Saved at',
           assignment.assignedAt ? new Date(assignment.assignedAt).toLocaleString() : 'Not set'
         )
       );
@@ -396,7 +396,7 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
           tone: 'neutral'
         },
         {
-          label: 'Saved assignments',
+          label: 'Filled shifts',
           value: state.loading ? 'Loading...' : String(state.assignments.length),
           tone: 'neutral'
         }
@@ -411,8 +411,8 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
       if (state.loading) {
         grid.appendChild(
           uiHelpers.createEmptyPanel(
-            'Loading assignments',
-            'Loading shifts, active staff, and saved backend assignments for this week.'
+            'Loading filled shifts',
+            'Loading shifts and active staff for this week.'
           )
         );
         workspaceElement.appendChild(grid);
@@ -422,12 +422,12 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
       grid.appendChild(renderToolbar(state, actions));
       grid.appendChild(
         uiHelpers.createStepsPanel(
-          'How assignment works now',
-          'This screen saves assignments to the backend and checks the main conflicts before a record is created.',
+          'Fill a shift',
+          'Pick one shift, choose one staff member, then save.',
           [
-            'Choose a week and shift from live shift records.',
-            'Select an active staff member from the backend staff list.',
-            'Save the assignment. The backend blocks duplicate shifts, role mismatch, approved leave, missing availability, and overlapping or back-to-back shifts. Contract hours return a warning.'
+            'Choose the week and the shift.',
+            'Pick a staff member who looks suitable.',
+            'Save it. The app checks time off, other shifts, role, and hours.'
           ],
           'assignment-guide-panel'
         )
@@ -443,7 +443,7 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
       state.loading = true;
       state.flash = nextFlash || {
         details: [],
-        text: 'Loading assignment data...',
+        text: 'Loading shifts...',
         tone: 'info'
       };
       render();
@@ -477,7 +477,7 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
         }
 
         state.loading = false;
-        const feedback = uiHelpers.getErrorFeedback(error, 'Could not load assignment data.');
+        const feedback = uiHelpers.getErrorFeedback(error, 'Could not load shifts.');
         setFlash(state, 'error', feedback.text, feedback.details);
         render();
       }
@@ -512,7 +512,7 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
       }
 
       if (getAssignmentForShift(state, selectedShift.id)) {
-        setFlash(state, 'warning', 'This shift already has a saved assignment.');
+        setFlash(state, 'warning', 'This shift already has staff.');
         render();
         return;
       }
@@ -524,7 +524,7 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
       );
 
       if (staffStatus.blocked) {
-        setFlash(state, 'warning', 'This assignment cannot be saved yet.', [
+        setFlash(state, 'warning', 'This shift cannot be saved yet.', [
           staffStatus.warning
         ]);
         render();
@@ -547,7 +547,7 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
           tone: warningDetails.length > 0 ? 'warning' : 'success'
         });
       } catch (error) {
-        const feedback = uiHelpers.getErrorFeedback(error, 'Could not save this assignment.');
+        const feedback = uiHelpers.getErrorFeedback(error, 'Could not save this shift.');
         setFlash(state, 'error', feedback.text, feedback.details);
         render();
       }
@@ -571,8 +571,8 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
 
       if (state.sessionUser.role !== 'MANAGER') {
         uiHelpers.renderUnauthorized(
-          workspaceElement,
-          'Manager access required',
+        workspaceElement,
+          'Manager sign in needed',
           'Only managers can assign staff to shifts.'
         );
         return;
@@ -586,7 +586,7 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
 
       uiHelpers.renderUnauthorized(
         workspaceElement,
-        'Session required',
+        'Sign in needed',
         'Sign in with a manager account to assign staff to shifts.'
       );
     }

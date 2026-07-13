@@ -47,7 +47,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
     });
     const toolbarRow = uiHelpers.createElement('div', { className: 'toolbar-row' });
     const toolbarTitle = uiHelpers.createElement('div', { className: 'toolbar-title' });
-    toolbarTitle.appendChild(uiHelpers.createElement('h3', { text: 'Find leave requests' }));
+    toolbarTitle.appendChild(uiHelpers.createElement('h3', { text: 'Find time off' }));
     toolbarRow.appendChild(toolbarTitle);
 
     const controls = uiHelpers.createElement('div', { className: 'toolbar-controls' });
@@ -65,7 +65,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
 
     const reloadButton = uiHelpers.createElement('button', {
       className: 'action-button button-secondary',
-      text: 'Load requests',
+      text: 'Load',
       attributes: { type: 'button' }
     });
     reloadButton.addEventListener('click', () => {
@@ -84,33 +84,33 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
     });
     panel.appendChild(
       uiHelpers.createPanelHeading(
-        state.sessionUser.role === 'MANAGER' ? 'Leave to review' : 'My leave requests',
+        state.sessionUser.role === 'MANAGER' ? 'Time off to review' : 'My time off',
         state.sessionUser.role === 'MANAGER'
-          ? 'Approve or reject requests that are still waiting.'
+          ? 'Approve or reject time off that is still waiting.'
           : 'Check what you asked for and whether the manager has decided.'
       )
     );
 
     if (state.loading) {
-      panel.appendChild(uiHelpers.createElement('p', { className: 'panel-copy', text: 'Loading leave requests...' }));
+      panel.appendChild(uiHelpers.createElement('p', { className: 'panel-copy', text: 'Loading time off...' }));
       return panel;
     }
 
     if (state.records.length === 0) {
       return uiHelpers.createEmptyPanel(
         state.sessionUser.role === 'MANAGER'
-          ? 'No leave requests to show'
-          : 'You have not sent a leave request yet',
+          ? 'No time off to show'
+          : 'You have not asked for time off yet',
         state.sessionUser.role === 'MANAGER'
-          ? 'Requests will appear here when staff ask for leave. Change the status filter if you want to check older decisions.'
-          : 'Use the form to choose dates and send a request to the manager.',
+          ? 'Requests appear here when staff ask for time off. Change the status filter to check older decisions.'
+          : 'Use the form to choose dates and send it to the manager.',
         'content-panel--span-10',
         state.sessionUser.role === 'STAFF'
           ? {
-              label: 'Ask for leave',
+              label: 'Ask for time off',
               onClick: () => {
                 state.formStep = 1;
-                setFlash(state, 'info', 'Use the form to send your first leave request.');
+                setFlash(state, 'info', 'Use the form to ask for time off.');
                 actions.render();
               },
               tone: 'primary'
@@ -172,7 +172,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
         });
         reviewButton.addEventListener('click', () => {
           fillManagerComment(state, record);
-          setFlash(state, 'info', `Reviewing ${record.fullName} leave request.`);
+          setFlash(state, 'info', `Reviewing ${record.fullName} time off.`);
           actions.render();
         });
         actionCell.appendChild(reviewButton);
@@ -183,7 +183,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
           attributes: { type: 'button' }
         });
         withdrawButton.addEventListener('click', async () => {
-          if (!uiHelpers.confirmAction('Withdraw this leave request?')) {
+          if (!uiHelpers.confirmAction('Withdraw this time off request?')) {
             return;
           }
 
@@ -211,7 +211,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
     });
     panel.appendChild(
       uiHelpers.createPanelHeading(
-        'Ask for leave',
+        'Ask for time off',
         'Choose the dates and add a short reason for the manager.'
       )
     );
@@ -291,7 +291,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
       form.appendChild(
         uiHelpers.createElement('p', {
           className: 'wizard-step-copy',
-          text: 'Lastly check the request before sending it.'
+          text: 'Lastly check the dates before sending it.'
         })
       );
       grid.appendChild(
@@ -340,7 +340,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
     } else {
       const submitButton = uiHelpers.createElement('button', {
         className: 'action-button button-primary',
-        text: 'Send request',
+        text: 'Send',
         attributes: { type: 'submit' }
       });
       actionsRow.appendChild(submitButton);
@@ -365,8 +365,8 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
 
     if (!selectedRecord) {
       return uiHelpers.createEmptyPanel(
-        'Select a pending request',
-        'Choose a request marked waiting for manager, then approve or reject it.',
+        'Select waiting time off',
+        'Choose one waiting request, then approve or reject it.',
         'content-panel--span-6 leave-decision-panel',
         {
           label: 'Show waiting requests',
@@ -384,7 +384,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
     });
     panel.appendChild(
       uiHelpers.createPanelHeading(
-        'Decide leave request',
+        'Decide time off',
         `Review ${selectedRecord.fullName} from ${selectedRecord.startDate} to ${selectedRecord.endDate}.`
       )
     );
@@ -411,7 +411,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
       attributes: { type: 'button', disabled: selectedRecord.status !== 'PENDING' }
     });
     approveButton.addEventListener('click', async () => {
-      if (!uiHelpers.confirmAction(`Approve leave for ${selectedRecord.fullName}?`)) {
+      if (!uiHelpers.confirmAction(`Approve time off for ${selectedRecord.fullName}?`)) {
         return;
       }
 
@@ -426,7 +426,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
       attributes: { type: 'button', disabled: selectedRecord.status !== 'PENDING' }
     });
     rejectButton.addEventListener('click', async () => {
-      if (!uiHelpers.confirmAction(`Reject leave for ${selectedRecord.fullName}?`)) {
+      if (!uiHelpers.confirmAction(`Reject time off for ${selectedRecord.fullName}?`)) {
         return;
       }
 
@@ -478,7 +478,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
       grid.appendChild(renderToolbar(state, actions));
       grid.appendChild(
         uiHelpers.createStepsPanel(
-          state.sessionUser.role === 'MANAGER' ? 'How to handle leave' : 'How leave works',
+          state.sessionUser.role === 'MANAGER' ? 'How to handle time off' : 'How time off works',
           state.sessionUser.role === 'MANAGER'
             ? 'Keep the decision clear before shifts are final.'
             : 'The request stays visible while it waits for a manager.',
@@ -507,7 +507,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
       state.loading = true;
       state.flash = nextFlash || {
         details: [],
-        text: 'Loading leave requests...',
+        text: 'Loading time off...',
         tone: 'info'
       };
       render();
@@ -549,11 +549,11 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
         state.formStep = 1;
         await loadLeaveRequests({
           details: [],
-          text: 'Leave request sent.',
+          text: 'Time off request sent.',
           tone: 'success'
         });
       } catch (error) {
-        const feedback = uiHelpers.getErrorFeedback(error, 'Could not submit leave request.');
+        const feedback = uiHelpers.getErrorFeedback(error, 'Could not send time off request.');
         setFlash(state, 'error', feedback.text, feedback.details);
         render();
       }
@@ -572,11 +572,11 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
         state.form.managerComment = '';
         await loadLeaveRequests({
           details: [],
-          text: `Leave request ${action === 'approve' ? 'approved' : 'rejected'}.`,
+          text: `Time off ${action === 'approve' ? 'approved' : 'rejected'}.`,
           tone: 'success'
         });
       } catch (error) {
-        const feedback = uiHelpers.getErrorFeedback(error, 'Could not decide the leave request.');
+        const feedback = uiHelpers.getErrorFeedback(error, 'Could not decide this time off request.');
         setFlash(state, 'error', feedback.text, feedback.details);
         render();
       }
@@ -592,11 +592,11 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
         state.selectedLeaveRequestId = null;
         await loadLeaveRequests({
           details: [],
-          text: 'Leave request withdrawn.',
+          text: 'Time off request withdrawn.',
           tone: 'success'
         });
       } catch (error) {
-        const feedback = uiHelpers.getErrorFeedback(error, 'Could not remove the leave request.');
+        const feedback = uiHelpers.getErrorFeedback(error, 'Could not remove this time off request.');
         setFlash(state, 'error', feedback.text, feedback.details);
         render();
       }
@@ -627,8 +627,8 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
 
       uiHelpers.renderUnauthorized(
         workspaceElement,
-        'Session required',
-        'Sign in with a staff or manager account to use the live leave workflow.'
+        'Sign in needed',
+        'Sign in to ask for time off or review requests.'
       );
     }
   };

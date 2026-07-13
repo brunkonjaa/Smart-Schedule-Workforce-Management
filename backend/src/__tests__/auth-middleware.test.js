@@ -205,6 +205,7 @@ describe('auth middleware', () => {
         email: activeEmail,
         id: activeUserId,
         mustChangePassword: false,
+        primaryRole: 'FLOOR',
         role: 'MANAGER',
         staffProfileId: activeStaffProfileId
       }
@@ -262,6 +263,7 @@ describe('auth middleware', () => {
         email: activeEmail,
         id: activeUserId,
         mustChangePassword: false,
+        primaryRole: 'FLOOR',
         role: 'MANAGER',
         staffProfileId: activeStaffProfileId
       }

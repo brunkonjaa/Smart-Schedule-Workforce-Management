@@ -90,7 +90,7 @@ describe('shift recommendation service', () => {
       fullName: 'Wrong Role Staff',
       id: crypto.randomUUID(),
       isActive: true,
-      primaryRole: 'FLOOR',
+      primaryRole: 'KITCHEN',
       userId: crypto.randomUUID(),
       userIsActive: true
     },
@@ -105,7 +105,7 @@ describe('shift recommendation service', () => {
     },
     {
       contractHours: 24,
-      fullName: 'Missing Availability Staff',
+      fullName: 'Extra Bar Staff',
       id: crypto.randomUUID(),
       isActive: true,
       primaryRole: 'BAR',
@@ -114,7 +114,7 @@ describe('shift recommendation service', () => {
     },
     {
       contractHours: 24,
-      fullName: 'Unavailable Staff',
+      fullName: 'Late Cover Staff',
       id: crypto.randomUUID(),
       isActive: true,
       primaryRole: 'BAR',
@@ -462,15 +462,25 @@ describe('shift recommendation service', () => {
         startTime: '15:00'
       })
     );
-    expect(result.recommendations.map((candidate) => candidate.name)).toEqual([
+    const recommendationNames = result.recommendations.map((candidate) => candidate.name);
+    expect(recommendationNames).toEqual(expect.arrayContaining([
       'Best Candidate',
+      'Extra Bar Staff',
+      'Late Cover Staff',
       'Aaron Tie',
       'Zoe Tie',
       'Over Contract Staff',
       'Heavy Workload Staff'
-    ]);
+    ]));
+    expect(recommendationNames).not.toContain(inactiveStaff.fullName);
+    expect(recommendationNames).not.toContain(wrongRoleStaff.fullName);
+    expect(recommendationNames).not.toContain(leaveStaff.fullName);
+    expect(recommendationNames).not.toContain(overlapStaff.fullName);
+    expect(recommendationNames).not.toContain(touchingStaff.fullName);
 
-    const bestCandidateResult = result.recommendations[0];
+    const bestCandidateResult = result.recommendations.find((candidate) => {
+      return candidate.staffId === bestCandidate.id;
+    });
     expect(bestCandidateResult).toEqual(
       expect.objectContaining({
         contractHours: 30,
@@ -481,13 +491,10 @@ describe('shift recommendation service', () => {
       })
     );
 
-    const tieSlice = result.recommendations.slice(1, 3);
-    expect(tieSlice.map((candidate) => candidate.name)).toEqual([
-      'Aaron Tie',
-      'Zoe Tie'
-    ]);
-    expect(tieSlice[0].score).toBe(tieSlice[1].score);
-    expect(tieSlice[0].projectedWeeklyHours).toBe(tieSlice[1].projectedWeeklyHours);
+    const aaronResult = result.recommendations.find((candidate) => candidate.staffId === aaronTie.id);
+    const zoeResult = result.recommendations.find((candidate) => candidate.staffId === zoeTie.id);
+    expect(aaronResult.score).toBe(zoeResult.score);
+    expect(aaronResult.projectedWeeklyHours).toBe(zoeResult.projectedWeeklyHours);
 
     const overContractResult = result.recommendations.find((candidate) => {
       return candidate.staffId === overContractStaff.id;
@@ -519,18 +526,6 @@ describe('shift recommendation service', () => {
           })
         }),
         expect.objectContaining({
-          name: missingAvailabilityStaff.fullName,
-          reason: expect.objectContaining({
-            code: 'ASSIGNMENT_AVAILABILITY_CONFLICT'
-          })
-        }),
-        expect.objectContaining({
-          name: unavailableStaff.fullName,
-          reason: expect.objectContaining({
-            code: 'ASSIGNMENT_UNAVAILABLE_CONFLICT'
-          })
-        }),
-        expect.objectContaining({
           name: overlapStaff.fullName,
           reason: expect.objectContaining({
             code: 'ASSIGNMENT_OVERLAP_CONFLICT'
@@ -544,6 +539,9 @@ describe('shift recommendation service', () => {
         })
       ])
     );
+    const excludedNames = result.excluded.map((candidate) => candidate.name);
+    expect(excludedNames).not.toContain(missingAvailabilityStaff.fullName);
+    expect(excludedNames).not.toContain(unavailableStaff.fullName);
 
     const assignmentCountAfter = await query(
       'SELECT COUNT(*)::int AS total FROM shift_assignments WHERE shift_id = $1',
@@ -552,10 +550,15 @@ describe('shift recommendation service', () => {
     expect(assignmentCountAfter.rows[0].total).toBe(assignmentCountBefore.rows[0].total);
   });
 
-  test('returns a valid empty recommendation list when nobody is eligible', async () => {
+  test('recommends matching-role staff without saved availability', async () => {
     const result = await getShiftRecommendations(noEligibleShiftId);
 
-    expect(result.recommendations).toEqual([]);
+    expect(result.recommendations.map((candidate) => candidate.name)).toContain(
+      wrongRoleStaff.fullName
+    );
+    expect(result.excluded.map((candidate) => candidate.name)).not.toContain(
+      wrongRoleStaff.fullName
+    );
     expect(result.excluded.length).toBeGreaterThan(0);
     expect(result.shift).toEqual(
       expect.objectContaining({

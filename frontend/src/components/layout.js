@@ -234,6 +234,10 @@ window.SmartSchedule.layout = (function createLayout() {
   }
 
   function renderPageIntro(page, role) {
+    if (page.hideIntro) {
+      return '';
+    }
+
     const compactClass = page.compactIntro ? ' page-intro--compact' : '';
     const metricRowClass =
       page.id === 'overview'

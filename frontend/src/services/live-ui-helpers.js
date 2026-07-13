@@ -55,8 +55,8 @@ window.SmartSchedule.liveUiHelpers = (function createLiveUiHelpers() {
     workspaceElement.textContent = '';
 
     const metrics = createElement('div', { className: 'metric-row' });
-    metrics.appendChild(createMetric('Access', 'Restricted', 'accent'));
-    metrics.appendChild(createMetric('Session', 'Required'));
+    metrics.appendChild(createMetric('Sign in', 'Needed', 'accent'));
+    metrics.appendChild(createMetric('Page', 'Locked'));
     workspaceElement.appendChild(metrics);
 
     const grid = createElement('div', { className: 'workspace-grid' });
@@ -338,16 +338,8 @@ window.SmartSchedule.liveUiHelpers = (function createLiveUiHelpers() {
       return 'Choose a valid day.';
     }
 
-    if (/overlaps another availability window/.test(detail)) {
-      return 'This time overlaps another availability entry for the same day.';
-    }
-
     if (detail === 'entries must be a non-empty array') {
-      return 'Add at least one availability entry first.';
-    }
-
-    if (detail === 'at least one availability field must be provided') {
-      return 'Make a change before saving.';
+      return 'Add at least one time first.';
     }
 
     if (detail === 'request body must be a JSON object') {
@@ -398,7 +390,7 @@ window.SmartSchedule.liveUiHelpers = (function createLiveUiHelpers() {
       return 'The staff filter is not valid.';
     }
 
-    if (/leaveRequestId must be a valid UUID$/.test(detail) || /shiftId must be a valid UUID$/.test(detail) || /availabilityId must be a valid UUID$/.test(detail)) {
+    if (/leaveRequestId must be a valid UUID$/.test(detail) || /shiftId must be a valid UUID$/.test(detail)) {
       return 'The selected item is not valid.';
     }
 
@@ -421,27 +413,18 @@ window.SmartSchedule.liveUiHelpers = (function createLiveUiHelpers() {
     }
 
     const directMessages = {
-      'The availability request contains invalid fields.': 'Please check the availability details and try again.',
-      'The leave request contains invalid fields.': 'Please check the leave request and try again.',
+      'The leave request contains invalid fields.': 'Please check the time off request and try again.',
       'The shift request contains invalid fields.': 'Please check the shift details and try again.',
-      'One or more availability windows overlap an existing entry for that week.':
-        'These times overlap another availability entry for this week.',
-      'This availability window overlaps another entry for the same week.':
-        'This time overlaps another availability entry for this week.',
-      'Only current or future availability entries can be changed.':
-        'Past availability entries cannot be changed.',
-      'The requested availability entry could not be found.':
-        'This availability entry could not be found.',
       'This leave request overlaps an existing pending or approved request.':
-        'These dates overlap another leave request.',
+        'These dates overlap another time off request.',
       'Only pending leave requests can be decided.':
-        'This leave request has already been decided.',
+        'This time off request has already been decided.',
       'Only pending leave requests can be withdrawn.':
-        'Only pending leave requests can be removed.',
+        'Only waiting time off requests can be removed.',
       'Only current or future pending leave requests can be withdrawn.':
-        'Past leave requests cannot be removed.',
+        'Past time off requests cannot be removed.',
       'The requested leave request could not be found.':
-        'This leave request could not be found.',
+        'This time off request could not be found.',
       'Only current or future shifts can be changed.':
         'Past shifts cannot be changed.',
       'The requested shift could not be found.':

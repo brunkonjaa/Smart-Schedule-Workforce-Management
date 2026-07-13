@@ -393,7 +393,7 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
       createElement('p', {
         className: 'panel-copy',
         text: isEditing
-          ? 'Update the details used later for shifts and assignments.'
+          ? 'Update the details used later for shifts and the rota.'
           : 'Create the login and profile before this person appears in planning.'
       })
     );
@@ -668,9 +668,9 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
   const renderUnauthorized = (workspaceElement, message) => {
     workspaceElement.textContent = '';
     const metrics = createElement('div', { className: 'metric-row' });
-    metrics.appendChild(createMetric('Access', 'Restricted', 'accent'));
+    metrics.appendChild(createMetric('Sign in', 'Needed', 'accent'));
     metrics.appendChild(createMetric('Role', 'Manager only'));
-    metrics.appendChild(createMetric('API', 'Session required'));
+    metrics.appendChild(createMetric('Page', 'Locked'));
     workspaceElement.appendChild(metrics);
 
     const grid = createElement('div', { className: 'workspace-grid' });
@@ -678,7 +678,7 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
       className: 'content-panel content-panel--empty content-panel--span-16'
     });
     const emptyState = createElement('div', { className: 'empty-state' });
-    emptyState.appendChild(createElement('h3', { text: 'Manager access required' }));
+    emptyState.appendChild(createElement('h3', { text: 'Manager sign in needed' }));
     emptyState.appendChild(
       createElement('p', {
         text: message
@@ -718,7 +718,7 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
       const activeStaffCount = state.records.filter((record) => record.isActive).length;
       const inactiveStaffCount = state.records.filter((record) => !record.isActive).length;
       uiHelpers.renderIntroMetrics([
-        { label: 'Owner', value: 'Manager', tone: 'accent' },
+        { label: 'Your role', value: 'Manager', tone: 'accent' },
         {
           label: 'Active staff',
           value: state.loading ? 'Loading...' : String(activeStaffCount),
@@ -742,12 +742,12 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
       grid.appendChild(renderForm(state, actions));
       grid.appendChild(
         uiHelpers.createStepsPanel(
-          'Staff setup order',
-          'This is the simple order a manager can follow.',
+          'Add staff',
+          'Follow this order so the person can be used on the rota.',
           [
             'Add the staff account and contact details.',
             'Set the main role and weekly contract hours.',
-            'Save the person before using them in shifts or assignments.'
+            'Save the person before putting them on shifts.'
           ],
           'staff-guide-panel'
         )
@@ -810,7 +810,7 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
         if (error.status === 403) {
           renderUnauthorized(
             workspaceElement,
-            'Your current account does not have manager access to staff.'
+            'This page is only for managers.'
           );
           return;
         }
@@ -908,7 +908,7 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
       if (state.sessionUser.role !== 'MANAGER') {
         renderUnauthorized(
           workspaceElement,
-          'Only manager accounts can use the live staff management screen.'
+          'This page is only for managers.'
         );
         return;
       }
@@ -923,8 +923,8 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
       renderUnauthorized(
         workspaceElement,
         error.status === 401
-          ? 'Sign in with the seeded manager account to create, edit, and review staff records.'
-          : 'The live staff screen could not verify the current session.'
+          ? 'Sign in with a manager account to add and edit staff.'
+          : 'The staff page could not check your sign in.'
       );
     }
   };

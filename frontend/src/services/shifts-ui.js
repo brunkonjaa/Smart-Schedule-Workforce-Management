@@ -471,11 +471,11 @@ window.SmartSchedule.shiftsUi = (function createShiftsUi() {
       grid.appendChild(
         uiHelpers.createStepsPanel(
           'How to build shifts',
-          'This page only creates the shift records. The assignment check comes after.',
+          'Add the times that need staff.',
           [
             'Choose the week you are planning.',
             'Create the shift date, start time, end time, and role needed.',
-            'Leave it open or draft until you are ready to assign staff.'
+            'Leave it open until you are ready to fill it.'
           ],
           'shift-guide-panel'
         )
@@ -590,8 +590,8 @@ window.SmartSchedule.shiftsUi = (function createShiftsUi() {
       if (state.sessionUser.role !== 'MANAGER') {
         uiHelpers.renderUnauthorized(
           workspaceElement,
-          'Manager access required',
-          'Only manager accounts can use the live shift planning screen.'
+          'Manager sign in needed',
+          'Only managers can create and edit shifts.'
         );
         return;
       }
@@ -605,8 +605,8 @@ window.SmartSchedule.shiftsUi = (function createShiftsUi() {
 
       uiHelpers.renderUnauthorized(
         workspaceElement,
-        'Session required',
-        'Sign in with a manager account to use the live shift planning screen.'
+        'Sign in needed',
+        'Sign in with a manager account to create shifts.'
       );
     }
   };

@@ -14,6 +14,8 @@ const listFilterFieldNames = ['weekStart'];
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const assignmentTransactionRetries = 2;
+const maxWeeklyAssignedShifts = 5;
+const maxWeeklyHours = 40;
 
 const createConflictError = (code, message) => {
   const error = new Error(message);
@@ -360,7 +362,8 @@ const getWeeklyHoursSummary = async (staffProfile, shift, client = null) => {
       SELECT COALESCE(
         SUM(EXTRACT(EPOCH FROM (shifts.end_time - shifts.start_time)) / 3600),
         0
-      ) AS assigned_hours
+      ) AS assigned_hours,
+      COUNT(*)::int AS assigned_shift_count
       FROM shift_assignments
       INNER JOIN shifts
         ON shifts.id = shift_assignments.shift_id
@@ -372,17 +375,38 @@ const getWeeklyHoursSummary = async (staffProfile, shift, client = null) => {
   );
 
   const assignedHoursBefore = roundHours(result.rows[0]?.assigned_hours);
+  const assignedShiftCountBefore = Number(result.rows[0]?.assigned_shift_count || 0);
   const shiftHours = getShiftHours(shift);
   const projectedHours = roundHours(assignedHoursBefore + shiftHours);
   const contractHours = roundHours(staffProfile.contract_hours);
 
   return {
     assignedHoursBefore,
+    assignedShiftCountBefore,
     contractHours,
     projectedHours,
+    projectedShiftCount: assignedShiftCountBefore + 1,
     shiftHours,
     weekStart
   };
+};
+
+const getWeeklyScheduleLimitConflict = (weeklyHours) => {
+  if (weeklyHours.projectedShiftCount > maxWeeklyAssignedShifts) {
+    return {
+      code: 'ASSIGNMENT_WEEKLY_SHIFT_LIMIT',
+      message: `This staff member would go over ${maxWeeklyAssignedShifts} shifts for the week.`
+    };
+  }
+
+  if (weeklyHours.projectedHours > maxWeeklyHours) {
+    return {
+      code: 'ASSIGNMENT_WEEKLY_HOURS_LIMIT',
+      message: `This staff member would go over ${maxWeeklyHours} hours for the week.`
+    };
+  }
+
+  return null;
 };
 
 const buildContractHoursWarningsFromSummary = (staffProfile, weeklyHours) => {
@@ -402,60 +426,6 @@ const buildContractHoursWarningsFromSummary = (staffProfile, weeklyHours) => {
       weekStart: weeklyHours.weekStart
     }
   ];
-};
-
-const findUnavailableWindowForShift = async (staffProfileId, shift, client = null) => {
-  const { dayOfWeek, weekStart } = getDateDetails(shift.shift_date);
-  const result = await executeQuery(
-    client,
-    `
-      SELECT id
-      FROM availability_entries
-      WHERE staff_profile_id = $1
-        AND week_start = $2::date
-        AND day_of_week = $3
-        AND status = 'UNAVAILABLE'
-        AND start_time < $4::time
-        AND end_time > $5::time
-      LIMIT 1
-    `,
-    [
-      staffProfileId,
-      weekStart,
-      dayOfWeek,
-      shift.end_time,
-      shift.start_time
-    ]
-  );
-
-  return result.rows[0] || null;
-};
-
-const findAvailableWindowForShift = async (staffProfileId, shift, client = null) => {
-  const { dayOfWeek, weekStart } = getDateDetails(shift.shift_date);
-  const result = await executeQuery(
-    client,
-    `
-      SELECT id
-      FROM availability_entries
-      WHERE staff_profile_id = $1
-        AND week_start = $2::date
-        AND day_of_week = $3
-        AND status = 'AVAILABLE'
-        AND start_time <= $4::time
-        AND end_time >= $5::time
-      LIMIT 1
-    `,
-    [
-      staffProfileId,
-      weekStart,
-      dayOfWeek,
-      shift.start_time,
-      shift.end_time
-    ]
-  );
-
-  return result.rows[0] || null;
 };
 
 const getAssignmentConflict = async (
@@ -511,32 +481,6 @@ const getAssignmentConflict = async (
     };
   }
 
-  const unavailableWindow = await findUnavailableWindowForShift(
-    assignmentInput.staffProfileId,
-    shift,
-    client
-  );
-
-  if (unavailableWindow) {
-    return {
-      code: 'ASSIGNMENT_UNAVAILABLE_CONFLICT',
-      message: 'This staff member is marked unavailable for this shift time.'
-    };
-  }
-
-  const availableWindow = await findAvailableWindowForShift(
-    assignmentInput.staffProfileId,
-    shift,
-    client
-  );
-
-  if (!availableWindow) {
-    return {
-      code: 'ASSIGNMENT_AVAILABILITY_CONFLICT',
-      message: 'This staff member does not have availability covering this shift time.'
-    };
-  }
-
   return null;
 };
 
@@ -563,6 +507,16 @@ const evaluateAssignmentEligibility = async (
   }
 
   const weeklyHours = await getWeeklyHoursSummary(staffProfile, shift, client);
+  const scheduleLimitConflict = getWeeklyScheduleLimitConflict(weeklyHours);
+
+  if (scheduleLimitConflict) {
+    return {
+      eligible: false,
+      exclusionReason: scheduleLimitConflict,
+      warnings: [],
+      weeklyHours
+    };
+  }
 
   return {
     eligible: true,
@@ -588,6 +542,18 @@ const assertNoAssignmentConflicts = async (
   if (conflict) {
     throw createConflictError(conflict.code, conflict.message);
   }
+
+  const weeklyHours = await getWeeklyHoursSummary(staffProfile, shift, client);
+  const scheduleLimitConflict = getWeeklyScheduleLimitConflict(weeklyHours);
+
+  if (scheduleLimitConflict) {
+    throw createConflictError(
+      scheduleLimitConflict.code,
+      scheduleLimitConflict.message
+    );
+  }
+
+  return weeklyHours;
 };
 
 const insertAssignment = async (assignmentInput, assignedByUserId, client = null) => {
@@ -703,14 +669,14 @@ const createAssignment = async (assignmentInput, assignedByUserId) => {
         );
       }
 
-      await assertNoAssignmentConflicts(
+      const weeklyHours = await assertNoAssignmentConflicts(
         assignmentInput,
         shift,
         staffProfile,
         client
       );
 
-      const warnings = await buildContractHoursWarnings(staffProfile, shift, client);
+      const warnings = buildContractHoursWarningsFromSummary(staffProfile, weeklyHours);
       const insertedAssignment = await insertAssignment(
         assignmentInput,
         assignedByUserId,
@@ -781,7 +747,7 @@ const updateAssignment = async (assignmentId, assignmentInput, assignedByUserId)
       };
     }
 
-    await assertNoAssignmentConflicts(
+    const weeklyHours = await assertNoAssignmentConflicts(
       {
         shiftId: existingAssignment.shiftId,
         staffProfileId: assignmentInput.staffProfileId
@@ -791,7 +757,7 @@ const updateAssignment = async (assignmentId, assignmentInput, assignedByUserId)
       client
     );
 
-    const warnings = await buildContractHoursWarnings(staffProfile, shift, client);
+    const warnings = buildContractHoursWarningsFromSummary(staffProfile, weeklyHours);
 
     await executeQuery(
       client,

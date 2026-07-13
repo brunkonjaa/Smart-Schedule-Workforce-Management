@@ -16,6 +16,7 @@ const dayLabels = [
   'Saturday',
   'Sunday'
 ];
+const allowedRotaDepartments = [...allowedWorkRoles, 'ALL'];
 
 const buildWeekDays = (weekStart) => {
   const startDate = new Date(`${weekStart}T00:00:00Z`);
@@ -67,8 +68,8 @@ const buildRotaFilters = (queryParams) => {
   const weekStart = validateWeekStart(queryParams?.weekStart, details);
   const department = String(queryParams?.department || 'BAR').trim().toUpperCase();
 
-  if (!allowedWorkRoles.includes(department)) {
-    details.push(`department must be one of: ${allowedWorkRoles.join(', ')}`);
+  if (!allowedRotaDepartments.includes(department)) {
+    details.push(`department must be one of: ${allowedRotaDepartments.join(', ')}`);
   }
 
   return {
@@ -81,6 +82,7 @@ const buildRotaFilters = (queryParams) => {
 };
 
 const listRotaStaff = async (department) => {
+  const filterByDepartment = department !== 'ALL';
   const result = await query(
     `
       SELECT
@@ -93,12 +95,12 @@ const listRotaStaff = async (department) => {
       FROM staff_profiles
       INNER JOIN users
         ON users.id = staff_profiles.user_id
-      WHERE staff_profiles.primary_role = $1
-        AND staff_profiles.is_active = TRUE
+      WHERE staff_profiles.is_active = TRUE
         AND users.is_active = TRUE
-      ORDER BY staff_profiles.full_name ASC
+        ${filterByDepartment ? 'AND staff_profiles.primary_role = $1' : ''}
+      ORDER BY staff_profiles.primary_role ASC, staff_profiles.full_name ASC
     `,
-    [department]
+    filterByDepartment ? [department] : []
   );
 
   return result.rows.map((row) => ({
@@ -110,6 +112,7 @@ const listRotaStaff = async (department) => {
 };
 
 const listRotaShifts = async (weekStart, weekEnd, department) => {
+  const filterByDepartment = department !== 'ALL';
   const result = await query(
     `
       SELECT
@@ -129,17 +132,18 @@ const listRotaShifts = async (weekStart, weekEnd, department) => {
       LEFT JOIN staff_profiles
         ON staff_profiles.id = shift_assignments.staff_profile_id
       WHERE shifts.shift_date BETWEEN $1 AND $2
-        AND shifts.required_role = $3
         AND shifts.status <> 'CANCELLED'
+        ${filterByDepartment ? 'AND shifts.required_role = $3' : ''}
       ORDER BY shifts.shift_date ASC, shifts.start_time ASC
     `,
-    [weekStart, weekEnd, department]
+    filterByDepartment ? [weekStart, weekEnd, department] : [weekStart, weekEnd]
   );
 
   return result.rows;
 };
 
 const listApprovedLeaveMarkers = async (weekStart, weekEnd, department) => {
+  const filterByDepartment = department !== 'ALL';
   const result = await query(
     `
       SELECT
@@ -156,12 +160,12 @@ const listApprovedLeaveMarkers = async (weekStart, weekEnd, department) => {
       WHERE leave_requests.status = 'APPROVED'
         AND leave_requests.start_date <= $2::date
         AND leave_requests.end_date >= $1::date
-        AND staff_profiles.primary_role = $3
         AND staff_profiles.is_active = TRUE
         AND users.is_active = TRUE
+        ${filterByDepartment ? 'AND staff_profiles.primary_role = $3' : ''}
       ORDER BY leave_requests.start_date ASC
     `,
-    [weekStart, weekEnd, department]
+    filterByDepartment ? [weekStart, weekEnd, department] : [weekStart, weekEnd]
   );
 
   return result.rows;
@@ -337,7 +341,7 @@ const buildSummary = (rows, days) => {
 
 const sanitizeRowsForStaff = (rows, days) => {
   return rows.map((row) => {
-    const sanitizedRow = {
+  const sanitizedRow = {
       days: days.reduce((cellsByDate, day) => {
         cellsByDate[day.date] = (row.days[day.date] || []).map((cell) => {
           return mapSanitizedStaffCell(cell);
@@ -345,7 +349,8 @@ const sanitizeRowsForStaff = (rows, days) => {
         return cellsByDate;
       }, {}),
       primaryRole: row.primaryRole,
-      staffName: row.staffName
+      staffName: row.staffName,
+      staffProfileId: row.staffProfileId
     };
 
     if (row.systemRow) {
@@ -379,7 +384,9 @@ const getRota = async (authUser, filters) => {
 
   const rows = formatRows(staffRows, openShiftRows, days);
   const visibleRows =
-    authUser.role === 'STAFF' ? sanitizeRowsForStaff(rows, days) : rows;
+    authUser.role === 'STAFF'
+      ? sanitizeRowsForStaff(rows, days)
+      : rows;
 
   return {
     days,
