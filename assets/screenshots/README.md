@@ -16,10 +16,11 @@ Current folders in use:
 2. `backend-auth`
 3. `backend-workflows`
 4. `database-setup`
-5. `frontend-shell`
-6. `frontend-workflows`
-7. `jira`
-8. `migrations`
+5. `deployment`
+6. `frontend-shell`
+7. `frontend-workflows`
+8. `jira`
+9. `migrations`
 
 If a new type of evidence is needed later, add another clear folder instead of dumping everything into one place.
 
@@ -132,6 +133,9 @@ Examples:
 - `085` Render hosted health connected
 - `086` Render hosted app login page
 - `087` Render service overview
+- `088` hosted manager rota week loaded
+- `089` hosted manager staff list loaded
+- `090` hosted staff rota read-only actions
 
 ## Practical Reminder
 
