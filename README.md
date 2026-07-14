@@ -1,159 +1,92 @@
 # Smart Schedule
 
-## What This Repo Is
+Smart Schedule is a hospitality workforce management app for building a weekly rota, keeping staff records, handling time off, and dealing with future shift swaps.
 
-Smart Schedule is a rota and staff coordination project for small hospitality teams.
+The main workflow is now the weekly rota. A manager creates shifts, assigns staff, and checks the warnings before the rota is used. Staff can view the full weekly roster, open their assigned shift menu, request a swap, and check their own history and leave requests.
 
-The idea is simple enough. Managers need one place to keep staff records, check availability, review leave, build weekly shifts, and see the rota without chasing messages or patching things together in spreadsheets. Staff need the smaller side of that, which is mainly login, availability, leave requests, and their own assigned shifts.
+## Current repo state
 
-Right now this repo is still not the full finished system yet, but it is not only the auth and staff base anymore either. The frontend shell is built, the backend foundation is in place, the Neon database connection is working, the PostgreSQL-backed session layer is wired, and the staff, availability, leave, shifts, assignment, and weekly rota layers now exist in the current checkpoint. The rota is now the first screen after login because that is closer to how a hospitality manager actually checks the week.
+The working build includes:
 
-## Why The Scope Was Tightened
+1. plain HTML, CSS, and JavaScript frontend
+2. Node.js and Express backend
+3. PostgreSQL database and ordered SQL migrations
+4. server-side sessions with `express-session` and `connect-pg-simple`
+5. bcrypt password checking
+6. manager and staff roles with backend authorization checks
+7. staff create, list, edit, deactivate, and filter workflow
+8. leave request submit, list, withdraw, approve, and reject workflow
+9. shift create, edit, list, and delete workflow
+10. assignment create, change, and remove workflow
+11. hard checks for duplicate shifts, role mismatch, approved leave, inactive staff, overlapping or touching shifts, and weekly limits of five shifts or forty hours
+12. contract-hour warnings when a save is allowed but goes above the staff contract
+13. weekly rota with Bar, Floor, Kitchen, and Kitchen Porter tabs
+14. manager rota actions and staff read-only rota access
+15. rule-based recommendation results for one open shift
+16. password reset request and single-use reset token flow
+17. manager-only password request view
+18. future shift swap request, target acceptance, and manager approval or rejection
+19. audit writes for manager shift and assignment changes
+20. demo seed data with Irish names, filled weekday shifts, and twelve previous weeks of history
 
-The earlier version of the project kept drifting wider. It had swaps, reports, audit log ideas, and some smarter scheduling features written into old notes. I cut that back because it was getting too easy to describe and too hard to finish properly.
+The audit log has no viewing page yet. Hosted deployment and formal UAT evidence also still need a final pass. These are the remaining gaps, not missing foundation work.
 
-The current build keeps the base workflow first:
+## Important route groups
 
-1. identity
-2. staff records
-3. availability
-4. leave
-5. shifts
-6. assignments
-7. rota view
+The backend is mounted under `/api/v1`:
 
-That is enough for the module and it is still a real scheduling problem.
+1. `/auth` for login, logout, current session, password change, and password reset
+2. `/staff` for manager staff management
+3. `/leave-requests` for time off
+4. `/shifts` for shift records and recommendations
+5. `/assignments` for manager assignment changes
+6. `/rota` for the weekly rota response
+7. `/shift-swaps` for staff swap requests and manager decisions
 
-## What Is Actually In The Repo Now
+## Local setup
 
-The current repo state is now past the setup-only stage, but it is still mid-build.
+From `backend/`:
 
-Built now:
+```powershell
+npm install
+npm run db:migrate
+npm start
+```
 
-1. frontend shell pages in plain `HTML`, `CSS`, and `JavaScript`
-2. role switch preview between manager and staff views
-3. theme switching and page navigation in the frontend shell
-4. backend Express app with JSON handling and a database-backed `/health` route
-5. PostgreSQL connection setup using `pg`
-6. PostgreSQL-backed session middleware configuration with `express-session` and `connect-pg-simple`
-7. migration runner with `up` and `status` commands
-8. `users` schema migration
-9. `staff_profiles` schema migration
-10. initial seed data migration
-11. login, logout, and authenticated-session routes under `/api/v1/auth`
-12. backend auth service for credential checks and public user shaping
-13. shared authentication middleware for protected routes
-14. security hardening around TLS, `helmet`, login rate limiting, and session timeout configuration
-15. role-based access middleware for manager-only backend routes
-16. manager staff routes for create, list, and edit under `/api/v1/staff`
-17. live frontend login flow using the real session-backed auth routes
-18. live manager staff page wired to backend staff data and update flows
-19. mutation-protection headers for logout and state-changing staff requests
-20. `availability_entries`, `leave_requests`, and `shifts` schema migrations
-21. live availability routes and UI for create, edit, list, and delete
-22. live leave routes and UI for submit, approve, reject, list, and staff-side withdraw
-23. live shift routes and UI for create, edit, list, and delete
-24. `shift_assignments` schema migration and assignment save route
-25. backend assignment checks for duplicate shifts, role mismatch, approved leave, overlapping or back-to-back shifts, missing availability, unavailable windows, inactive staff, non-open shifts, and contract-hours warnings
-26. manager assignment update and remove routes for rota cell actions
-27. weekly rota endpoint under `/api/v1/rota`
-28. rota-first frontend screen with department tabs, week controls, desktop grid, and mobile day view
-29. `OTHER` work role support for the fourth rota tab
-30. demo-history seed support with a reset script for rebuilding fake rota evidence data
-31. `audit_logs` schema migration and audit writes for manager shift and assignment changes
-32. manager-only shift recommendation route that reuses the assignment conflict rules and ranks eligible staff for one open shift
-33. rota recommendation modal for open shifts without turning the flow into auto-scheduling
-34. shared workflow helper logic for the route layer
-35. screenshot evidence through `080`
-36. Jest and Supertest coverage now including availability, leave, shift, assignment, rota, recommendation, and audit-write route flows
-37. exported SRS diagrams under `docs/SRS/diagrams/`
+The normal `.env` file is used by the backend. For safe local evidence work use `backend/local-evidence.env` and these guarded commands instead:
 
-Not built yet:
+```powershell
+npm run local:evidence:check
+npm run local:evidence:all
+npm run db:seed:demo-history:reset
+npm run db:seed:staff-history
+npm run local:evidence:start
+```
 
-1. audit log viewing screen
-2. deployment
-3. UAT evidence
-4. final documentation alignment after the last workflow checks
+The local evidence scripts refuse non-local database targets. The demo-history reset creates 24 active Irish-named staff records, weekday rota data, and the current/next week. The staff-history seed gives `alex.byrne@example.com` twelve previous worked weeks for the overview page.
 
-That distinction matters because a lot of the docs describe the target build shape, not just the already-running code.
+## Testing
 
-## Current Target MVP
+Run from `backend/`:
 
-These are still the active MVP features I am building toward:
+```powershell
+npm test -- --runInBand
+```
 
-1. login and logout
-2. manager and staff roles
-3. staff records
-4. weekly availability submission
-5. leave requests with approve or reject flow
-6. shift creation
-7. manual assignment
-8. staff rota view
-9. basic conflict checks
+The current local database run has 13 suites and 84 passing tests. The test environment must have migrations `012` to `015` applied as well as the earlier schema files.
 
-What matters here is that the rota is no longer only a planned screen. It now reads live shifts, assignments, approved leave markers, and open shift gaps from the backend. Managers can also ask for a rule-based staff recommendation for one open shift before they save the final assignment. Contract-hours warnings still come back as warnings instead of hard blocks, and manager shift or assignment changes now leave audit records. The audit screen itself is still not built.
+## Main project files
 
-## Current Stack
+1. `backend/` - Express app, routes, services, migrations, tests, and local scripts
+2. `frontend/` - shell, pages, services, and responsive styles
+3. `database/migrations/` - ordered PostgreSQL schema and data changes
+4. `docs/` - build notes, requirements, design, and testing records
+5. `assets/screenshots/` - numbered project evidence
 
-1. Frontend: `HTML`, `CSS`, `JavaScript`
-2. Backend: `Node.js` with `Express`
-3. Database: `PostgreSQL`
-4. Database host: `Neon Free`
-5. Web host target: `Render Free Web Service`
-6. Database driver: `pg`
-7. Auth direction: `express-session` with `bcrypt`
-8. Session storage direction: `connect-pg-simple`
-9. Testing plan: `Jest`, `Supertest`, `Postman`, and manual checks
-10. Project tracking: Jira
+## Stack decisions
 
-I stayed with plain frontend code on purpose. For this project it keeps the moving parts lower, and it is easier to explain in the report. On the other hand it means I need to keep my own structure tidy instead of leaning on a frontend framework.
+I kept the frontend plain because the workflows are easier to follow in this project without adding a framework. PostgreSQL was chosen over the earlier MySQL direction so the schema, hosted Neon database, and proposal use the same database story. Render remains the hosted app direction, with the free-tier limits accepted for this semester build.
 
-## Folder Structure
+## Deferred work
 
-1. `backend/` Express app, config, database utilities, session config, and scripts
-2. `frontend/` shell UI, reusable layout code, and styles
-3. `database/` ordered SQL migrations and database notes
-4. `docs/` planning, design, requirements, testing files, and SRS support exports
-5. `assets/` screenshots and other evidence files
-6. `scripts/` helper scripts if needed later
-7. `infra/` deployment support files
-8. `research/` notes and references
-9. `wireframes/` early UI sketches
-10. `logs/` local output if I need it during setup
-
-## Screenshot Evidence Rule
-
-All report evidence screenshots stay under `assets/screenshots/`.
-
-Rules:
-
-1. keep screenshots in simple subfolders based on what they show
-2. use one number sequence across the whole project
-3. keep the number at the start of the filename
-4. do not save secrets such as raw passwords or full connection strings in evidence screenshots
-
-Examples:
-
-1. `assets/screenshots/tests/backend-setup/001_backend-health-check-response.png`
-2. `assets/screenshots/tests/jira/027_scrum-11-in-progress.png`
-3. `assets/screenshots/tests/database-setup/029_staff-profiles-columns-query.png`
-4. `assets/screenshots/tests/backend-auth/039_login-success-response.png`
-
-## Hosting Direction
-
-The current hosting plan is still `Neon Free` for the database and `Render Free Web Service` for the app.
-
-I chose that because it is cheap, simple to demonstrate, and enough for the module. The trade-off is obvious as well. Free-tier cold starts and other limits are acceptable for this stage, but I would not describe that setup as production-ready for a real hospitality business.
-
-## Main Docs
-
-1. `docs/planning/technology_stack.md`
-2. `docs/planning/project_scope.md`
-3. `docs/planning/decision_log.md`
-4. `docs/planning/progress_log.md`
-5. `docs/design/database_design.md`
-6. `docs/design/database_migration_plan.md`
-7. `docs/design/api_contract.md`
-8. `docs/requirements/requirements_and_acceptance_criteria.md`
-9. `docs/requirements/rbac_matrix.md`
-10. `docs/testing/test_plan.md`
+The current MVP does not include full automatic scheduling, payroll integration, a native mobile app, multi-branch support, POS integration, reports, or an audit viewing screen. I left these out because the rota, leave, assignment, password recovery, and swap workflow needed to be real first.

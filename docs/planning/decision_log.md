@@ -311,7 +311,7 @@ Reason for selection:
 That gave me visible target pages for the main workflows before the backend routes existed.
 
 Drawback accepted:
-The shell uses preview data and placeholder interactions for now.
+The shell was initially preview-only, so the early screenshots did not prove live backend behavior. The current shell now mounts live auth, staff, leave, shifts, assignments, rota, password reset, and swap workflows.
 
 Status:
 Active
@@ -358,6 +358,57 @@ This kept the SRS grounded in the real Smart Schedule build. I created the diagr
 
 Drawback accepted:
 The diagram set is intentionally narrow. If the later build changes the workflows too much, the exports under `docs/SRS/diagrams/` will need another pass.
+
+Status:
+Active
+
+### D-16 Replace Weekly Availability With Exceptions
+
+Problem:
+Asking staff to submit availability every week did not match how the hospitality rota is normally managed, and it added another page that staff had to maintain.
+
+Selected option:
+Keep the normal staffing pattern in the rota and handle exceptions through leave requests and future shift swaps.
+
+Reason for selection:
+This keeps the weekly workflow closer to the real use case. It also means an assignment is not blocked just because a staff member has no weekly availability row.
+
+Drawback accepted:
+The system does not model every possible availability window. Managers need to keep the normal staffing pattern and use leave or swap requests for changes.
+
+Status:
+Active
+
+### D-17 Keep Swap Decisions In Two Steps
+
+Problem:
+A staff member asking for a swap should not immediately change the rota, especially when the replacement may have leave, role, or weekly limit conflicts.
+
+Selected option:
+Let the target accept first, then require manager approval before updating the assignment.
+
+Reason for selection:
+It keeps the staff request simple while leaving the final decision and conflict recheck with the manager workflow.
+
+Drawback accepted:
+The rota does not change immediately when someone volunteers. The request stays visible until the manager makes the final decision.
+
+Status:
+Active
+
+### D-18 Use Realistic Local Seed Records
+
+Problem:
+Numbered demo labels and starter emails made the rota harder to read and made the overview history empty for the staff account used in local checks.
+
+Selected option:
+Use Irish staff names, name-based emails, filled weekday demo shifts, and a separate twelve-week staff-history seed.
+
+Reason for selection:
+The app is easier to demonstrate when the rota looks like a real hospitality team and the overview has actual worked weeks to display.
+
+Drawback accepted:
+The seed data is for local demonstration and still needs to be kept separate from real production records.
 
 Status:
 Active

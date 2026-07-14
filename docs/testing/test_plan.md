@@ -1,151 +1,76 @@
 # Test Plan
 
-## What This Plan Covers
+This plan describes the checks used for the current Smart Schedule workflow. The important distinction is between automated route tests, local database checks, and manual browser evidence. They prove different things.
 
-This file covers the testing direction for the MVP.
+## Automated test result
 
-It also needs one honest note at the start. Most of the cases below are planned coverage, not finished automated coverage. Right now the repo has:
+The current local migrated database run passes:
 
-1. manual frontend shell evidence
-2. manual Neon and pgAdmin database checks
-3. backend health-route verification
-4. migration status and migration apply checks
-5. automated auth, staff, availability, leave, shift, and basic assignment route tests with `Jest` and `Supertest`
+```text
+13 test suites passed
+84 tests passed
+```
 
-That still is not full MVP test coverage. The missing part is mainly the assignment conflict rules and rota workflow.
+The suites cover authentication, staff, leave, shifts, assignments, rota, recommendation scoring/routes, password reset, shift swaps, rate limiting, middleware, and database configuration. The test database needs migrations `001` to `015` before the password-reset and shift-swap suites can run.
 
-## Test Strategy
+Run it from `backend/`:
 
-I am splitting testing into these layers:
+```powershell
+npm test -- --runInBand
+```
 
-1. unit tests for business rules
-2. integration tests for linked workflow steps
-3. API tests for route behavior
-4. manual UAT for full user flows
-5. security checks for auth, RBAC, and ownership rules
+For the local evidence database in PowerShell:
 
-## Test Environments
+```powershell
+$env:DOTENV_CONFIG_PATH='local-evidence.env'
+node -r dotenv/config node_modules/jest/bin/jest.js --runInBand
+```
 
-### Local
+## What is checked automatically
 
-1. Node.js and Express backend
-2. PostgreSQL database
-3. HTML, CSS, and JavaScript frontend shell
+1. valid and invalid login
+2. session lookup and logout
+3. protected route `401` and wrong-role `403` responses
+4. staff creation, duplicate email, update, active state, and validation
+5. leave date validation, creation, approval, rejection, withdrawal, and ownership
+6. shift validation, create, update, delete, and manager access
+7. assignment creation, duplicate protection, leave, role, inactive staff, overlap, touching shift, weekly shift, and weekly hour rules
+8. contract-hour warning output
+9. rota week, department, staff visibility, and manager action behavior
+10. recommendation eligibility, exclusions, scores, and route authorization
+11. password reset generic response, token expiry, single-use behavior, and manager request visibility
+12. shift swap creation, open/targeted requests, target acceptance, manager approval/rejection, ownership, and conflict checks
 
-### Hosted
+## Local database checks
 
-1. Render web service
-2. Neon PostgreSQL database
-3. seeded test data for demo and screenshots
+Use `backend/local-evidence.env`, never the normal hosted `.env`, for reset or seed work:
 
-## What Is Already Verifiable
+```powershell
+npm run local:evidence:check
+npm run local:evidence:all
+npm run db:seed:demo-history:reset
+npm run db:seed:staff-history
+```
 
-At the current checkpoint I can already verify:
+The seed data has 24 Irish-named active staff across Bar, Floor, Kitchen, and Kitchen Porter. It creates Monday-Friday shifts, avoids double shifts in the same day, and gives the selected staff overview account twelve previous weeks.
 
-1. the backend can reach the database through `/health`
-2. the Express app boots with the PostgreSQL-backed session middleware in place
-3. the migration runner reports applied and pending files
-4. the `users` and `staff_profiles` tables exist in Neon
-5. the seed data file can populate starter records
-6. the frontend shell renders the planned workflow pages
-7. valid login creates a session
-8. `GET /api/v1/auth/me` returns the current session user
-9. logout destroys the session
-10. a manager can create a basic saved shift assignment through the backend
-11. staff users are rejected from the assignment route
-12. duplicate assignment for the same shift returns a conflict
-13. overlapping or back-to-back assignment for the same staff member returns a conflict
-14. assignment above weekly contract hours returns a warning
-15. assignment create, update, and delete write audit records
-16. shift create, update, and delete write audit records
+## Manual workflow checks
 
-## Unit Test Coverage Planned
+1. manager logs in and checks the weekly rota
+2. staff logs in and sees the full roster without manager edit actions
+3. staff submits time off and the manager approves or rejects it
+4. manager creates a shift and assigns a matching active staff member
+5. the rota shows leave markers, filled shifts, open shifts, and department tabs
+6. staff starts a future-shift swap, chooses a person or open request, and sees the shared request page
+7. the target accepts and the manager approves the swap
+8. forgot password creates a manager-visible request and a reset link in the configured email output
+9. overview shows previous weeks worked, time off, swap requests, and the route back to the main rota
+10. the footer opens its email and phone links when the pointer reaches the bottom reveal area
 
-### Scheduling Rule Tests
+## Evidence rules
 
-| Test ID | Description | Expected Result |
-| --- | --- | --- |
-| UT-SCHED-01 | Assign staff when no conflicts exist | Assignment allowed |
-| UT-SCHED-02 | Assign staff on approved leave | Assignment blocked |
-| UT-SCHED-03 | Assign staff with overlapping or back-to-back shift | Assignment blocked |
-| UT-SCHED-04 | Assign staff outside availability window | Assignment blocked |
-| UT-SCHED-05 | Assign staff above contract hours | Warning returned |
+Screenshots belong under `assets/screenshots/tests/`, use one project-wide number sequence, and must not show passwords, connection strings, tokens, or unrelated browser tabs. Raw test-menu logs stay local unless a selected output is needed as report evidence.
 
-### Leave Tests
+## Still to do
 
-| Test ID | Description | Expected Result |
-| --- | --- | --- |
-| UT-LEAVE-01 | Leave end date before start date | Validation fails |
-| UT-LEAVE-02 | Approve pending leave | Status becomes `APPROVED` |
-
-## Integration Tests Planned
-
-| Test ID | Description | Expected Result |
-| --- | --- | --- |
-| IT-01 | Leave approval then assignment attempt | Assignment rejected |
-| IT-02 | Assignment flow stores actor and shift link correctly | Assignment saved correctly |
-| IT-03 | Staff record create persists user and staff profile | Both records saved |
-| IT-04 | Availability query returns only target week records | Week filter applied correctly |
-| IT-05 | Staff rota view shows only own assigned shifts | Ownership filter works |
-
-## API Test Cases Planned
-
-| Test ID | Endpoint | Scenario | Expected Result |
-| --- | --- | --- | --- |
-| API-01 | `POST /api/v1/auth/login` | Valid credentials | `200` |
-| API-02 | `POST /api/v1/auth/login` | Invalid credentials | `401` |
-| API-03 | `GET /api/v1/auth/me` | Authenticated session | `200` |
-| API-04 | `POST /api/v1/auth/logout` | Valid session logout | `204` |
-| API-05 | `GET /api/v1/staff` | Staff session used | `403` |
-| API-06 | `POST /api/v1/availability` | End time before start time | `400` |
-| API-07 | `PUT /api/v1/leave-requests/{id}/approve` | Manager approves valid request | `200` |
-| API-08 | `POST /api/v1/shifts` | Invalid shift time | `400` |
-| API-09 | `POST /api/v1/assignments` | Overlapping shift | `409` |
-| API-10 | `GET /api/v1/rota` | Staff requests own rota | `200` |
-
-## Security Test Cases Planned
-
-| Test ID | Scenario | Expected Result |
-| --- | --- | --- |
-| SEC-01 | Access manager endpoint with staff session | `403` |
-| SEC-02 | Access protected endpoint without session | `401` |
-| SEC-03 | Submit SQL injection payload in login field | Rejected or treated as plain input |
-| SEC-04 | Use expired or invalid session | `401` or `403` |
-| SEC-05 | Verify no secret values appear in logs or responses | Secrets absent |
-
-## UAT Scenarios Planned
-
-| UAT ID | Scenario | Evidence Needed |
-| --- | --- | --- |
-| UAT-01 | Manager logs in and creates a staff member | screenshot plus notes |
-| UAT-02 | Staff logs in and submits availability for a week | screenshot plus notes |
-| UAT-03 | Staff submits leave request | screenshot plus notes |
-| UAT-04 | Manager approves leave and sees it block assignment | screenshots plus notes |
-| UAT-05 | Manager creates shifts and assigns staff | screenshots plus notes |
-| UAT-06 | Staff views assigned shifts | screenshot plus notes |
-| UAT-07 | Staff attempts unauthorized action and receives correct denial | screenshot plus notes |
-
-## Screenshot Rule
-
-1. store screenshots under `assets/screenshots/`
-2. split them into clear folders by what they prove
-3. keep one global numbering sequence
-4. start every filename with the number
-5. avoid screenshots that leak secrets
-
-Examples:
-
-1. `assets/screenshots/tests/backend-setup/001_backend-health-check-response.png`
-2. `assets/screenshots/tests/frontend-shell/003_overview-dark.png`
-3. `assets/screenshots/tests/jira/031_scrum-11-done.png`
-4. `assets/screenshots/tests/backend-auth/039_login-success-response.png`
-
-## Exit Criteria
-
-Before I call the MVP test-ready, these need to be true:
-
-1. critical defects are fixed
-2. core UAT scenarios pass
-3. auth and RBAC tests pass
-4. no failing test evidence remains in the final set
-5. the hosted version works well enough for demo use
+Hosted UAT and final cross-browser evidence still need a focused pass. The audit records exist for shift and assignment changes, but there is no audit viewing screen to test yet.

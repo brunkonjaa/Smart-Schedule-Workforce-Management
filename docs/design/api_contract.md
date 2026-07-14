@@ -2,12 +2,7 @@
 
 ## Read This File The Right Way
 
-This file mixes two things:
-
-1. the route set that is actually live in the repo now
-2. the target contract for the parts that still come after this checkpoint
-
-I am writing it that way on purpose so the design stays honest. Right now the backend is no longer only in foundation and identity setup. Auth, staff management, availability, leave, shifts, assignment saving, assignment conflict checks, contract-hours warnings, assignment update/remove, weekly rota endpoint, shift recommendations, and backend audit writes are already live in the repo. Audit viewing still comes after this checkpoint.
+This file records the route shapes in the current repo. Password recovery, shift swaps, rota reads, assignment changes, and internal audit writes are included. Weekly availability is historical and is not a live route.
 
 ## Current Live Backend Surface
 
@@ -118,6 +113,40 @@ Destroy the current session and clear the `smart_schedule.sid` cookie.
 Current success:
 `204`
 
+### `POST /api/v1/auth/change-password`
+
+Purpose:
+Change the current user password after checking the existing password.
+
+Current request:
+
+```json
+{
+  "currentPassword": "OldPassword123!",
+  "newPassword": "NewPassword123!"
+}
+```
+
+Current success:
+`200`
+
+### `POST /api/v1/auth/password-reset/request`
+
+Purpose:
+Create a reset request and send a reset link when email delivery is configured.
+
+The response is `202` with a generic message for both matching and non-matching active emails. This avoids account enumeration. Local development can print the generated link through the configured email service.
+
+### `POST /api/v1/auth/password-reset/confirm`
+
+Purpose:
+Consume a valid reset token and set a new password. Invalid, expired, or already-used tokens return `400`.
+
+### `GET /api/v1/auth/password-reset/requests`
+
+Purpose:
+Show recent password recovery requests to managers. Passwords and reset tokens are not returned.
+
 ## Current Session Base Note
 
 The backend app now boots with PostgreSQL-backed session middleware through `express-session` and `connect-pg-simple`.
@@ -155,12 +184,12 @@ Example error payload:
 
 ## Current Build Reality
 
-The auth routes above are live now. Staff, availability, leave, shift, assignment, and rota routes are live as well.
+The auth routes above are live now. Staff, leave, shift, assignment, swap, and rota routes are live as well.
 
 That means:
 
 1. the route shapes here are a mix of current and next
-2. the repo already exposes the staff, availability, leave, shift, assignment, and rota read surface
+2. the repo already exposes the staff, leave, shift, assignment, swap, and rota read surface
 3. audit log records are written internally, but there is no audit read endpoint yet
 4. one selected open shift can now return a manager-only recommendation result before any assignment is saved
 
@@ -180,7 +209,7 @@ Current request shape:
 
 ```json
 {
-  "email": "staff1@example.com",
+  "email": "alex.byrne@example.com",
   "password": "InitialTempPassword123",
   "fullName": "Alex Byrne",
   "primaryRole": "FLOOR",
@@ -199,52 +228,6 @@ Update a staff profile. Manager only. Live now.
 
 Current success:
 `200`
-
-## Availability Routes
-
-### `GET /api/v1/availability`
-
-Purpose:
-View availability entries. Live now.
-
-Current query params:
-
-1. `weekStart` required date
-2. `staffProfileId` optional for manager use
-
-### `POST /api/v1/availability`
-
-Purpose:
-Create availability entries for the logged-in staff user. Live now.
-
-Current request shape:
-
-```json
-{
-  "weekStart": "2026-06-08",
-  "entries": [
-    {
-      "dayOfWeek": 1,
-      "startTime": "09:00",
-      "endTime": "17:00",
-      "status": "AVAILABLE"
-    }
-  ]
-}
-```
-
-Current success:
-`201`
-
-### `PUT /api/v1/availability/{availabilityId}`
-
-Purpose:
-Update own future availability entry. Live now.
-
-### `DELETE /api/v1/availability/{availabilityId}`
-
-Purpose:
-Delete own future availability entry. Live now.
 
 ## Leave Request Routes
 
@@ -347,7 +330,7 @@ Current success `200`:
 {
   "excluded": [
     {
-      "name": "Dylan Demo",
+      "name": "Aoife O'Sullivan",
       "reason": {
         "code": "ASSIGNMENT_LEAVE_CONFLICT",
         "message": "This staff member has approved leave on this shift date."
@@ -359,7 +342,7 @@ Current success `200`:
     {
       "contractHours": 30,
       "currentWeeklyHours": 22,
-      "name": "Ava Demo",
+      "name": "Cian Murphy",
       "projectedWeeklyHours": 28,
       "reasons": [
         {
@@ -395,9 +378,9 @@ Current hard-rule codes used in recommendation exclusions:
 1. `STAFF_NOT_ACTIVE`
 2. `ASSIGNMENT_ROLE_CONFLICT`
 3. `ASSIGNMENT_LEAVE_CONFLICT`
-4. `ASSIGNMENT_AVAILABILITY_CONFLICT`
-5. `ASSIGNMENT_UNAVAILABLE_CONFLICT`
-6. `ASSIGNMENT_OVERLAP_CONFLICT`
+4. `ASSIGNMENT_OVERLAP_CONFLICT`
+5. `ASSIGNMENT_WEEKLY_SHIFT_LIMIT`
+6. `ASSIGNMENT_WEEKLY_HOURS_LIMIT`
 
 ## Assignment Route
 
@@ -456,10 +439,9 @@ Possible business-rule errors:
 2. `404` unknown shift or staff record - live now
 3. `409` leave conflict - live now
 4. `409` overlap or back-to-back shift conflict - live now
-5. `409` availability conflict - live now
-6. `409` role conflict - live now
-7. `409` inactive staff or non-open shift - live now
-8. `warnings[]` contract-hours warning on successful create or update - live now
+5. `409` role conflict - live now
+6. `409` inactive staff or non-open shift - live now
+7. `warnings[]` contract-hours warning on successful create or update - live now
 
 ### `PUT /api/v1/assignments/{assignmentId}`
 
@@ -481,6 +463,45 @@ Remove a saved assignment from a current or future shift. Manager only. Live now
 
 Audit note:
 Assignment create, update, and delete actions now write to `audit_logs`. There is no public audit route yet.
+
+## Shift Swap Routes
+
+### `GET /api/v1/shift-swaps`
+
+Purpose:
+List active future swap requests for the shared staff and manager request page.
+
+### `POST /api/v1/shift-swaps`
+
+Purpose:
+Let the logged-in staff member request a swap for their own future assignment.
+
+Request:
+
+```json
+{
+  "assignmentId": "uuid",
+  "targetStaffProfileId": "uuid",
+  "reason": "Personal appointment"
+}
+```
+
+`targetStaffProfileId` can be omitted to leave the request open to an eligible colleague. The route returns `201` when the request is created.
+
+### `POST /api/v1/shift-swaps/{swapId}/accept`
+
+Purpose:
+Allow the eligible target staff member to accept a pending request. The normal assignment checks run before acceptance.
+
+### `PUT /api/v1/shift-swaps/{swapId}/approve`
+
+Purpose:
+Approve an accepted request and update the assignment through the normal assignment path.
+
+### `PUT /api/v1/shift-swaps/{swapId}/reject`
+
+Purpose:
+Reject a pending or accepted request with an optional manager note.
 
 ## Rota Route
 

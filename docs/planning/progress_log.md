@@ -27,6 +27,41 @@ Each entry should answer four practical things:
 3. what proves it
 4. what comes next
 
+## 2026-07-14 - Current documentation and workflow alignment
+
+### What changed
+
+1. password reset request and confirmation routes are now in the auth service, including expiring single-use tokens and a manager-only request list
+2. shift swaps now have a real migration, route, service, staff acceptance step, and manager approval/rejection step
+3. weekly availability was removed from the live workflow and migration `014_remove_weekly_availability.sql` records that change
+4. migration `015_normalize_seed_staff_emails.sql` changes the starter staff emails to `alex.byrne@example.com`, `jamie.murphy@example.com`, and `casey.doyle@example.com`
+5. `seed-demo-history.js` creates twelve previous weeks, current/next week rows, weekday shifts, 24 Irish-named staff, and no same-day double shifts in the generated assignments
+6. `seed-staff-history.js` adds two previous shifts per week for the staff overview account so the history cards have real local data
+7. the overview now combines history into one card, stacks swap requests and time off in the right column, and links back to the main rota
+8. the footer is a responsive bottom hover drawer with email and phone links
+9. the Time Off page now uses the same responsive card-grid layout as the overview and rota
+
+### Checks
+
+1. local database migrations `001` to `015` applied
+2. demo history reset completed with 840 shifts and 840 assignments
+3. staff history seed completed with 24 assigned history shifts for Alex Byrne
+4. backend local suite passed with 13 suites and 84 tests
+5. frontend JavaScript syntax checks passed
+6. local `/health` returned `200`
+
+### Still not done
+
+1. no audit log viewing page
+2. hosted UAT and final cross-browser evidence still need a focused pass
+3. the current browser connector was not available for fresh automated screenshots, so visual checks used the running local page and supplied browser captures
+
+### Next
+
+1. finish the documentation and private-note checkpoint
+2. run the final targeted checks before committing
+3. keep the report files separate from this Markdown update
+
 ## 2026-05-27
 
 ### Snapshot
@@ -155,7 +190,7 @@ Each entry should answer four practical things:
 
 1. I built the frontend shell for overview, login, staff, availability, leave, shifts, assignments, and rota pages.
 2. I added top navigation, role switching, theme switching, and page transitions.
-3. I shaped the pages around forms, tables, and workflow-first layouts instead of static placeholders only.
+3. I shaped the pages around forms, tables, and workflow-first layouts instead of leaving the shell as static screens only.
 4. I captured the main frontend shell screenshots and stored them under the repo evidence folder.
 
 ### Why It Changed
@@ -556,7 +591,7 @@ Each entry should answer four practical things:
 
 ### Why It Changed
 
-1. The SRS needed real project diagrams, not placeholders.
+1. The SRS needed real project diagrams, not empty diagram blocks.
 2. I kept the set small because the project is still mid-build and I did not want diagram sprawl for features that do not exist yet.
 
 ### Drawback Accepted
@@ -1008,7 +1043,7 @@ Each entry should answer four practical things:
 1. I added a manager-only recommendation read route at `GET /api/v1/shifts/{shiftId}/recommendations`.
 2. I kept it under the shifts route because the manager asks for a recommendation from one selected open shift, not from a separate scheduling module.
 3. I reused the current assignment conflict checks first, then ranked only the eligible staff with a small score based on weekly hours and contract hours.
-4. I added machine-readable exclusions for inactive staff, role mismatch, approved leave, unavailable windows, missing availability, and overlapping or touching same-day shifts.
+4. I added machine-readable exclusions for inactive staff, role mismatch, approved leave, weekly limits, and overlapping or touching same-day shifts.
 5. I added a rota recommendation modal so the manager can open one open shift, review the ranked staff, then hand off to the normal assignment save flow.
 6. I added focused recommendation route and service tests, then reran the existing assignment and rota tests plus the full backend suite.
 

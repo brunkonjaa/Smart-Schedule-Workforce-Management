@@ -1,59 +1,47 @@
 # RBAC Matrix
 
-## What This Matrix Is
+The backend uses three access states: unauthenticated, `STAFF`, and `MANAGER`. The frontend hides pages where possible, but the route middleware and service ownership checks are the real protection.
 
-This matrix shows the backend access rules for the MVP routes.
-
-It is important to say this clearly as well. A lot of this matrix is already wired now for auth, staff, availability, leave, shifts, assignments, assignment conflict checks, contract-hours warnings, the weekly rota read route, and internal audit writes. Audit log viewing still needs its own later work.
-
-## Roles
-
-1. `Unauthenticated`
-2. `STAFF`
-3. `MANAGER`
-
-## Endpoint Matrix
-
-| Endpoint | Unauthenticated | Staff | Manager | Notes |
+| Endpoint | Unauthenticated | Staff | Manager | Note |
 | --- | --- | --- | --- | --- |
-| `POST /api/v1/auth/login` | Allow | Allow | Allow | Public route |
-| `POST /api/v1/auth/logout` | Deny | Allow | Allow | Logged-in users only |
-| `GET /api/v1/staff` | Deny | Deny | Allow | Manager only |
-| `POST /api/v1/staff` | Deny | Deny | Allow | Manager only |
-| `PUT /api/v1/staff/{staffId}` | Deny | Deny | Allow | Manager only |
-| `GET /api/v1/availability?weekStart=...` | Deny | Allow own | Allow all | Staff limited to own records |
-| `POST /api/v1/availability` | Deny | Allow own | Deny | Staff creates own entries |
-| `PUT /api/v1/availability/{availabilityId}` | Deny | Allow own future | Deny | Ownership check required |
-| `DELETE /api/v1/availability/{availabilityId}` | Deny | Allow own future | Deny | Ownership check required |
-| `GET /api/v1/leave-requests` | Deny | Allow own | Allow all | Ownership check required for staff |
-| `POST /api/v1/leave-requests` | Deny | Allow own | Deny | Staff creates own request |
-| `PUT /api/v1/leave-requests/{id}/approve` | Deny | Deny | Allow | Manager only |
-| `PUT /api/v1/leave-requests/{id}/reject` | Deny | Deny | Allow | Manager only |
-| `DELETE /api/v1/leave-requests/{id}` | Deny | Allow own pending | Deny | Staff can withdraw own pending request |
-| `GET /api/v1/shifts?weekStart=...` | Deny | Deny | Allow | Manager only |
-| `POST /api/v1/shifts` | Deny | Deny | Allow | Manager only |
-| `PUT /api/v1/shifts/{shiftId}` | Deny | Deny | Allow | Manager only |
-| `DELETE /api/v1/shifts/{shiftId}` | Deny | Deny | Allow | Manager only |
-| `GET /api/v1/shifts/{shiftId}/recommendations` | Deny | Deny | Allow | Manager only advisory read |
-| `POST /api/v1/assignments` | Deny | Deny | Allow | Manager only |
-| `PUT /api/v1/assignments/{assignmentId}` | Deny | Deny | Allow | Manager only |
-| `DELETE /api/v1/assignments/{assignmentId}` | Deny | Deny | Allow | Manager only |
-| `GET /api/v1/rota?weekStart=...&department=...` | Deny | Allow view | Allow view | Staff can view the rota but cannot edit it |
+| `POST /api/v1/auth/login` | Allow | Allow | Allow | Login route |
+| `POST /api/v1/auth/logout` | Deny | Allow | Allow | Current session only |
+| `GET /api/v1/auth/me` | Deny | Allow | Allow | Current session user |
+| `POST /api/v1/auth/password-reset/request` | Allow with mutation header | Allow | Allow | Same generic response for unknown email |
+| `POST /api/v1/auth/password-reset/confirm` | Allow with valid token | Allow | Allow | Token is expiring and single-use |
+| `GET /api/v1/auth/password-reset/requests` | Deny | Deny | Allow | Manager password request view |
+| `GET /api/v1/staff` | Deny | Deny | Allow | Manager staff list |
+| `POST /api/v1/staff` | Deny | Deny | Allow | Manager creates staff account |
+| `PUT /api/v1/staff/{staffId}` | Deny | Deny | Allow | Manager edits staff record |
+| `GET /api/v1/leave-requests` | Deny | Own records | All records | Ownership filter for staff |
+| `POST /api/v1/leave-requests` | Deny | Own request | Deny | Staff creates leave |
+| `PUT /api/v1/leave-requests/{id}/approve` | Deny | Deny | Allow | Manager decision |
+| `PUT /api/v1/leave-requests/{id}/reject` | Deny | Deny | Allow | Manager decision |
+| `DELETE /api/v1/leave-requests/{id}` | Deny | Own pending | Deny | Staff withdrawal |
+| `GET /api/v1/shifts` | Deny | Deny | Allow | Manager shift management |
+| `POST /api/v1/shifts` | Deny | Deny | Allow | Manager creates shift |
+| `PUT /api/v1/shifts/{id}` | Deny | Deny | Allow | Manager edits shift |
+| `DELETE /api/v1/shifts/{id}` | Deny | Deny | Allow | Manager deletes shift |
+| `GET /api/v1/shifts/{id}/recommendations` | Deny | Deny | Allow | Advisory manager-only result |
+| `POST /api/v1/assignments` | Deny | Deny | Allow | Manager assigns staff |
+| `PUT /api/v1/assignments/{id}` | Deny | Deny | Allow | Manager changes assignment |
+| `DELETE /api/v1/assignments/{id}` | Deny | Deny | Allow | Manager removes assignment |
+| `GET /api/v1/rota` | Deny | Allow view | Allow view | Staff receives the full roster; edit actions remain manager-only |
+| `GET /api/v1/shift-swaps` | Deny | Relevant requests | Pending workflow | Staff can see requests connected to the shared swap page |
+| `POST /api/v1/shift-swaps` | Deny | Own future assignment | Deny | Optional target staff |
+| `POST /api/v1/shift-swaps/{id}/accept` | Deny | Eligible target only | Deny | Target acceptance |
+| `PUT /api/v1/shift-swaps/{id}/approve` | Deny | Deny | Allow | Manager final decision |
+| `PUT /api/v1/shift-swaps/{id}/reject` | Deny | Deny | Allow | Manager final decision |
 
-## Object-Level Rules
+## Object-level rules
 
-1. a staff user can only create, update, or delete their own availability entries
-2. a staff user can only create leave requests for themselves
-3. a staff user can only view and withdraw their own pending leave records
-4. a staff user can view rota sections but cannot create, update, or delete shifts or assignments
-5. manager-only cell actions still have backend role checks
+1. a staff user cannot create a leave request for another profile
+2. a staff user cannot withdraw another person’s request
+3. a staff user can only start a swap from their own future assignment
+4. a targeted swap can only be accepted by the named target
+5. accepting a swap still runs assignment eligibility checks
+6. manager-only shift and assignment actions are checked again on the backend
 
-## Current Repo Note
+## Test expectation
 
-The current repo now has the route middleware and ownership checks for the live auth, staff, availability, leave, shift, assignment, and rota read surface.
-
-## Security Test Expectations
-
-1. every manager-only endpoint should have at least one `403` test using a staff account
-2. every ownership-sensitive endpoint should have at least one cross-user denial test
-3. unauthenticated access to protected routes should return `401`
+The route suites should include unauthenticated `401`, wrong-role `403`, ownership denial, and business-rule `409` cases where those rules apply.

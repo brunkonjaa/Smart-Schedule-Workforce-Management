@@ -1,73 +1,49 @@
 # Local Evidence Workflow
 
-This is the local workflow for Smart Schedule evidence checks.
+Use this workflow for repeatable Smart Schedule checks against local PostgreSQL. The guard is important: the hosted `.env` points to Neon, so reset and seed commands must use `backend/local-evidence.env` instead.
 
-The main rule is simple: do not run reset or evidence seed commands against Neon. The hosted database is for final proof only. Local testing should use a local PostgreSQL database first, because the recommendation modal needs a known open shift, known staff availability, and known excluded staff cases.
+## Setup
 
-## First Setup
-
-1. Copy `backend/local-evidence.env.example` to `backend/local-evidence.env`.
-2. Change the password in `DATABASE_URL` so it matches the local PostgreSQL `postgres` user.
-3. Keep `backend/local-evidence.env` private. It is ignored by git.
-4. Create the local database named in that file if it does not exist yet.
-
-Example database name:
-
-```text
-smart_schedule_local
-```
+1. copy `backend/local-evidence.env.example` to `backend/local-evidence.env`
+2. set the local PostgreSQL password
+3. create the database named in the file, normally `smart_schedule_local`
+4. keep `local-evidence.env` outside Git
 
 ## Commands
 
-Run these from `backend`.
+Run from `backend/`:
 
 ```powershell
 npm run local:evidence:check
 npm run local:evidence:migrate
 npm run local:evidence:seed
-```
-
-Or run the migrate and seed together:
-
-```powershell
-npm run local:evidence:all
-```
-
-The script refuses to run if `DATABASE_URL` is not local. That is intentional because `backend/.env` currently points at Neon.
-
-After the local database is ready, run the app against the local evidence data:
-
-```powershell
 npm run local:evidence:start
 ```
 
-Then open:
+`npm run local:evidence:all` runs the local check, pending migrations, and recommendation seed in sequence.
 
-```text
-http://localhost:3000
+For the full rota seed and staff overview history:
+
+```powershell
+npm run db:seed:demo-history:reset
+npm run db:seed:staff-history
 ```
 
-## Recommendation Evidence Data
+The first command creates 24 active Irish-named staff records, Monday-Friday demo shifts, and the current/next week. The second command gives `alex.byrne@example.com` two assigned shifts in each of the previous twelve weeks.
 
-The local seed creates one controlled manager account and one controlled recommendation scenario.
+## Evidence accounts
 
-Use this manager only for local evidence:
+The recommendation evidence manager is:
 
 ```text
 evidence.manager@evidence.smart-schedule.test
 EvidenceManager123!
 ```
 
-The seeded rota week is:
+The controlled recommendation week is `2026-07-13`, with a target open shift on `2026-07-15` from `15:00` to `21:00` for `BAR`.
 
-```text
-2026-07-13
-```
+The local seed script prints the exact account names and domain it creates. Do not put local passwords or reset tokens into committed screenshots or Markdown.
 
-The target open shift is:
+## Safety rule
 
-```text
-2026-07-15 15:00-21:00 BAR
-```
-
-This gives the recommendation modal enough real data to show eligible staff, score reasons, contract-hour warnings, and excluded staff. That is the evidence we need before trying to repeat the strongest version on hosted.
+If `DATABASE_URL` is not local, the evidence scripts refuse to run. Do not bypass that guard for a demo reset. Hosted checks should read the hosted data without deleting or reseeding it.

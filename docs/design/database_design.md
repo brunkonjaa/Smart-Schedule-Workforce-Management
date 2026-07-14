@@ -1,290 +1,74 @@
 # Database Design
 
-## What This Design Means Right Now
+Smart Schedule uses PostgreSQL as the source of truth for identity, staff profiles, leave, shifts, assignments, password recovery, swaps, and manager audit records.
 
-This file describes the current PostgreSQL schema direction for the MVP.
+## Tables in the current migration chain
 
-Two things matter here:
+1. `users` - login email, password hash, role, active state, security fields
+2. `staff_profiles` - name, work role, contract hours, phone, active state
+3. `leave_requests` - dates, reason, status, manager comment, decision actor/time
+4. `shifts` - date, start/end time, required role, status, notes
+5. `shift_assignments` - one staff profile on one shift and the assigning manager
+6. `audit_logs` - manager shift and assignment actions with JSON before/after state
+7. `security_events` - security-related event records
+8. `password_reset_requests` - hashed reset token, expiry, use state, and request timestamps
+9. `shift_swap_requests` - source assignment, requester, optional target, acceptance and manager decision state
 
-1. not every table in this file already exists in the live database
-2. the core MVP tables are now represented by migration files, but the route logic on top of every table is not finished yet
+`availability_entries` is historical. Migration `014_remove_weekly_availability.sql` removes that table because weekly availability submission was removed from the rota workflow.
 
-That distinction is important. I do not want the schema notes to read like the whole project is already built when it is not.
+## Design rules
 
-## Design Rules
+1. users come before staff profiles because every staff profile has one login identity
+2. shifts come before assignments because an assignment must point to a real shift
+3. a shift has one assignment in the current MVP
+4. foreign keys protect links between users, profiles, shifts, assignments, and requests
+5. SQL constraints handle simple ranges and allowed values
+6. service code handles the scheduling rules that need several rows at once
 
-1. keep the schema relational and easy to trace
-2. keep one source of truth for users, staff records, shifts, leave, and assignments
-3. use database constraints for basic protection instead of leaving everything to route code
-4. build the schema in the same order the app depends on it
-
-## Current MVP Tables
-
-1. `users`
-2. `staff_profiles`
-3. `availability_entries`
-4. `leave_requests`
-5. `shifts`
-6. `shift_assignments`
-7. `audit_logs`
-
-## Tables Already In The Repo Database Layer
-
-These are already represented by real migration files:
-
-1. `users`
-2. `staff_profiles`
-3. `availability_entries`
-4. `leave_requests`
-5. `shifts`
-6. `shift_assignments`
-7. `audit_logs`
-
-## Main Backend Work Still Not Finished
-
-The table structure now supports the current assignment and rota layer.
-
-Still not built yet:
-
-1. audit log viewing screen
-2. hosted deployment state
-3. final UAT evidence
-
-The assignment API, leave checks, availability checks, role checks, overlap and back-to-back shift checks, contract-hours warning, rota endpoint, role-scoped rota views, and basic audit log writes are now code-backed.
-
-## Deferred Tables From Older Drafts
-
-These were in the wider version and are not part of the first build:
-
-1. `skills`
-2. `staff_skills`
-3. `assignment_override_reasons`
-4. `swap_requests`
-5. `rota_publications`
-6. wider audit reporting tables
-
-## PostgreSQL Notes
-
-1. use native `UUID`
-2. use `TIMESTAMPTZ` for timestamp fields
-3. use `CHECK` constraints for simple rules
-4. use `gen_random_uuid()` through `pgcrypto`
-
-## SRS Diagram Note
-
-I also exported a simpler data model diagram for the SRS under `docs/SRS/diagrams/smart_schedule_data_model.png`.
-
-That Visual Paradigm version uses more generic display types where the tool got awkward, but the real repo design standard here is still PostgreSQL-first:
-
-1. `UUID`
-2. `TIMESTAMPTZ`
-3. explicit constraints
-4. real FK links based on the SQL files in `database/migrations/`
-
-## Table Definitions
+## Important constraints
 
 ### `users`
 
-Purpose:
-Login identity and role information.
-
-Current repo note:
-This table already exists through `001_create_users_schema.sql`.
-
-| Column | Type | Constraints |
-| --- | --- | --- |
-| `id` | UUID | PK |
-| `email` | VARCHAR(255) | NOT NULL, lowercase check, UNIQUE |
-| `password_hash` | VARCHAR(255) | NOT NULL |
-| `role` | VARCHAR(20) | NOT NULL |
-| `is_active` | BOOLEAN | NOT NULL DEFAULT `true` |
-| `created_at` | TIMESTAMPTZ | NOT NULL |
-| `updated_at` | TIMESTAMPTZ | NOT NULL |
-
-Notes:
-
-1. `role` is `MANAGER` or `STAFF`
-2. lowercase email is enforced in the schema, not just left to application logic
+`email` is unique and lowercase. `role` is `MANAGER` or `STAFF`. Passwords are stored as bcrypt hashes, not plaintext.
 
 ### `staff_profiles`
 
-Purpose:
-Staff details linked to a user account.
-
-Current repo note:
-This table already exists through `002_create_staff_profiles_schema.sql`.
-
-| Column | Type | Constraints |
-| --- | --- | --- |
-| `id` | UUID | PK |
-| `user_id` | UUID | FK -> `users.id`, UNIQUE, NOT NULL |
-| `full_name` | VARCHAR(120) | NOT NULL |
-| `primary_role` | VARCHAR(50) | NOT NULL |
-| `contract_hours` | NUMERIC(5,2) | NOT NULL CHECK (`contract_hours >= 0`) |
-| `phone_number` | VARCHAR(30) | NULL |
-| `is_active` | BOOLEAN | NOT NULL DEFAULT `true` |
-| `created_at` | TIMESTAMPTZ | NOT NULL |
-| `updated_at` | TIMESTAMPTZ | NOT NULL |
-
-Notes:
-
-1. one user maps to one staff profile in the current design
-2. the `is_active` index is there for later filtering
-
-### `availability_entries`
-
-Purpose:
-Weekly availability windows submitted by staff.
-
-Current repo note:
-This table already exists through `004_create_availability_entries_schema.sql`.
-
-| Column | Type | Constraints |
-| --- | --- | --- |
-| `id` | UUID | PK |
-| `staff_profile_id` | UUID | FK -> `staff_profiles.id`, NOT NULL |
-| `week_start` | DATE | NOT NULL |
-| `day_of_week` | SMALLINT | NOT NULL CHECK (`day_of_week BETWEEN 1 AND 7`) |
-| `start_time` | TIME | NOT NULL |
-| `end_time` | TIME | NOT NULL |
-| `status` | VARCHAR(20) | NOT NULL |
-| `created_at` | TIMESTAMPTZ | NOT NULL |
-| `updated_at` | TIMESTAMPTZ | NOT NULL |
-
-Rules:
-
-1. `status` is `AVAILABLE` or `UNAVAILABLE`
-2. `end_time` must be greater than `start_time`
-3. exact duplicate entries should be blocked
+`user_id` is unique. `primary_role` is used for Bar, Floor, Kitchen, and the displayed Kitchen Porter/`OTHER` rota group. `contract_hours` cannot be negative.
 
 ### `leave_requests`
 
-Purpose:
-Staff leave workflow with manager decision tracking.
-
-Current repo note:
-This table already exists through `005_create_leave_requests_schema.sql`.
-
-| Column | Type | Constraints |
-| --- | --- | --- |
-| `id` | UUID | PK |
-| `staff_profile_id` | UUID | FK -> `staff_profiles.id`, NOT NULL |
-| `start_date` | DATE | NOT NULL |
-| `end_date` | DATE | NOT NULL |
-| `reason` | VARCHAR(500) | NOT NULL |
-| `status` | VARCHAR(20) | NOT NULL |
-| `manager_comment` | VARCHAR(500) | NULL |
-| `decided_by_user_id` | UUID | FK -> `users.id`, NULL |
-| `decided_at` | TIMESTAMPTZ | NULL |
-| `created_at` | TIMESTAMPTZ | NOT NULL |
-| `updated_at` | TIMESTAMPTZ | NOT NULL |
-
-Rules:
-
-1. `status` is `PENDING`, `APPROVED`, or `REJECTED`
-2. `end_date` must be on or after `start_date`
+`status` is `PENDING`, `APPROVED`, or `REJECTED`. The database rejects an end date before the start date.
 
 ### `shifts`
 
-Purpose:
-Shift records for the weekly rota.
-
-Current repo note:
-This table already exists through `006_create_shifts_schema.sql`.
-
-| Column | Type | Constraints |
-| --- | --- | --- |
-| `id` | UUID | PK |
-| `shift_date` | DATE | NOT NULL |
-| `start_time` | TIME | NOT NULL |
-| `end_time` | TIME | NOT NULL |
-| `required_role` | VARCHAR(50) | NOT NULL |
-| `status` | VARCHAR(20) | NOT NULL DEFAULT `OPEN` |
-| `notes` | VARCHAR(500) | NULL |
-| `created_at` | TIMESTAMPTZ | NOT NULL |
-| `updated_at` | TIMESTAMPTZ | NOT NULL |
-
-Rules:
-
-1. `end_time` must be greater than `start_time`
-2. the first version supports same-day shifts only
-3. `status` is `DRAFT`, `OPEN`, or `CANCELLED`
+The end time must be after the start time. The current statuses are `DRAFT`, `OPEN`, and `CANCELLED`. The current rota seed uses Monday-Friday shifts, while the rota view can show the whole week.
 
 ### `shift_assignments`
 
-Purpose:
-Link one staff member to one shift.
+`shift_id` is unique, so the current build stores one assigned staff member per shift. The row keeps `assigned_by_user_id` and `assigned_at` for traceability.
 
-Current repo note:
-This table already exists through `007_create_shift_assignments_schema.sql`.
+### `password_reset_requests`
 
-| Column | Type | Constraints |
-| --- | --- | --- |
-| `id` | UUID | PK |
-| `shift_id` | UUID | FK -> `shifts.id`, UNIQUE, NOT NULL |
-| `staff_profile_id` | UUID | FK -> `staff_profiles.id`, NOT NULL |
-| `assigned_by_user_id` | UUID | FK -> `users.id`, NOT NULL |
-| `assigned_at` | TIMESTAMPTZ | NOT NULL |
-| `created_at` | TIMESTAMPTZ | NOT NULL |
-| `updated_at` | TIMESTAMPTZ | NOT NULL |
+The raw token is never stored. The service stores a hash and checks expiry and used state before changing the password. The manager request view does not expose the token.
 
-Notes:
+### `shift_swap_requests`
 
-1. the MVP assumes one assignment per shift
-2. reassignment can update or replace the stored record in service logic later
+The request points to an existing assignment. It stores whether it is open or targeted, whether a target accepted, and whether a manager approved or rejected the final change. The assignment is not changed just because a request was created.
 
-### `audit_logs`
+## Service-level scheduling checks
 
-Purpose:
-Keep a backend trail of important manager changes.
+Before an assignment is saved, the backend checks:
 
-Current repo note:
-This table already exists through `009_create_audit_logs_schema.sql`.
+1. active staff account
+2. matching role
+3. open shift and no existing assignment
+4. approved leave on the shift date
+5. overlapping or touching shifts on the same day
+6. no more than five assigned shifts in the week
+7. no more than forty assigned hours in the week
 
-| Column | Type | Constraints |
-| --- | --- | --- |
-| `id` | UUID | PK |
-| `actor_user_id` | UUID | FK -> `users.id`, NULL allowed if user is later removed |
-| `action` | VARCHAR(40) | NOT NULL |
-| `entity_type` | VARCHAR(30) | NOT NULL |
-| `entity_id` | UUID | NOT NULL |
-| `summary` | VARCHAR(250) | NOT NULL |
-| `before_state` | JSONB | NULL |
-| `after_state` | JSONB | NULL |
-| `created_at` | TIMESTAMPTZ | NOT NULL |
+Contract hours can produce a warning instead of a hard block. A manager may need to approve extra contracted hours in a busy week, but the hard safety limits still apply.
 
-Notes:
+## PostgreSQL choices
 
-1. the first audit layer records shift and assignment create, update, and delete actions
-2. it stores snapshots as `JSONB` because this is evidence support, not a main reporting workflow yet
-3. there is no audit log screen in the MVP checkpoint yet
-
-## Indexing Plan
-
-Indexes already real:
-
-1. unique index on `users(email)`
-2. index on `staff_profiles(is_active)`
-3. index on `availability_entries(staff_profile_id, week_start, day_of_week)`
-4. index on `availability_entries(week_start, status)`
-5. index on `leave_requests(staff_profile_id, start_date, end_date)`
-6. index on `leave_requests(status)`
-7. index on `shifts(shift_date)`
-8. index on `shifts(required_role, shift_date)`
-9. index on `shift_assignments(staff_profile_id)`
-10. index on `shift_assignments(assigned_at)`
-11. index on `audit_logs(actor_user_id)`
-12. index on `audit_logs(entity_type, entity_id)`
-13. index on `audit_logs(created_at)`
-
-## Conflict Logic The Schema Is Meant To Support
-
-1. overlap and back-to-back shift checks by comparing assigned shifts for the same staff member
-2. leave checks by matching shift dates against approved leave ranges
-3. availability checks by matching shift time against submitted windows
-4. role checks by comparing `required_role` and `primary_role`
-5. contract-hours warnings by summing assigned shift lengths for a week
-
-## Session Storage Note
-
-The deployed direction uses `connect-pg-simple` for sessions. I am treating that session table as infrastructure support rather than a core scheduling table.
+The schema uses UUID keys, `TIMESTAMPTZ` timestamps, `CHECK` constraints, `JSONB` audit snapshots, and `gen_random_uuid()` from `pgcrypto`. The migration runner records applied filenames in `schema_migrations`.
