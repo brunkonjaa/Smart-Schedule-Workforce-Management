@@ -145,7 +145,27 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
   };
 
   const getVisibleRows = (state) => {
+    return (state.rota?.rows || []).filter((row) => {
+      return !row.systemRow && (state.department === 'ALL' || row.primaryRole === state.department);
+    });
+  };
+
+  const getMobileRows = (state) => {
     return (state.rota?.rows || []).filter((row) => !row.systemRow);
+  };
+
+  const getCompactDayLabel = (day) => {
+    const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return labels[Number(day?.dayOfWeek) - 1] || String(day?.label || '').slice(0, 3);
+  };
+
+  const getCompactStaffName = (staffName) => {
+    const parts = String(staffName || '').trim().split(/\s+/).filter(Boolean);
+    if (parts.length < 2) {
+      return parts[0] || 'Staff';
+    }
+
+    return `${parts[0]} ${parts[parts.length - 1].charAt(0)}.`;
   };
 
   const getOpenShiftRow = (state) => {
@@ -178,6 +198,16 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
 
   const getCellEntries = (row, dayDate) => {
     const cells = sortCells(getCellsForDay(row, dayDate));
+    const sickCell = cells.find((cell) => {
+      const state = String(cell.state || '').toUpperCase();
+      const leaveType = String(cell.leaveType || '').toUpperCase();
+      return state.includes('SICK') || leaveType.includes('SICK');
+    });
+
+    if (sickCell) {
+      return [{ cell: sickCell, kind: 'sick', label: 'S' }];
+    }
+
     const leaveCell = cells.find((cell) => cell.state === 'APPROVED_LEAVE');
 
     if (leaveCell) {
@@ -404,10 +434,6 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
   };
 
   const renderDepartmentTabs = (state, actions) => {
-    if (state.sessionUser?.role !== 'MANAGER') {
-      return null;
-    }
-
     const tabs = uiHelpers.createElement('div', {
       className: 'rota-tabs',
       attributes: { role: 'tablist' }
@@ -485,12 +511,47 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     const entry = uiHelpers.createElement('div', {
       className: `rota-entry rota-entry--${item.kind}`
     });
-    entry.appendChild(
-      uiHelpers.createElement('span', {
-        className: 'rota-entry-text',
-        text: item.label
-      })
-    );
+    const entryText = uiHelpers.createElement('span', {
+      className: 'rota-entry-text',
+      text: item.label
+    });
+    const shouldShowMarker =
+      state.sessionUser?.role === 'MANAGER' ||
+      row.staffProfileId === state.sessionUser?.staffProfileId;
+    const canOpenMenu = canOpenEntryMenu(state, row, item);
+
+    if (shouldShowMarker) {
+      if (canOpenMenu) {
+        const markerButton = uiHelpers.createElement('button', {
+          className: 'rota-required-marker rota-required-marker--button',
+          text: '*',
+          attributes: {
+            'aria-label': 'Open rota options',
+            type: 'button'
+          }
+        });
+        markerButton.addEventListener('click', (event) => {
+          event.stopPropagation();
+          actions.openEntryContext({
+            cell: item.cell,
+            day,
+            kind: item.kind,
+            label: item.label,
+            row
+          });
+        });
+        entryText.appendChild(markerButton);
+      } else {
+        entryText.appendChild(
+          uiHelpers.createElement('sup', {
+            className: 'rota-required-marker',
+            text: '*'
+          })
+        );
+      }
+    }
+
+    entry.appendChild(entryText);
 
     if (canOpenEntryMenu(state, row, item)) {
       entry.appendChild(
@@ -571,16 +632,18 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       tableRow.appendChild(nameCell);
 
       state.rota.days.forEach((day) => {
+        const entries = getCellEntries(row, day.date);
         const dayClasses = [
           'rota-table-cell',
           day.dayOfWeek >= 6 ? 'rota-table-cell--weekend' : '',
-          day.date === getCurrentIsoDate() ? 'rota-table-cell--today' : ''
+          day.date === getCurrentIsoDate() ? 'rota-table-cell--today' : '',
+          entries.some((entry) => entry.kind === 'assigned') ? 'rota-table-cell--filled' : ''
         ]
           .filter(Boolean)
           .join(' ');
         const cell = uiHelpers.createElement('td', { className: dayClasses });
         const entryList = uiHelpers.createElement('div', { className: 'rota-day-cell' });
-        getCellEntries(row, day.date).forEach((item) => {
+        entries.forEach((item) => {
           entryList.appendChild(renderCellEntry(state, row, day, item, actions));
         });
         cell.appendChild(entryList);
@@ -596,10 +659,6 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
   };
 
   const renderMobileDepartmentTabs = (state, actions) => {
-    if (state.sessionUser?.role !== 'MANAGER') {
-      return null;
-    }
-
     const tabs = uiHelpers.createElement('div', { className: 'rota-mobile-tabs' });
     departments.forEach((department) => {
       const button = uiHelpers.createElement('button', {
@@ -624,12 +683,6 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
 
   const renderMobilePanel = (state, actions) => {
     const selectedDay = state.rota.days.find((day) => day.date === state.selectedDay) || state.rota.days[0];
-    const selectedDayIndex = state.rota.days.findIndex((day) => day.date === selectedDay.date);
-    const previousDay = selectedDayIndex > 0 ? state.rota.days[selectedDayIndex - 1] : null;
-    const nextDay =
-      selectedDayIndex >= 0 && selectedDayIndex < state.rota.days.length - 1
-        ? state.rota.days[selectedDayIndex + 1]
-        : null;
 
     const panel = uiHelpers.createElement('section', { className: 'rota-mobile-panel' });
     const header = uiHelpers.createElement('div', { className: 'rota-mobile-panel-header' });
@@ -640,43 +693,24 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
 
     const controls = uiHelpers.createElement('div', { className: 'rota-mobile-day-controls' });
     [
-      { label: 'Prev', nextDate: previousDay?.date || null },
-      { label: 'Today', current: true },
-      { label: 'Next', nextDate: nextDay?.date || null }
+      { label: 'Prev week', offset: -7 },
+      { label: 'Current week', current: true },
+      { label: 'Next week', offset: 7 }
     ].forEach((control) => {
       const button = uiHelpers.createElement('button', {
         className: `action-button ${control.current ? 'button-ghost' : 'button-secondary'} rota-mobile-day-button`,
         text: control.label,
         attributes: {
-          disabled: !control.current && !control.nextDate,
           type: 'button'
         }
       });
       button.addEventListener('click', () => {
-        if (control.current) {
-          const currentDay = getCurrentIsoDate();
-
-          if (state.rota.days.some((day) => day.date === currentDay)) {
-            state.selectedDay = currentDay;
-            state.modal = null;
-            actions.render();
-            return;
-          }
-
-          state.weekStart = uiHelpers.getCurrentWeekStart();
-          state.selectedDay = null;
-          state.modal = null;
-          actions.loadRota();
-          return;
-        }
-
-        if (!control.nextDate) {
-          return;
-        }
-
-        state.selectedDay = control.nextDate;
+        state.weekStart = control.current
+          ? uiHelpers.getCurrentWeekStart()
+          : addDays(state.weekStart, control.offset);
+        state.selectedDay = null;
         state.modal = null;
-        actions.render();
+        actions.loadRota();
       });
       controls.appendChild(button);
     });
@@ -688,27 +722,52 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       panel.appendChild(mobileTabs);
     }
 
-    const openShiftStrip = renderOpenShiftStrip(state, actions, selectedDay.date);
-    if (openShiftStrip) {
-      panel.appendChild(openShiftStrip);
-    }
-
-    getVisibleRows(state).forEach((row) => {
-      const item = uiHelpers.createElement('section', { className: 'rota-mobile-row' });
-      item.appendChild(
-        uiHelpers.createElement('strong', {
-          className: 'rota-mobile-row-name',
-          text: row.staffName
-        })
-      );
-
-      const entryList = uiHelpers.createElement('div', { className: 'rota-mobile-entry-list' });
-      getCellEntries(row, selectedDay.date).forEach((entry) => {
-        entryList.appendChild(renderCellEntry(state, row, selectedDay, entry, actions));
-      });
-      item.appendChild(entryList);
-      panel.appendChild(item);
+    const mobileRows = getMobileRows(state).filter((row) => {
+      return state.department === 'ALL' || row.primaryRole === state.department;
     });
+    const tableWrap = uiHelpers.createElement('div', { className: 'rota-mobile-table-wrap' });
+    const table = uiHelpers.createElement('table', { className: 'rota-mobile-table' });
+    const headRow = uiHelpers.createElement('tr');
+    headRow.appendChild(uiHelpers.createElement('th', { className: 'rota-mobile-staff-heading', text: 'Staff' }));
+    state.rota.days.forEach((day) => {
+      headRow.appendChild(uiHelpers.createElement('th', {
+        className: `rota-mobile-day-heading${day.date === selectedDay.date ? ' is-selected' : ''}`,
+        text: getCompactDayLabel(day)
+      }));
+    });
+    const thead = uiHelpers.createElement('thead');
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    const tbody = uiHelpers.createElement('tbody');
+    mobileRows.forEach((row) => {
+      const tableRow = uiHelpers.createElement('tr', {
+        className: row.staffProfileId === state.sessionUser?.staffProfileId ? 'is-current' : ''
+      });
+      tableRow.appendChild(uiHelpers.createElement('th', {
+        className: 'rota-mobile-staff-name',
+        text: getCompactStaffName(row.staffName),
+        attributes: { scope: 'row', title: row.staffName }
+      }));
+      state.rota.days.forEach((day) => {
+        const entries = getCellEntries(row, day.date);
+        const cell = uiHelpers.createElement('td', {
+          className: [
+            'rota-mobile-week-cell',
+            day.date === selectedDay.date ? 'is-selected' : '',
+            entries.some((entry) => entry.kind === 'assigned') ? 'is-filled' : ''
+          ].filter(Boolean).join(' ')
+        });
+        entries.forEach((entry) => {
+          cell.appendChild(renderCellEntry(state, row, day, entry, actions));
+        });
+        tableRow.appendChild(cell);
+      });
+      tbody.appendChild(tableRow);
+    });
+    table.appendChild(tbody);
+    tableWrap.appendChild(table);
+    panel.appendChild(tableWrap);
 
     return panel;
   };
@@ -1128,7 +1187,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
 
       try {
         const queryString = uiHelpers.buildQueryString({
-          department: state.department,
+          department: 'ALL',
           weekStart: state.weekStart
         });
         const result = await apiClient.get(`/api/v1/rota?${queryString}`);
@@ -1347,12 +1406,6 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       }
 
       state.sessionUser = result.user;
-
-      if (
-        state.sessionUser.role === 'STAFF'
-      ) {
-        state.department = 'ALL';
-      }
 
       render();
       await loadRota();

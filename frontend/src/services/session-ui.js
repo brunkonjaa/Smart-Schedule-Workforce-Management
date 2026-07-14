@@ -74,7 +74,7 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
   const renderSignedOutState = (workspaceElement, flashMessage) => {
     workspaceElement.textContent = '';
 
-    const grid = createElement('div', { className: 'workspace-grid' });
+    const grid = createElement('div', { className: 'workspace-grid workspace-grid--login' });
 
     if (flashMessage) {
       const flashPanel = createElement('section', {
@@ -186,6 +186,16 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
       attributes: { type: 'submit' }
     });
     actionsRow.appendChild(submitButton);
+    actionsRow.appendChild(
+      createElement('button', {
+        className: 'action-button button-ghost',
+        text: 'Forgot password',
+        attributes: {
+          title: 'Password recovery will be added later.',
+          type: 'button'
+        }
+      })
+    );
     form.appendChild(actionsRow);
 
     form.addEventListener('submit', async (event) => {
@@ -212,29 +222,6 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
 
     formPanel.appendChild(form);
     grid.appendChild(formPanel);
-
-    const helpPanel = createElement('section', {
-      className: 'content-panel content-panel--guide content-panel--span-11'
-    });
-    const helpHeading = createElement('div', { className: 'panel-heading' });
-    helpHeading.appendChild(createElement('h3', { text: 'What you can do' }));
-    helpHeading.appendChild(
-      createElement('p', {
-        className: 'panel-copy',
-        text: 'The app only shows pages your account can use.'
-      })
-    );
-    helpPanel.appendChild(helpHeading);
-
-    const helpList = createElement('ul', { className: 'login-help-list' });
-    [
-      'Managers can add staff and build the rota.',
-      'Staff can check the full rota and ask for time off.'
-    ].forEach((itemText) => {
-      helpList.appendChild(createElement('li', { text: itemText }));
-    });
-    helpPanel.appendChild(helpList);
-    grid.appendChild(helpPanel);
 
     workspaceElement.appendChild(grid);
   };

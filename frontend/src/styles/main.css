@@ -137,6 +137,12 @@ textarea {
   transition: background-color 180ms ease, color 180ms ease, transform 180ms ease;
 }
 
+.nav-link--button {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
 .nav-link:hover,
 .nav-link:focus-visible {
   background: var(--surface-soft);
@@ -395,6 +401,12 @@ textarea {
   align-content: flex-start;
   justify-content: flex-start;
   will-change: opacity, transform;
+}
+
+.workspace-grid--login {
+  min-height: min(560px, calc(100vh - 250px));
+  align-items: center;
+  justify-content: center;
 }
 
 .content-panel {
@@ -1397,6 +1409,15 @@ td {
     padding-top: 14px;
   }
 
+  #page-intro[data-page='login'] {
+    display: none;
+  }
+
+  .workspace-grid--login {
+    min-height: 0;
+    margin-top: 0;
+  }
+
   .page-intro {
     gap: 10px;
     margin-bottom: 10px;
@@ -1668,8 +1689,11 @@ td {
 .rota-workspace {
   display: grid;
   gap: 10px;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  min-width: 0;
   justify-content: start;
-  justify-items: start;
+  justify-items: stretch;
 }
 
 .rota-toolbar,
@@ -1784,8 +1808,9 @@ td {
 }
 
 .rota-grid-shell {
+  width: 100%;
+  max-width: none;
   overflow: auto;
-  max-width: 100%;
   border: 1px solid var(--line);
   border-radius: 14px;
   background: var(--bg-strong);
@@ -1793,8 +1818,8 @@ td {
 }
 
 .rota-table {
-  width: auto;
-  min-width: 0;
+  width: 100%;
+  min-width: 760px;
   border-collapse: collapse;
   table-layout: fixed;
   border: 0;
@@ -1802,11 +1827,11 @@ td {
 }
 
 .rota-table-staff-col {
-  width: 186px;
+  width: 16%;
 }
 
 .rota-table-day-col {
-  width: 116px;
+  width: 12%;
 }
 
 .rota-table thead th,
@@ -1881,6 +1906,14 @@ body[data-theme='dark'] .rota-table-cell--weekend {
   background: rgba(139, 124, 255, 0.1);
 }
 
+.rota-table-cell--filled {
+  background: rgba(187, 247, 208, 0.62);
+}
+
+body[data-theme='dark'] .rota-table-cell--filled {
+  background: rgba(34, 197, 94, 0.18);
+}
+
 body[data-theme='dark'] .rota-table-cell--today {
   background: rgba(139, 124, 255, 0.12);
 }
@@ -1931,6 +1964,10 @@ body[data-theme='dark'] .rota-entry--open {
   color: #15803d;
 }
 
+.rota-entry--sick {
+  color: #b91c1c;
+}
+
 body[data-theme='dark'] .rota-entry--leave {
   color: #4ade80;
 }
@@ -1944,6 +1981,25 @@ body[data-theme='dark'] .rota-entry--leave {
   font-weight: 600;
   line-height: 1.15;
   overflow-wrap: anywhere;
+}
+
+.rota-required-marker {
+  margin-left: 1px;
+  color: var(--accent);
+  font-size: 0.7em;
+  font-weight: 800;
+  vertical-align: text-top;
+}
+
+.rota-required-marker--button {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
 }
 
 .rota-cell-menu-button {
@@ -1968,6 +2024,9 @@ body[data-theme='dark'] .rota-entry--leave {
   display: none;
   gap: 12px;
   padding: 12px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .rota-mobile-panel-header {
@@ -1997,15 +2056,233 @@ body[data-theme='dark'] .rota-entry--leave {
 
 .rota-mobile-row {
   display: grid;
-  gap: 8px;
-  padding: 10px;
+  gap: 4px;
+  min-width: 0;
+  padding: 9px 10px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 9px;
   background: var(--surface-soft);
 }
 
 .rota-mobile-row-name {
-  font-size: 0.9rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.88rem;
+}
+
+.rota-mobile-active-list,
+.rota-mobile-off-list {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.rota-mobile-row--off {
+  padding: 7px 9px;
+  border-radius: 7px;
+  background: transparent;
+}
+
+.rota-mobile-row--off .rota-mobile-row-name,
+.rota-mobile-row--off .rota-entry-text {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.rota-mobile-empty {
+  margin: 0;
+  padding: 12px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 9px;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+}
+
+.rota-mobile-off-details {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.rota-mobile-off-summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  list-style-position: inside;
+}
+
+.rota-mobile-off-list {
+  margin-top: 8px;
+}
+
+.rota-mobile-table {
+  width: 100%;
+  min-width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  background: var(--bg-strong);
+}
+
+.rota-mobile-table-wrap {
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+
+/* Keep the weekly rota as one spreadsheet on small screens. The general
+   mobile table rule below this component turns ordinary tables into cards. */
+.rota-mobile-table,
+.rota-mobile-table thead,
+.rota-mobile-table tbody,
+.rota-mobile-table tr,
+.rota-mobile-table th,
+.rota-mobile-table td {
+  display: revert;
+}
+
+.rota-mobile-table thead {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+.rota-mobile-table tbody {
+  display: table-row-group;
+}
+
+.rota-mobile-table tr {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.rota-mobile-table td {
+  display: table-cell;
+  min-height: 0;
+  padding: 4px 2px;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: normal;
+}
+
+.rota-mobile-table td::before {
+  content: none;
+}
+
+.rota-mobile-table th,
+.rota-mobile-table td {
+  border: 1px solid var(--line);
+  padding: 4px 2px;
+  vertical-align: middle;
+}
+
+.rota-mobile-staff-heading,
+.rota-mobile-staff-name {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  width: 92px;
+  text-align: left;
+}
+
+.rota-mobile-staff-heading {
+  background: var(--bg-strong);
+}
+
+.rota-mobile-staff-name {
+  background: var(--surface-soft);
+}
+
+.rota-mobile-staff-heading {
+  color: var(--text-muted);
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.rota-mobile-day-heading {
+  color: var(--text-muted);
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.rota-mobile-day-heading.is-selected,
+.rota-mobile-week-cell.is-selected {
+  background: rgba(139, 124, 255, 0.12);
+}
+
+.rota-mobile-staff-name {
+  overflow: hidden;
+  padding-left: 5px;
+  color: var(--text);
+  font-size: 0.69rem;
+  font-weight: 650;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rota-mobile-week-cell {
+  height: 30px;
+  overflow: hidden;
+  background: #ffffff;
+  text-align: center;
+}
+
+.rota-mobile-week-cell.is-filled {
+  background: rgba(187, 247, 208, 0.62);
+}
+
+.rota-mobile-week-cell.is-selected:not(.is-filled) {
+  background: #ffffff;
+}
+
+body[data-theme='dark'] .rota-mobile-week-cell {
+  background: var(--bg-strong);
+}
+
+body[data-theme='dark'] .rota-mobile-week-cell.is-filled {
+  background: rgba(34, 197, 94, 0.18);
+}
+
+body[data-theme='dark'] .rota-mobile-week-cell.is-selected:not(.is-filled) {
+  background: var(--bg-strong);
+}
+
+.rota-mobile-week-cell .rota-day-cell,
+.rota-mobile-week-cell .rota-mobile-entry-list {
+  display: block;
+  min-height: 0;
+}
+
+.rota-mobile-week-cell .rota-entry {
+  display: flex;
+  justify-content: center;
+  min-height: 0;
+}
+
+.rota-mobile-week-cell .rota-entry-text {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 0.62rem;
+  font-weight: 650;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rota-mobile-week-cell .rota-cell-menu-button {
+  display: none;
+}
+
+.rota-mobile-week-cell .rota-required-marker--button {
+  display: inline;
 }
 
 .rota-sheet-backdrop {
@@ -2104,6 +2381,11 @@ body[data-theme='dark'] .rota-entry--leave {
 }
 
 @media (max-width: 900px) {
+  .rota-workspace {
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+  }
+
   .rota-toolbar,
   .rota-tabs,
   .rota-grid-shell,
@@ -2113,6 +2395,9 @@ body[data-theme='dark'] .rota-entry--leave {
 
   .rota-mobile-panel {
     display: grid;
+    grid-column: 1 / -1;
+    justify-self: stretch;
+    width: 100%;
   }
 
   .rota-mobile-tabs {
@@ -2123,6 +2408,125 @@ body[data-theme='dark'] .rota-entry--leave {
 }
 
 @media (max-width: 620px) {
+  .rota-mobile-panel {
+    gap: 9px;
+    padding: 8px 0 16px;
+    width: calc(100vw - 32px);
+    max-width: calc(100vw - 32px);
+  }
+
+  .rota-mobile-panel-header {
+    align-items: center;
+    gap: 8px;
+    padding: 0 2px 9px;
+  }
+
+  .rota-mobile-panel-title {
+    flex: 0 0 62px;
+  }
+
+  .rota-mobile-panel-title span {
+    font-size: 0.62rem;
+  }
+
+  .rota-mobile-day-controls {
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+  }
+
+  .rota-mobile-panel-title strong {
+    font-size: 0.92rem;
+  }
+
+  .rota-mobile-day-controls {
+    justify-content: flex-end;
+    gap: 4px;
+  }
+
+  .rota-mobile-day-button {
+    min-height: 30px;
+    padding: 0 5px;
+    font-size: 0.62rem;
+    white-space: nowrap;
+  }
+
+  .rota-mobile-table th,
+  .rota-mobile-table td {
+    padding: 4px 1px;
+  }
+
+  .rota-mobile-table {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  .rota-mobile-staff-heading,
+  .rota-mobile-staff-name {
+    width: 92px;
+  }
+
+  .rota-mobile-staff-heading,
+  .rota-mobile-day-heading {
+    font-size: 0.6rem;
+  }
+
+  .rota-mobile-staff-name {
+    padding-left: 4px;
+    font-size: 0.66rem;
+  }
+
+  .rota-mobile-week-cell .rota-entry-text {
+    font-size: 0.58rem;
+  }
+
+  .rota-mobile-tabs {
+    gap: 5px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .rota-mobile-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .rota-mobile-tab {
+    flex: 0 0 auto;
+    min-height: 30px;
+    padding: 0 9px;
+    font-size: 0.78rem;
+  }
+
+  .rota-open-strip {
+    gap: 7px;
+    padding: 9px 10px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--surface-soft);
+  }
+
+  .rota-open-item {
+    min-height: 32px;
+    padding: 5px 7px;
+  }
+
+  .rota-open-copy strong {
+    font-size: 0.78rem;
+  }
+
+  .rota-open-copy span {
+    font-size: 0.7rem;
+  }
+
+  .rota-mobile-row {
+    padding: 8px 9px;
+  }
+
+  .rota-mobile-row--off {
+    padding: 6px 8px;
+  }
+
   .rota-sheet-backdrop {
     padding: 0;
   }

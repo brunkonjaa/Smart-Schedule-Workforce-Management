@@ -144,6 +144,11 @@ Examples:
 - `096` security access-control test suite passing
 - `097` recommendation test suite passing
 - `098` dependency audit zero vulnerabilities
+- `099` rota manager desktop department-filtered view
+- `100` centered desktop login account access
+- `101` rota staff mobile department-filtered view
+- `102` staff mobile time-off request form
+- `103` mobile login account access
 
 ## Practical Reminder
 

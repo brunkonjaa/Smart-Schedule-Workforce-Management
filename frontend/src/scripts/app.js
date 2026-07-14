@@ -73,6 +73,10 @@
   function renderNavigation(state) {
     navElement.innerHTML = pagesForRole(state.role)
       .map((page) => {
+        if (page.id === 'login' && state.role !== 'guest') {
+          return '<button class="nav-link nav-link--button" type="button" data-action="logout">Logout</button>';
+        }
+
         const activeClass = page.id === state.page ? ' is-active' : '';
         return `<a class="nav-link${activeClass}" href="#${page.id}">${page.label}</a>`;
       })
@@ -245,6 +249,27 @@
   }
 
   navElement.addEventListener('click', (event) => {
+    const logoutButton = event.target.closest('button[data-action="logout"]');
+    if (logoutButton) {
+      event.preventDefault();
+      logoutButton.disabled = true;
+      logoutButton.textContent = 'Logging out...';
+
+      window.SmartSchedule.apiClient
+        .post('/api/v1/auth/logout', {})
+        .then(() => {
+          suppressNextHashChange = true;
+          nextState({ page: 'login', role: 'guest' });
+          window.location.hash = 'login';
+          queueRender(true);
+        })
+        .catch(() => {
+          logoutButton.disabled = false;
+          logoutButton.textContent = 'Logout';
+        });
+      return;
+    }
+
     const link = event.target.closest('a[href^="#"]');
     if (!link) {
       return;
