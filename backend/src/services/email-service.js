@@ -21,6 +21,8 @@ const buildTransport = () => {
       pass: config.smtpPassword,
       user: config.smtpUser
     },
+    connectionTimeout: 10000,
+    family: 4,
     host: config.smtpHost,
     port: config.smtpPort,
     secure: config.smtpPort === 465
