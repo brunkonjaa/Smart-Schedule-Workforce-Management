@@ -278,6 +278,16 @@ const findStaffProfileForAssignment = async (staffProfileId, client = null) => {
   return result.rows[0] || null;
 };
 
+const lockStaffAssignmentWindow = async (staffProfileId, client) => {
+  // Serialize weekly assignment checks for one staff member. SERIALIZABLE retries
+  // remain enabled, but this lock stops two different shifts for the same person
+  // passing the weekly hours/count check at the same time.
+  await client.query(
+    'SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
+    [staffProfileId]
+  );
+};
+
 const findAssignmentByShiftId = async (shiftId, client = null, options = {}) => {
   const result = await executeQuery(
     client,
@@ -656,6 +666,8 @@ const createAssignment = async (assignmentInput, assignedByUserId) => {
         };
       }
 
+      await lockStaffAssignmentWindow(assignmentInput.staffProfileId, client);
+
       const existingAssignment = await findAssignmentByShiftId(
         assignmentInput.shiftId,
         client,
@@ -746,6 +758,8 @@ const updateAssignment = async (assignmentId, assignmentInput, assignedByUserId)
         missingResource: 'staff'
       };
     }
+
+    await lockStaffAssignmentWindow(assignmentInput.staffProfileId, client);
 
     const weeklyHours = await assertNoAssignmentConflicts(
       {

@@ -149,6 +149,14 @@ Examples:
 - `101` rota staff mobile department-filtered view
 - `102` staff mobile time-off request form
 - `103` mobile login account access
+- `104` staff overview history card with swap requests and time off
+- `105` staff time-off request page
+- `106` filled Bar rota view
+- `107` staff swap requests page
+- `108` hosted mobile PWA install prompt
+- `109` hosted staff swap requests desktop
+- `110` hosted manager overview desktop
+- `111` hosted manager rota desktop
 
 ## Practical Reminder
 

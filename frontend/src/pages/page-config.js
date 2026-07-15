@@ -62,6 +62,22 @@ window.SmartSchedule.pageConfig = {
       blocks: []
     },
     {
+      id: 'audit-logs',
+      label: 'Audit log',
+      audience: 'manager',
+      eyebrow: 'Security record',
+      title: 'Audit log',
+      summary: 'Review manager changes made to shifts and assignments.',
+      context: 'This page shows the recorded action, actor, time, and before/after state.',
+      compactIntro: true,
+      metrics: [
+        { label: 'Access', value: 'Manager', tone: 'accent' },
+        { label: 'Records', value: 'Latest 100', tone: 'neutral' },
+        { label: 'Scope', value: 'Shifts', tone: 'neutral' }
+      ],
+      blocks: []
+    },
+    {
       id: 'login',
       label: 'Login',
       audience: 'both',

@@ -4,6 +4,7 @@
   const stateStore = shell.previewState;
   const layout = shell.layout;
   const overviewUi = shell.overviewUi;
+  const auditLogsUi = shell.auditLogsUi;
   const sessionUi = shell.sessionUi;
   const staffManager = shell.staffManager;
   const leaveUi = shell.leaveUi;
@@ -151,6 +152,14 @@
         page,
         renderToken,
         role: state.role,
+        workspaceElement
+      });
+    }
+
+    if (auditLogsUi) {
+      await auditLogsUi.mount({
+        page,
+        renderToken,
         workspaceElement
       });
     }

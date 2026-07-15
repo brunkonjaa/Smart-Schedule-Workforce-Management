@@ -957,6 +957,41 @@ textarea {
   justify-content: flex-start;
 }
 
+.audit-log-table {
+  min-width: 980px;
+}
+
+.audit-log-summary {
+  margin: 0 0 0.55rem;
+}
+
+.audit-log-details summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.audit-log-state {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.audit-log-state pre {
+  max-width: 34rem;
+  margin: 0.35rem 0 0;
+  padding: 0.65rem;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  background: var(--surface-soft);
+  color: var(--text);
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .workspace-grid--leave .leave-form-panel,
 .workspace-grid--leave .leave-decision-panel {
   order: 1;

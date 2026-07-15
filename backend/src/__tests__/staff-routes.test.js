@@ -200,6 +200,28 @@ describe('staff routes', () => {
     });
   });
 
+  test('rejects a mutation with a cross-origin request header', async () => {
+    const agent = await loginAsManager();
+    const response = await agent
+      .post('/api/v1/staff')
+      .set(mutationHeader)
+      .set('Origin', 'https://outside.example')
+      .send({
+        contractHours: 18,
+        email: createdStaffEmail,
+        fullName: 'Cross Origin Test',
+        password: 'CreatedStaffPass123!',
+        phoneNumber: '0851000004',
+        primaryRole: 'FLOOR'
+      });
+
+    expect(response.status).toBe(403);
+    expect(response.body).toEqual({
+      error: 'Forbidden',
+      message: 'This request failed the mutation protection check.'
+    });
+  });
+
   test('creates a staff user and linked staff profile for managers', async () => {
     const agent = await loginAsManager();
     const response = await agent
