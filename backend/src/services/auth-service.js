@@ -66,6 +66,7 @@ const mapUserRecord = (record) => {
 
   return {
     email: record.email,
+    fullName: record.staff_profile_full_name || null,
     id: record.id,
     isActive: record.is_active,
     mustChangePassword: Boolean(record.must_change_password),
@@ -82,6 +83,7 @@ const mapUserRecord = (record) => {
 const buildPublicUser = (user) => {
   return {
     email: user.email,
+    fullName: user.fullName || null,
     id: user.id,
     mustChangePassword: Boolean(user.mustChangePassword),
     primaryRole: user.primaryRole,
@@ -104,6 +106,7 @@ const findUserByEmail = async (email, client = null) => {
         users.is_active,
         COALESCE(users.must_change_password, FALSE) AS must_change_password,
         staff_profiles.id AS staff_profile_id,
+        staff_profiles.full_name AS staff_profile_full_name,
         staff_profiles.primary_role AS staff_profile_primary_role,
         staff_profiles.is_active AS staff_profile_is_active
       FROM users
@@ -129,6 +132,7 @@ const findUserById = async (userId, client = null) => {
         users.is_active,
         COALESCE(users.must_change_password, FALSE) AS must_change_password,
         staff_profiles.id AS staff_profile_id,
+        staff_profiles.full_name AS staff_profile_full_name,
         staff_profiles.primary_role AS staff_profile_primary_role,
         staff_profiles.is_active AS staff_profile_is_active
       FROM users
@@ -155,6 +159,7 @@ const findUserWithPasswordById = async (userId, client = null) => {
         users.is_active,
         COALESCE(users.must_change_password, FALSE) AS must_change_password,
         staff_profiles.id AS staff_profile_id,
+        staff_profiles.full_name AS staff_profile_full_name,
         staff_profiles.primary_role AS staff_profile_primary_role,
         staff_profiles.is_active AS staff_profile_is_active
       FROM users

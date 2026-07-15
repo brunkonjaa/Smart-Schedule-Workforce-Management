@@ -90,6 +90,7 @@ describe('auth routes', () => {
       message: 'Login successful.',
       user: {
         email: testEmail,
+        fullName: 'Auth Test User',
         id: testUserId,
         mustChangePassword: false,
         primaryRole: 'FLOOR',
@@ -160,6 +161,7 @@ describe('auth routes', () => {
     expect(meResponse.body).toEqual({
       user: {
         email: testEmail,
+        fullName: 'Auth Test User',
         id: testUserId,
         mustChangePassword: false,
         primaryRole: 'FLOOR',
@@ -235,6 +237,7 @@ describe('auth routes', () => {
       message: 'Password changed successfully.',
       user: {
         email: testEmail,
+        fullName: 'Auth Test User',
         id: testUserId,
         mustChangePassword: false,
         primaryRole: 'FLOOR',

@@ -203,6 +203,7 @@ describe('auth middleware', () => {
     expect(protectedResponse.body).toEqual({
       user: {
         email: activeEmail,
+        fullName: 'Middleware Active User',
         id: activeUserId,
         mustChangePassword: false,
         primaryRole: 'FLOOR',
@@ -261,6 +262,7 @@ describe('auth middleware', () => {
     expect(protectedResponse.body).toEqual({
       user: {
         email: activeEmail,
+        fullName: 'Middleware Active User',
         id: activeUserId,
         mustChangePassword: false,
         primaryRole: 'FLOOR',

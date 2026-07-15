@@ -15,6 +15,7 @@
 
   const navElement = document.querySelector('.top-nav');
   const themeToggleElement = document.getElementById('theme-toggle');
+  const userGreetingElement = document.getElementById('user-greeting');
   const pageIntroElement = document.getElementById('page-intro');
   const workspaceElement = document.getElementById('workspace');
   const footerElement = document.querySelector('.app-footer');
@@ -101,6 +102,28 @@
         return `<a class="nav-link${activeClass}" href="#${page.id}">${page.label}</a>`;
       })
       .join('');
+  }
+
+  async function renderUserGreeting(state) {
+    if (!userGreetingElement || state.role === 'guest') {
+      userGreetingElement?.setAttribute('hidden', '');
+      return;
+    }
+
+    try {
+      const result = await shell.apiClient.get('/api/v1/auth/me');
+      const firstName = result.user.fullName?.trim().split(/\s+/)[0];
+
+      if (!firstName) {
+        userGreetingElement.setAttribute('hidden', '');
+        return;
+      }
+
+      userGreetingElement.textContent = `Hello ${firstName}`;
+      userGreetingElement.removeAttribute('hidden');
+    } catch (error) {
+      userGreetingElement.setAttribute('hidden', '');
+    }
   }
 
   async function renderPage(state) {
@@ -251,6 +274,7 @@
     }
     applyTheme(state.theme);
     renderNavigation(state);
+    await renderUserGreeting(state);
     await renderPage(state);
 
     if (shouldAnimate) {

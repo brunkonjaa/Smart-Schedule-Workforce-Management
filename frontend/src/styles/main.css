@@ -164,6 +164,13 @@ textarea {
   gap: 12px;
 }
 
+.user-greeting {
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .segmented-control {
   display: inline-flex;
   padding: 4px;
