@@ -97,7 +97,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
     }
 
     if (state.records.length === 0) {
-      return uiHelpers.createEmptyPanel(
+      const emptyPanel = uiHelpers.createEmptyPanel(
         state.sessionUser.role === 'MANAGER'
           ? 'No time off to show'
           : 'You have not asked for time off yet',
@@ -117,6 +117,8 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
             }
           : null
       );
+      emptyPanel.classList.add('leave-table-panel');
+      return emptyPanel;
     }
 
     const tableWrap = uiHelpers.createElement('div', { className: 'table-wrap' });

@@ -278,45 +278,6 @@ describe('shift recommendation service', () => {
 
     await query(
       `
-        INSERT INTO availability_entries (
-          staff_profile_id,
-          week_start,
-          day_of_week,
-          start_time,
-          end_time,
-          status,
-          created_at,
-          updated_at
-        )
-        VALUES
-          ($1, $10, 3, '12:00', '23:00', 'AVAILABLE', NOW(), NOW()),
-          ($2, $10, 3, '12:00', '23:00', 'AVAILABLE', NOW(), NOW()),
-          ($3, $10, 3, '12:00', '23:00', 'AVAILABLE', NOW(), NOW()),
-          ($4, $10, 4, '07:00', '17:00', 'AVAILABLE', NOW(), NOW()),
-          ($4, $10, 3, '12:00', '23:00', 'AVAILABLE', NOW(), NOW()),
-          ($5, $10, 3, '12:00', '23:00', 'AVAILABLE', NOW(), NOW()),
-          ($6, $10, 3, '12:00', '23:00', 'AVAILABLE', NOW(), NOW()),
-          ($7, $10, 3, '12:00', '23:00', 'AVAILABLE', NOW(), NOW()),
-          ($7, $10, 3, '14:00', '18:00', 'UNAVAILABLE', NOW(), NOW()),
-          ($8, $10, 3, '12:00', '23:00', 'AVAILABLE', NOW(), NOW()),
-          ($9, $10, 3, '12:00', '23:00', 'AVAILABLE', NOW(), NOW())
-      `,
-      [
-        bestCandidate.id,
-        aaronTie.id,
-        zoeTie.id,
-        overContractStaff.id,
-        heavyWorkloadStaff.id,
-        leaveStaff.id,
-        unavailableStaff.id,
-        overlapStaff.id,
-        touchingStaff.id,
-        nextWeekStart
-      ]
-    );
-
-    await query(
-      `
         INSERT INTO leave_requests (
           staff_profile_id,
           start_date,
@@ -405,12 +366,6 @@ describe('shift recommendation service', () => {
     await query(
       'DELETE FROM leave_requests WHERE decided_by_user_id = $1',
       [managerUserId]
-    );
-    await query(
-      'DELETE FROM availability_entries WHERE staff_profile_id IN (' +
-        staffSeeds.map((_, index) => `$${index + 1}`).join(', ') +
-      ')',
-      staffSeeds.map((staffMember) => staffMember.id)
     );
     await query(
       'DELETE FROM shifts WHERE id IN ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
@@ -550,7 +505,7 @@ describe('shift recommendation service', () => {
     expect(assignmentCountAfter.rows[0].total).toBe(assignmentCountBefore.rows[0].total);
   });
 
-  test('recommends matching-role staff without saved availability', async () => {
+  test('recommends matching-role staff without weekly availability records', async () => {
     const result = await getShiftRecommendations(noEligibleShiftId);
 
     expect(result.recommendations.map((candidate) => candidate.name)).toContain(

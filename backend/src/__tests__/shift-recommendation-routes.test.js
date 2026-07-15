@@ -307,7 +307,7 @@ describe('shift recommendation routes', () => {
     });
   });
 
-  test('returns matching-role staff without saved availability records', async () => {
+  test('returns matching-role staff without weekly availability records', async () => {
     const agent = await loginAsManager();
     const response = await agent.get(
       `/api/v1/shifts/${noEligibleShiftId}/recommendations`

@@ -7,6 +7,7 @@
   const sessionUi = shell.sessionUi;
   const staffManager = shell.staffManager;
   const leaveUi = shell.leaveUi;
+  const swapRequestsUi = shell.swapRequestsUi;
   const shiftsUi = shell.shiftsUi;
   const assignmentsUi = shell.assignmentsUi;
   const rotaUi = shell.rotaUi;
@@ -16,8 +17,25 @@
   const themeToggleElement = document.getElementById('theme-toggle');
   const pageIntroElement = document.getElementById('page-intro');
   const workspaceElement = document.getElementById('workspace');
+  const footerElement = document.querySelector('.app-footer');
+  const footerRevealDistance = 150;
+  let lastPointerY = 0;
   let suppressNextHashChange = false;
   let renderQueue = Promise.resolve();
+
+  function updateFooterReveal(pointerY = lastPointerY) {
+    if (!footerElement) {
+      return;
+    }
+
+    lastPointerY = pointerY;
+    const revealStart = Math.max(0, window.innerHeight - footerRevealDistance);
+    footerElement.classList.toggle('is-peeked', pointerY >= revealStart);
+  }
+
+  window.addEventListener('mousemove', (event) => updateFooterReveal(event.clientY), { passive: true });
+  window.addEventListener('resize', () => updateFooterReveal(), { passive: true });
+  updateFooterReveal();
 
   function clearTransientOverlays() {
     document.getElementById('rota-modal-host')?.remove();
@@ -25,14 +43,14 @@
 
   function pagesForRole(role) {
     if (role === 'guest') {
-      return allPages.filter((page) => page.id === 'login');
+      return allPages.filter((page) => ['login', 'reset-password'].includes(page.id));
     }
 
     return allPages.filter((page) => page.audience === 'both' || page.audience === role);
   }
 
   function currentHash() {
-    return window.location.hash.replace('#', '');
+    return window.location.hash.replace('#', '').split('?')[0];
   }
 
   function nextState(partialState) {
@@ -43,7 +61,9 @@
   function resolveState() {
     const previousState = stateStore.get();
     const hashPage = currentHash();
-    const resolvedRole = hashPage === 'login' ? 'guest' : previousState.role;
+    const resolvedRole = ['login', 'reset-password'].includes(hashPage)
+      ? 'guest'
+      : previousState.role;
     const rolePages = pagesForRole(resolvedRole);
     const fallbackPage = rolePages[0] || allPages.find((page) => page.id === 'login');
     const allowedPageIds = rolePages.map((page) => page.id);
@@ -57,7 +77,7 @@
       page: chosenPage,
       role: chosenPage === 'login' ? 'guest' : resolvedRole
     });
-    if (window.location.hash !== `#${chosenPage}`) {
+    if (chosenPage !== 'reset-password' && window.location.hash !== `#${chosenPage}`) {
       window.location.hash = chosenPage;
     }
 
@@ -114,6 +134,15 @@
 
     if (leaveUi) {
       await leaveUi.mount({
+        page,
+        renderToken,
+        role: state.role,
+        workspaceElement
+      });
+    }
+
+    if (swapRequestsUi) {
+      await swapRequestsUi.mount({
         page,
         renderToken,
         role: state.role,

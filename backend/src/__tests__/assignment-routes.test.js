@@ -44,11 +44,11 @@ describe('assignment routes', () => {
   const roleMismatchShiftId = crypto.randomUUID();
   const leaveConflictShiftId = crypto.randomUUID();
   const overlapConflictShiftId = crypto.randomUUID();
-  const availabilityConflictShiftId = crypto.randomUUID();
+  const noWeeklyAvailabilityShiftId = crypto.randomUUID();
   const nextWeekStart = getMondayOffset(2);
   const roleMismatchShiftDate = getDateFromWeek(nextWeekStart, 0);
   const leaveConflictShiftDate = getDateFromWeek(nextWeekStart, 1);
-  const availabilityConflictShiftDate = getDateFromWeek(nextWeekStart, 2);
+  const noWeeklyAvailabilityShiftDate = getDateFromWeek(nextWeekStart, 2);
   const assignableShiftDate = getDateFromWeek(nextWeekStart, 4);
   const duplicateShiftDate = getDateFromWeek(nextWeekStart, 5);
   const updateAssignmentShiftDate = getDateFromWeek(nextWeekStart, 3);
@@ -130,7 +130,7 @@ describe('assignment routes', () => {
           ($5, $6, '12:00', '20:00', 'FLOOR', 'OPEN', 'Role mismatch assignment route test', NOW(), NOW()),
           ($7, $8, '11:00', '19:00', 'BAR', 'OPEN', 'Leave conflict assignment route test', NOW(), NOW()),
           ($9, $4, '10:00', '18:00', 'BAR', 'OPEN', 'Overlap assignment route test', NOW(), NOW()),
-          ($10, $11, '15:00', '21:00', 'BAR', 'OPEN', 'Availability conflict assignment route test', NOW(), NOW()),
+          ($10, $11, '15:00', '21:00', 'BAR', 'OPEN', 'No weekly availability assignment route test', NOW(), NOW()),
           ($12, $13, '10:00', '16:00', 'BAR', 'OPEN', 'Update assignment route test', NOW(), NOW()),
           ($14, $15, '08:00', '14:00', 'BAR', 'OPEN', 'Delete assignment route test', NOW(), NOW())
       `,
@@ -144,34 +144,13 @@ describe('assignment routes', () => {
         leaveConflictShiftId,
         leaveConflictShiftDate,
         overlapConflictShiftId,
-        availabilityConflictShiftId,
-        availabilityConflictShiftDate,
+        noWeeklyAvailabilityShiftId,
+        noWeeklyAvailabilityShiftDate,
         updateAssignmentShiftId,
         updateAssignmentShiftDate,
         deleteAssignmentShiftId,
         deleteAssignmentShiftDate
       ]
-    );
-
-    await query(
-      `
-        INSERT INTO availability_entries (
-          staff_profile_id,
-          week_start,
-          day_of_week,
-          start_time,
-          end_time,
-          status,
-          created_at,
-          updated_at
-        )
-        VALUES
-          ($1, $2, 2, '10:00', '20:00', 'AVAILABLE', NOW(), NOW()),
-          ($1, $2, 5, '13:00', '23:00', 'AVAILABLE', NOW(), NOW()),
-          ($1, $2, 6, '08:00', '18:00', 'AVAILABLE', NOW(), NOW()),
-          ($3, $2, 4, '09:00', '17:00', 'AVAILABLE', NOW(), NOW())
-      `,
-      [staffProfileId, nextWeekStart, secondStaffProfileId]
     );
 
     await query(
@@ -235,17 +214,13 @@ describe('assignment routes', () => {
         roleMismatchShiftId,
         leaveConflictShiftId,
         overlapConflictShiftId,
-        availabilityConflictShiftId,
+        noWeeklyAvailabilityShiftId,
         updateAssignmentShiftId,
         deleteAssignmentShiftId
       ]
     );
     await query(
       'DELETE FROM leave_requests WHERE staff_profile_id IN ($1, $2, $3)',
-      [managerStaffProfileId, staffProfileId, secondStaffProfileId]
-    );
-    await query(
-      'DELETE FROM availability_entries WHERE staff_profile_id IN ($1, $2, $3)',
       [managerStaffProfileId, staffProfileId, secondStaffProfileId]
     );
     await query(
@@ -256,7 +231,7 @@ describe('assignment routes', () => {
         roleMismatchShiftId,
         leaveConflictShiftId,
         overlapConflictShiftId,
-        availabilityConflictShiftId,
+        noWeeklyAvailabilityShiftId,
         updateAssignmentShiftId,
         deleteAssignmentShiftId
       ]
@@ -698,25 +673,6 @@ describe('assignment routes', () => {
       );
       await query(
         `
-          INSERT INTO availability_entries (
-            staff_profile_id,
-            week_start,
-            day_of_week,
-            start_time,
-            end_time,
-            status,
-            created_at,
-            updated_at
-          )
-          VALUES
-            ($1, $2, 1, '08:00', '18:00', 'AVAILABLE', NOW(), NOW()),
-            ($1, $2, 2, '08:00', '18:00', 'AVAILABLE', NOW(), NOW()),
-            ($1, $2, 3, '08:00', '18:00', 'AVAILABLE', NOW(), NOW())
-        `,
-        [contractStaffProfileId, nextWeekStart]
-      );
-      await query(
-        `
           INSERT INTO shift_assignments (
             id,
             shift_id,
@@ -765,10 +721,6 @@ describe('assignment routes', () => {
       await query(
         'DELETE FROM shift_assignments WHERE shift_id IN ($1, $2, $3)',
         [firstExistingShiftId, secondExistingShiftId, contractWarningShiftId]
-      );
-      await query(
-        'DELETE FROM availability_entries WHERE staff_profile_id = $1',
-        [contractStaffProfileId]
       );
       await query(
         'DELETE FROM shifts WHERE id IN ($1, $2, $3)',
@@ -1034,20 +986,20 @@ describe('assignment routes', () => {
     }
   });
 
-  test('allows assignment when no availability window is saved', async () => {
+  test('allows assignment without a weekly availability window', async () => {
     const agent = await loginAsManager();
     const response = await agent
       .post('/api/v1/assignments')
       .set(mutationHeader)
       .send({
-        shiftId: availabilityConflictShiftId,
+        shiftId: noWeeklyAvailabilityShiftId,
         staffProfileId
       });
 
     expect(response.status).toBe(201);
     expect(response.body.assignment).toEqual(
       expect.objectContaining({
-        shiftId: availabilityConflictShiftId,
+        shiftId: noWeeklyAvailabilityShiftId,
         staffProfileId
       })
     );

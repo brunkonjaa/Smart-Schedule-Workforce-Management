@@ -315,10 +315,6 @@ const deleteExistingEvidenceData = async (client) => {
 
   if (staffIds.length > 0) {
     await client.query(
-      'DELETE FROM availability_entries WHERE staff_profile_id = ANY($1::uuid[])',
-      [staffIds]
-    );
-    await client.query(
       'DELETE FROM leave_requests WHERE staff_profile_id = ANY($1::uuid[])',
       [staffIds]
     );

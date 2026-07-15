@@ -48,10 +48,20 @@ const productionSessionEnvNames = [
 ];
 
 const config = {
+  appBaseUrl: process.env.APP_BASE_URL || `http://localhost:${Number(process.env.PORT) || 3000}`,
   databaseUrl: process.env.DATABASE_URL || '',
   firstManagerBootstrapToken: process.env.FIRST_MANAGER_BOOTSTRAP_TOKEN || '',
   nodeEnv: process.env.NODE_ENV || 'development',
   port: Number(process.env.PORT) || 3000,
+  passwordResetExpiryMinutes: parsePositiveInteger(
+    process.env.PASSWORD_RESET_EXPIRY_MINUTES,
+    30
+  ),
+  smtpFrom: process.env.SMTP_FROM || '',
+  smtpHost: process.env.SMTP_HOST || '',
+  smtpPassword: process.env.SMTP_PASSWORD || '',
+  smtpPort: parsePositiveInteger(process.env.SMTP_PORT, 587),
+  smtpUser: process.env.SMTP_USER || '',
   productionSessionEnvNames,
   sessionAbsoluteLifetimeHours: parsePositiveInteger(
     process.env.SESSION_ABSOLUTE_LIFETIME_HOURS,

@@ -136,12 +136,12 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     return `${formatCompactClock(cell.startTime)}-${formatCompactClock(cell.endTime)}`;
   };
 
-  const formatShortDate = (dateValue) => {
+  const formatDate = (dateValue) => {
     if (!dateValue || typeof dateValue !== 'string' || dateValue.length < 10) {
       return dateValue || '';
     }
 
-    return `${dateValue.slice(5, 7)}/${dateValue.slice(8, 10)}`;
+    return `${dateValue.slice(8, 10)}/${dateValue.slice(5, 7)}/${dateValue.slice(0, 4)}`;
   };
 
   const getVisibleRows = (state) => {
@@ -253,7 +253,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
   };
 
   const getContextTitle = (context) => {
-    const dayText = `${context.day.label} ${context.day.date}`;
+    const dayText = `${context.day.label} ${formatDate(context.day.date)}`;
 
     if (context.kind === 'open') {
       return `${dayText} ${context.label}`.trim();
@@ -402,16 +402,16 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     );
     title.appendChild(
       uiHelpers.createElement('strong', {
-        text: `${state.weekStart} to ${state.rota?.weekEnd || addDays(state.weekStart, 6)}`
+        text: `${formatDate(state.weekStart)} to ${formatDate(state.rota?.weekEnd || addDays(state.weekStart, 6))}`
       })
     );
     panel.appendChild(title);
 
     const controls = uiHelpers.createElement('div', { className: 'rota-week-controls' });
     [
-      { label: 'Prev', offset: -7 },
-      { label: 'This week', current: true },
-      { label: 'Next', offset: 7 }
+      { label: 'Previous Week', offset: -7 },
+      { label: 'This Week', current: true },
+      { label: 'Next Week', offset: 7 }
     ].forEach((control) => {
       const button = uiHelpers.createElement('button', {
         className: 'action-button button-secondary',
@@ -490,7 +490,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       const copy = uiHelpers.createElement('div', { className: 'rota-open-copy' });
       copy.appendChild(
         uiHelpers.createElement('strong', {
-          text: `${item.day.label} ${formatShortDate(item.day.date)}`
+          text: `${item.day.label} ${formatDate(item.day.date)}`
         })
       );
       copy.appendChild(uiHelpers.createElement('span', { text: item.label }));
@@ -553,20 +553,6 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
 
     entry.appendChild(entryText);
 
-    if (canOpenEntryMenu(state, row, item)) {
-      entry.appendChild(
-        createMenuButton('Open rota options', () => {
-          actions.openEntryContext({
-            cell: item.cell,
-            day,
-            kind: item.kind,
-            label: item.label,
-            row
-          });
-        })
-      );
-    }
-
     return entry;
   };
 
@@ -596,7 +582,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     const headRow = uiHelpers.createElement('tr');
     headRow.appendChild(
       uiHelpers.createElement('th', {
-        className: 'rota-table-staff-heading',
+        className: 'rota-table-corner',
         text: ''
       })
     );
@@ -688,14 +674,14 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     const header = uiHelpers.createElement('div', { className: 'rota-mobile-panel-header' });
     const title = uiHelpers.createElement('div', { className: 'rota-mobile-panel-title' });
     title.appendChild(uiHelpers.createElement('span', { text: selectedDay.label }));
-    title.appendChild(uiHelpers.createElement('strong', { text: selectedDay.date }));
+    title.appendChild(uiHelpers.createElement('strong', { text: formatDate(selectedDay.date) }));
     header.appendChild(title);
 
     const controls = uiHelpers.createElement('div', { className: 'rota-mobile-day-controls' });
     [
-      { label: 'Prev week', offset: -7 },
-      { label: 'Current week', current: true },
-      { label: 'Next week', offset: 7 }
+      { label: 'Previous Week', offset: -7 },
+      { label: 'This Week', current: true },
+      { label: 'Next Week', offset: 7 }
     ].forEach((control) => {
       const button = uiHelpers.createElement('button', {
         className: `action-button ${control.current ? 'button-ghost' : 'button-secondary'} rota-mobile-day-button`,
@@ -728,7 +714,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     const tableWrap = uiHelpers.createElement('div', { className: 'rota-mobile-table-wrap' });
     const table = uiHelpers.createElement('table', { className: 'rota-mobile-table' });
     const headRow = uiHelpers.createElement('tr');
-    headRow.appendChild(uiHelpers.createElement('th', { className: 'rota-mobile-staff-heading', text: 'Staff' }));
+    headRow.appendChild(uiHelpers.createElement('th', { className: 'rota-mobile-corner', text: '' }));
     state.rota.days.forEach((day) => {
       headRow.appendChild(uiHelpers.createElement('th', {
         className: `rota-mobile-day-heading${day.date === selectedDay.date ? ' is-selected' : ''}`,
@@ -939,7 +925,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     body.appendChild(
       uiHelpers.createReviewList([
         { label: 'Day', value: state.modal.context.day.label },
-        { label: 'Date', value: state.modal.context.day.date }
+        { label: 'Date', value: formatDate(state.modal.context.day.date) }
       ])
     );
 
@@ -1012,7 +998,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     body.appendChild(
       uiHelpers.createReviewList([
         { label: 'Day', value: state.modal.context.day.label },
-        { label: 'Date', value: state.modal.context.day.date }
+        { label: 'Date', value: formatDate(state.modal.context.day.date) }
       ])
     );
 
@@ -1086,17 +1072,80 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     body.appendChild(
       uiHelpers.createReviewList([
         { label: 'Day', value: context.day.label },
-        { label: 'Date', value: context.day.date },
+        { label: 'Date', value: formatDate(context.day.date) },
         { label: 'Shift', value: context.label }
       ])
     );
-    body.appendChild(
-      uiHelpers.createElement('p', {
-        className: 'panel-copy',
-        text: 'Ask the manager to change this shift.'
-      })
-    );
+    body.appendChild(uiHelpers.createElement('p', {
+      className: 'panel-copy',
+      text: 'Choose a colleague or leave this open for any eligible colleague to accept.'
+    }));
+    renderModalError(body, state.modal.error);
 
+    const form = uiHelpers.createElement('form', { className: 'form-shell' });
+    const grid = uiHelpers.createElement('div', { className: 'form-grid' });
+    const targetField = uiHelpers.createElement('label', { className: 'form-field form-field--span-12' });
+    targetField.appendChild(uiHelpers.createElement('span', { text: 'Request from' }));
+    const targetSelect = uiHelpers.createElement('select', { className: 'input-control' });
+    targetSelect.appendChild(uiHelpers.createElement('option', { text: 'Anyone eligible' }));
+    const candidates = (state.rota?.rows || []).filter((row) => {
+      return row.staffProfileId && row.staffProfileId !== state.sessionUser?.staffProfileId && row.primaryRole === context.cell?.department;
+    });
+    candidates.forEach((candidate) => {
+      targetSelect.appendChild(uiHelpers.createElement('option', {
+        text: candidate.staffName,
+        attributes: { value: candidate.staffProfileId }
+      }));
+    });
+    targetField.appendChild(targetSelect);
+    grid.appendChild(targetField);
+    const reasonField = uiHelpers.createElement('label', { className: 'form-field form-field--span-12' });
+    reasonField.appendChild(uiHelpers.createElement('span', { text: 'Reason (optional)' }));
+    const reasonInput = uiHelpers.createElement('textarea', { className: 'input-control input-control--textarea', attributes: { rows: 3, maxlength: 500 } });
+    reasonField.appendChild(reasonInput);
+    grid.appendChild(reasonField);
+    form.appendChild(grid);
+    const actionsRow = uiHelpers.createElement('div', { className: 'actions-row' });
+    const submitButton = uiHelpers.createElement('button', { className: 'action-button button-primary', text: 'Send swap request', attributes: { type: 'submit' } });
+    actionsRow.appendChild(submitButton);
+    form.appendChild(actionsRow);
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      submitButton.disabled = true;
+      submitButton.textContent = 'Sending...';
+      await actions.requestSwap({
+        assignmentId: context.cell.assignmentId,
+        reason: reasonInput.value.trim(),
+        targetStaffProfileId: targetSelect.value || null
+      });
+    });
+    body.appendChild(form);
+
+    return backdrop;
+  };
+
+  const renderStaffMenuModal = (state, actions) => {
+    const { backdrop, body } = createModalShell('My shift options', state, actions);
+    const context = state.modal.context;
+
+    body.appendChild(uiHelpers.createReviewList([
+      { label: 'Day', value: context.day.label },
+      { label: 'Date', value: formatDate(context.day.date) },
+      { label: 'Shift', value: context.label }
+    ]));
+    body.appendChild(uiHelpers.createElement('p', {
+      className: 'panel-copy',
+      text: 'Only you can see these options for your own assigned shift.'
+    }));
+
+    const swapButton = uiHelpers.createElement('button', {
+      className: 'action-button button-primary',
+      text: 'Request swap',
+      attributes: { type: 'button' }
+    });
+    swapButton.addEventListener('click', () => actions.openStaffSwapModal(context));
+    body.appendChild(uiHelpers.createElement('div', { className: 'actions-row' }));
+    body.lastChild.appendChild(swapButton);
     return backdrop;
   };
 
@@ -1114,6 +1163,8 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
         return renderManagerEditModal(state, actions);
       case 'staff-swap':
         return renderStaffSwapModal(state, actions);
+      case 'staff-menu':
+        return renderStaffMenuModal(state, actions);
       default:
         return null;
     }
@@ -1230,6 +1281,14 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
         return;
       }
 
+      state.modal = {
+        context,
+        type: 'staff-menu'
+      };
+      render();
+    };
+
+    const openStaffSwapModal = (context) => {
       state.modal = {
         context,
         type: 'staff-swap'
@@ -1387,14 +1446,34 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       }
     };
 
+    const requestSwap = async (swapInput) => {
+      try {
+        await apiClient.post('/api/v1/shift-swaps', swapInput);
+        state.modal = null;
+        await loadRota({
+          details: [],
+          text: 'Swap request sent to the manager.',
+          tone: 'success'
+        });
+      } catch (error) {
+        state.modal = {
+          ...state.modal,
+          error: uiHelpers.getErrorFeedback(error, 'Could not send the swap request.')
+        };
+        render();
+      }
+    };
+
     const actions = {
       addShiftForStaff,
       loadRota,
       openAddModal,
       openEditTimeModal,
       openEntryContext,
+      openStaffSwapModal,
       removeShiftById,
       render,
+      requestSwap,
       saveEditedTime
     };
 

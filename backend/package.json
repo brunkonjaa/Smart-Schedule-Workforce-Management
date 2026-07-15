@@ -11,6 +11,7 @@
     "db:migrate:status": "node src/scripts/run-migrations.js status",
     "db:seed:demo-history": "node src/scripts/seed-demo-history.js",
     "db:seed:demo-history:reset": "node src/scripts/seed-demo-history.js --reset",
+    "db:seed:staff-history": "node src/scripts/seed-staff-history.js",
     "local:evidence:check": "node src/scripts/prepare-local-evidence.js check",
     "local:evidence:migrate": "node src/scripts/prepare-local-evidence.js migrate",
     "local:evidence:seed": "node src/scripts/prepare-local-evidence.js seed-recommendation",
@@ -27,6 +28,7 @@
     "express-rate-limit": "^8.5.2",
     "express-session": "^1.18.1",
     "helmet": "^8.2.0",
+    "nodemailer": "^9.0.3",
     "pg": "^8.13.1"
   },
   "devDependencies": {

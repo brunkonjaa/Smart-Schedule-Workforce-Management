@@ -10,68 +10,43 @@ const hashRounds = 12;
 const roles = ['BAR', 'FLOOR', 'KITCHEN', 'OTHER'];
 const currentWeekOffset = 0;
 const nextWeekOffset = 1;
-const firstWeekOffset = -104;
-const staffCount = 45;
-const activeStaffCount = 30;
+const firstWeekOffset = -12;
+const staffCount = 24;
+const activeStaffCount = 24;
 const resetDemoSeed = process.argv.includes('--reset') || process.env.SMART_SCHEDULE_RESET_DEMO_SEED === 'true';
 
-const fakeFirstNames = [
-  'Ava',
-  'Ben',
-  'Cara',
-  'Dylan',
-  'Ella',
-  'Finn',
-  'Grace',
-  'Hugo',
-  'Iris',
-  'Jack',
-  'Kara',
-  'Leo',
-  'Maya',
-  'Noah',
-  'Orla',
-  'Perry',
-  'Quinn',
-  'Rosa',
-  'Sam',
-  'Tara',
-  'Uma',
-  'Vera',
-  'Will',
-  'Xena',
-  'Yasmin',
-  'Zane',
-  'Alina',
-  'Brodie',
-  'Cleo',
-  'Dev',
-  'Elsie',
-  'Freddie',
-  'Gia',
-  'Harvey',
-  'Indie',
-  'Jonas',
-  'Keira',
-  'Luca',
-  'Mila',
-  'Niall',
-  'Pia',
-  'Rafi',
-  'Sienna',
-  'Theo',
-  'Zara'
+const fakeFullNames = [
+  "Aoife O'Sullivan",
+  'Cian Murphy',
+  'Niamh Byrne',
+  'Eoin Gallagher',
+  "Liam O'Rourke",
+  "Brid O'Neill",
+  'Saoirse Walsh',
+  'Conor Kelly',
+  "Orla McCarthy",
+  "Tadhg O'Brien",
+  'Maeve Ryan',
+  'Ronan Doyle',
+  'Patrick Healy',
+  'Molly Keane',
+  'Fionn McDonagh',
+  'Ciara Kavanagh',
+  "Brendan O'Leary",
+  'Roisin Farrell',
+  "Dara Brennan",
+  "Aisling O'Connor",
+  'Seamus Flynn',
+  'Declan Whelan',
+  'Emer Nolan',
+  'Cathal Byrne'
 ];
 
 const rolePlan = [
-  ...Array(8).fill('BAR'),
-  ...Array(9).fill('FLOOR'),
-  ...Array(8).fill('KITCHEN'),
-  ...Array(5).fill('OTHER'),
-  ...Array(4).fill('BAR'),
-  ...Array(4).fill('FLOOR'),
+  ...Array(6).fill('BAR'),
+  ...Array(8).fill('FLOOR'),
   ...Array(4).fill('KITCHEN'),
-  ...Array(3).fill('OTHER')
+  ...Array(6).fill('OTHER')
 ];
 
 const pad = (value) => String(value).padStart(2, '0');
@@ -108,52 +83,45 @@ const slugify = (value) => {
 };
 
 const hasSameDayTimeConflict = (left, right) => {
-  return left.startTime <= right.endTime && left.endTime >= right.startTime;
+  return left.startTime < right.endTime && left.endTime > right.startTime;
 };
 
 const timeRange = (startTime, endTime) => ({ startTime, endTime });
 
 const buildShiftPatterns = (role, dayIndex) => {
   if (role === 'BAR') {
-    const patterns = [timeRange('10:00', '17:00'), timeRange('17:00', '23:00')];
-
-    if ([4, 5].includes(dayIndex)) {
-      patterns.push(timeRange('19:00', '23:30'));
-    }
-
-    return patterns;
+    return [
+      timeRange('10:00', '17:00'),
+      timeRange('12:00', '20:00'),
+      timeRange('17:00', '23:30')
+    ];
   }
 
   if (role === 'FLOOR') {
-    const patterns = [
-      timeRange('09:00', '15:00'),
-      timeRange('12:00', '18:00'),
-      timeRange('17:00', '23:00')
+    return [
+      timeRange('11:00', '16:00'),
+      timeRange('12:00', '17:00'),
+      timeRange('13:00', '18:00'),
+      timeRange('15:00', '21:00')
     ];
-
-    if ([4, 5].includes(dayIndex)) {
-      patterns.push(timeRange('18:00', '23:30'));
-    }
-
-    return patterns;
   }
 
   if (role === 'KITCHEN') {
-    return [timeRange('08:00', '16:00'), timeRange('14:00', '22:00')];
+    return [timeRange('10:00', '16:00'), timeRange('15:00', '21:00')];
   }
 
-  if (dayIndex <= 4) {
-    return [timeRange('07:00', '12:00')];
-  }
-
-  return [timeRange('08:00', '14:00'), timeRange('12:00', '18:00')];
+  return [
+    timeRange('10:00', '16:00'),
+    timeRange('14:00', '18:00'),
+    timeRange('16:00', '22:00')
+  ];
 };
 
 const buildStaff = () => {
   const currentWeekStart = getCurrentWeekStart();
 
   return Array.from({ length: staffCount }, (_, index) => {
-    const firstName = fakeFirstNames[index];
+    const fullName = fakeFullNames[index];
     const paddedNumber = pad(index + 1);
     const isActive = index < activeStaffCount;
     const role = rolePlan[index];
@@ -162,9 +130,9 @@ const buildStaff = () => {
 
     return {
       contractHours: [12, 16, 20, 24, 28, 32, 36, 40][index % 8],
-      email: `${slugify(firstName)}.demo.${paddedNumber}@${demoDomain}`,
+      email: `${slugify(fullName)}.demo.${paddedNumber}@${demoDomain}`,
       endDate: endOffset === null ? null : addWeeks(currentWeekStart, endOffset),
-      fullName: `${firstName} Demo ${paddedNumber}`,
+      fullName,
       id: crypto.randomUUID(),
       isActive,
       phoneNumber: `0800000${String(index + 1).padStart(3, '0')}`,
@@ -190,7 +158,7 @@ const buildLeaveRequests = (staff, managerUserId) => {
     .filter((staffMember) => staffMember.isActive)
     .filter((_, index) => index % 5 === 0)
     .map((staffMember, index) => {
-      const leaveWeekOffsets = [-8, -3, 0, 1, 5, 12];
+      const leaveWeekOffsets = [-8, -3, 5, 12];
       const weekStart = addWeeks(
         currentWeekStart,
         leaveWeekOffsets[index % leaveWeekOffsets.length]
@@ -219,31 +187,14 @@ const hasApprovedLeave = (leaveRequests, staffProfileId, dateText) => {
 };
 
 const shouldKeepShiftOpen = (weekOffset, role, dayIndex, patternIndex) => {
-  if (
-    weekOffset === currentWeekOffset &&
-    ((role === 'BAR' && dayIndex === 4 && patternIndex === 1) ||
-      (role === 'FLOOR' && dayIndex === 5 && patternIndex === 2) ||
-      (role === 'KITCHEN' && dayIndex === 6 && patternIndex === 1))
-  ) {
-    return true;
-  }
-
-  if (
-    weekOffset === nextWeekOffset &&
-    ((role === 'BAR' && dayIndex === 5 && patternIndex === 2) ||
-      (role === 'FLOOR' && dayIndex === 4 && patternIndex === 3) ||
-      (role === 'OTHER' && dayIndex === 6 && patternIndex === 0))
-  ) {
-    return true;
-  }
-
-  return weekOffset < 0 && Math.abs(weekOffset) % 13 === 0 && dayIndex === 5 && patternIndex === 0;
+  return false;
 };
 
 const chooseStaffForShift = (
   staffByRole,
   leaveRequests,
   assignedWindows,
+  assignedDayCounts,
   role,
   shiftDate,
   shiftWindow
@@ -260,6 +211,10 @@ const chooseStaffForShift = (
     const staffDateKey = `${staffMember.id}:${shiftDate}`;
     const existingWindows = assignedWindows.get(staffDateKey) || [];
 
+    if (existingWindows.length > 0) {
+      return false;
+    }
+
     return !existingWindows.some((existingWindow) => {
       return hasSameDayTimeConflict(existingWindow, shiftWindow);
     });
@@ -269,11 +224,13 @@ const chooseStaffForShift = (
     return null;
   }
 
-  const candidateIndex =
-    (parseInt(shiftDate.replace(/-/g, ''), 10) + shiftWindow.startTime.charCodeAt(0)) %
-    candidates.length;
+  candidates.sort((left, right) => {
+    const leftCount = assignedDayCounts.get(left.id) || 0;
+    const rightCount = assignedDayCounts.get(right.id) || 0;
+    return leftCount - rightCount || left.fullName.localeCompare(right.fullName);
+  });
 
-  return candidates[candidateIndex];
+  return candidates[0];
 };
 
 const buildRotaRows = (staff, leaveRequests, managerUserId) => {
@@ -288,8 +245,9 @@ const buildRotaRows = (staff, leaveRequests, managerUserId) => {
 
   for (let weekOffset = firstWeekOffset; weekOffset <= nextWeekOffset; weekOffset += 1) {
     const weekStart = addWeeks(currentWeekStart, weekOffset);
+    const assignedDayCounts = new Map();
 
-    for (let dayIndex = 0; dayIndex < 7; dayIndex += 1) {
+    for (let dayIndex = 0; dayIndex < 5; dayIndex += 1) {
       const shiftDate = addDays(weekStart, dayIndex);
 
       roles.forEach((role) => {
@@ -313,6 +271,7 @@ const buildRotaRows = (staff, leaveRequests, managerUserId) => {
             staffByRole,
             leaveRequests,
             assignedWindows,
+            assignedDayCounts,
             role,
             shiftDate,
             shiftWindow
@@ -327,6 +286,10 @@ const buildRotaRows = (staff, leaveRequests, managerUserId) => {
             ...(assignedWindows.get(staffDateKey) || []),
             shiftWindow
           ]);
+          assignedDayCounts.set(
+            staffMember.id,
+            (assignedDayCounts.get(staffMember.id) || 0) + 1
+          );
           assignments.push({
             assignedByUserId: managerUserId,
             id: crypto.randomUUID(),
@@ -342,30 +305,6 @@ const buildRotaRows = (staff, leaveRequests, managerUserId) => {
     assignments,
     shifts
   };
-};
-
-const buildAvailabilityRows = (staff) => {
-  const currentWeekStart = getCurrentWeekStart();
-  const weekStarts = [
-    addWeeks(currentWeekStart, currentWeekOffset),
-    addWeeks(currentWeekStart, nextWeekOffset)
-  ];
-
-  return staff
-    .filter((staffMember) => staffMember.isActive)
-    .flatMap((staffMember) => {
-      return weekStarts.flatMap((weekStart) => {
-        return Array.from({ length: 7 }, (_, index) => ({
-          dayOfWeek: index + 1,
-          endTime: index >= 4 ? '23:30' : '22:00',
-          id: crypto.randomUUID(),
-          staffProfileId: staffMember.id,
-          startTime: index >= 4 ? '10:00' : '09:00',
-          status: index === 6 && staffMember.primaryRole !== 'KITCHEN' ? 'UNAVAILABLE' : 'AVAILABLE',
-          weekStart
-        }));
-      });
-    });
 };
 
 const getExistingDemoUserCount = async (client) => {
@@ -511,7 +450,6 @@ const run = async () => {
     const staff = buildStaff();
     const leaveRequests = buildLeaveRequests(staff, managerUserId);
     const { assignments, shifts } = buildRotaRows(staff, leaveRequests, managerUserId);
-    const availabilityEntries = buildAvailabilityRows(staff);
 
     await insertRows(
       client,
@@ -603,38 +541,14 @@ const run = async () => {
       }))
     );
 
-    await insertRows(
-      client,
-      'availability_entries',
-      [
-        'id',
-        'staff_profile_id',
-        'week_start',
-        'day_of_week',
-        'start_time',
-        'end_time',
-        'status'
-      ],
-      availabilityEntries.map((entry) => ({
-        day_of_week: entry.dayOfWeek,
-        end_time: entry.endTime,
-        id: entry.id,
-        staff_profile_id: entry.staffProfileId,
-        start_time: entry.startTime,
-        status: entry.status,
-        week_start: entry.weekStart
-      }))
-    );
-
     await client.query('COMMIT');
 
     console.log(resetDemoSeed ? 'Demo history reset and seed complete.' : 'Demo history seed complete.');
-    console.log(`Fake staff users added: ${staff.length}`);
-    console.log(`Active fake staff now: ${staff.filter((item) => item.isActive).length}`);
+    console.log(`Demo staff users added: ${staff.length}`);
+    console.log(`Active demo staff now: ${staff.filter((item) => item.isActive).length}`);
     console.log(`Historical and current shifts added: ${shifts.length}`);
     console.log(`Assignments added: ${assignments.length}`);
     console.log(`Approved leave records added: ${leaveRequests.length}`);
-    console.log(`Availability entries added: ${availabilityEntries.length}`);
     console.log(`Demo staff password: ${demoPassword}`);
     console.log(`Demo email domain: ${demoDomain}`);
   } catch (error) {

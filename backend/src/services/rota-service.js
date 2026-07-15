@@ -241,12 +241,14 @@ const addLeaveMarkersToRows = (staffRows, leaveMarkers, days) => {
 
 const mapSanitizedStaffCell = (cell) => {
   return {
+    assignmentId: cell.assignmentId,
     department: cell.department,
     endTime: cell.endTime,
     shiftDate: cell.shiftDate,
     staffName: cell.staffName,
     startTime: cell.startTime,
-    state: cell.state
+    state: cell.state,
+    shiftId: cell.shiftId
   };
 };
 
@@ -398,7 +400,54 @@ const getRota = async (authUser, filters) => {
   };
 };
 
+const getStaffWorkHistory = async (staffProfileId) => {
+  const result = await query(
+    `
+      SELECT
+        date_trunc('week', shifts.shift_date)::date::text AS week_start,
+        shifts.shift_date::text AS shift_date,
+        shifts.start_time::text AS start_time,
+        shifts.end_time::text AS end_time,
+        shifts.required_role
+      FROM shift_assignments
+      INNER JOIN shifts ON shifts.id = shift_assignments.shift_id
+      WHERE shift_assignments.staff_profile_id = $1
+        AND shifts.shift_date < date_trunc('week', CURRENT_DATE)::date
+      ORDER BY week_start DESC, shifts.shift_date DESC, shifts.start_time DESC
+    `,
+    [staffProfileId]
+  );
+
+  const weeks = new Map();
+  result.rows.forEach((row) => {
+    const week = weeks.get(row.week_start) || {
+      hours: 0,
+      shifts: [],
+      weekEnd: null,
+      weekStart: row.week_start
+    };
+    const start = new Date(`1970-01-01T${row.start_time}Z`);
+    const end = new Date(`1970-01-01T${row.end_time}Z`);
+    const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+    const weekEnd = new Date(`${row.week_start}T00:00:00Z`);
+    weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);
+    week.hours = Number((week.hours + hours).toFixed(2));
+    week.weekEnd = weekEnd.toISOString().slice(0, 10);
+    week.shifts.push({
+      day: new Date(`${row.shift_date}T00:00:00Z`).toLocaleDateString('en-GB', { weekday: 'short', timeZone: 'UTC' }),
+      endTime: row.end_time.slice(0, 5),
+      requiredRole: row.required_role,
+      shiftDate: row.shift_date,
+      startTime: row.start_time.slice(0, 5)
+    });
+    weeks.set(row.week_start, week);
+  });
+
+  return [...weeks.values()];
+};
+
 module.exports = {
   buildRotaFilters,
-  getRota
+  getRota,
+  getStaffWorkHistory
 };

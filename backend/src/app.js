@@ -10,11 +10,11 @@ const {
 } = require('./config/rate-limit');
 const authRoutes = require('./routes/auth');
 const staffRoutes = require('./routes/staff');
-const availabilityRoutes = require('./routes/availability');
 const leaveRequestRoutes = require('./routes/leave-requests');
 const shiftRoutes = require('./routes/shifts');
 const assignmentRoutes = require('./routes/assignments');
 const rotaRoutes = require('./routes/rota');
+const shiftSwapRoutes = require('./routes/shift-swaps');
 
 const frontendPublicDirectory = path.resolve(__dirname, '../../frontend/public');
 const frontendSourceDirectory = path.resolve(__dirname, '../../frontend/src');
@@ -50,11 +50,11 @@ app.use('/src', express.static(frontendSourceDirectory));
 app.use('/api/v1', apiRateLimiter);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/staff', staffRoutes);
-app.use('/api/v1/availability', availabilityRoutes);
 app.use('/api/v1/leave-requests', leaveRequestRoutes);
 app.use('/api/v1/shifts', shiftRoutes);
 app.use('/api/v1/assignments', assignmentRoutes);
 app.use('/api/v1/rota', rotaRoutes);
+app.use('/api/v1/shift-swaps', shiftSwapRoutes);
 app.use(express.static(frontendPublicDirectory));
 
 app.get('/health', healthRateLimiter, async (request, response) => {

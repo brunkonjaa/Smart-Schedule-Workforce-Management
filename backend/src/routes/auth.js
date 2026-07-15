@@ -24,6 +24,13 @@ const {
 const { requireMutationProtection } = require('../middleware/request-security');
 const { loginRateLimiter } = require('../config/rate-limit');
 const { createSecurityEvent } = require('../services/security-event-service');
+const {
+  consumePasswordReset,
+  createPasswordResetRequest,
+  listPasswordResetRequests,
+  validateResetPasswordInput
+} = require('../services/password-reset-service');
+const { requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -267,6 +274,73 @@ router.post(
     return response.status(200).json({
       message: 'Login successful.',
       user: authenticatedUser
+    });
+  })
+);
+
+router.post(
+  '/password-reset/request',
+  requireMutationProtection,
+  asyncHandler(async (request, response) => {
+    const email = normalizeEmail(request.body?.email);
+
+    if (!email || email.length > 255 || !emailPattern.test(email)) {
+      return sendValidationError(response, ['email must be a valid email address']);
+    }
+
+    try {
+      await createPasswordResetRequest({
+        email,
+        ipAddress: request.ip
+      });
+    } catch (error) {
+      if (error.code === 'EMAIL_NOT_CONFIGURED') {
+        return response.status(503).json({
+          error: 'Configuration Error',
+          message: 'Password recovery email is not configured on this server.'
+        });
+      }
+
+      throw error;
+    }
+
+    return response.status(202).json({
+      message: 'If an active account matches that email, a reset link has been sent.'
+    });
+  })
+);
+
+router.post(
+  '/password-reset/confirm',
+  requireMutationProtection,
+  asyncHandler(async (request, response) => {
+    const { details, newPassword, token } = validateResetPasswordInput(request.body);
+
+    if (details.length > 0) {
+      return sendValidationError(response, details);
+    }
+
+    const result = await consumePasswordReset({ newPassword, token });
+
+    if (!result.valid) {
+      return response.status(400).json({
+        error: 'Invalid Reset Link',
+        message: 'This password reset link is invalid, expired, or already used.'
+      });
+    }
+
+    return response.status(200).json({
+      message: 'Password reset successfully. You can now sign in.'
+    });
+  })
+);
+
+router.get(
+  '/password-reset/requests',
+  requireRole('MANAGER'),
+  asyncHandler(async (request, response) => {
+    return response.status(200).json({
+      requests: await listPasswordResetRequests()
     });
   })
 );

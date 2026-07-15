@@ -49,6 +49,112 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
     return panel;
   };
 
+  const formatWeekLabel = (week) => {
+    const format = (dateValue) => `${dateValue.slice(8, 10)}/${dateValue.slice(5, 7)}/${dateValue.slice(0, 4)}`;
+    return `${format(week.weekStart)} - ${format(week.weekEnd)}`;
+  };
+
+  const formatDate = (dateValue) => {
+    if (!dateValue || dateValue.length < 10) return dateValue || '';
+    return `${dateValue.slice(8, 10)}/${dateValue.slice(5, 7)}/${dateValue.slice(0, 4)}`;
+  };
+
+  const createStaffHistorySection = (weeks, weekStart) => {
+    const section = uiHelpers.createElement('section', {
+      className: 'content-panel overview-staff-history-card'
+    });
+    section.appendChild(uiHelpers.createElement('p', { className: 'intro-kicker', text: 'My work' }));
+    section.appendChild(uiHelpers.createElement('h2', { text: 'Your schedule history' }));
+    section.appendChild(uiHelpers.createElement('p', {
+      className: 'intro-summary',
+      text: `Current week starts ${formatDate(weekStart)}. Previous worked weeks are shown below.`
+    }));
+    const historyGrid = uiHelpers.createElement('div', { className: 'staff-history-grid' });
+
+    if (weeks.length === 0) {
+      historyGrid.appendChild(uiHelpers.createElement('p', {
+        className: 'panel-copy',
+        text: 'Previous weeks will appear here after you have worked assigned shifts.'
+      }));
+    } else {
+      weeks.forEach((week) => {
+        const card = uiHelpers.createElement('article', { className: 'staff-history-card' });
+        const heading = uiHelpers.createElement('div', { className: 'staff-history-card-heading' });
+        heading.appendChild(uiHelpers.createElement('div', {
+          className: 'staff-history-week',
+          text: formatWeekLabel(week)
+        }));
+        heading.appendChild(uiHelpers.createElement('strong', {
+          className: 'staff-history-hours',
+          text: `${week.hours} hours`
+        }));
+        card.appendChild(heading);
+        const shiftList = uiHelpers.createElement('div', { className: 'staff-history-shifts' });
+        week.shifts.forEach((shift) => {
+          shiftList.appendChild(uiHelpers.createElement('span', {
+            className: 'staff-history-shift',
+            text: `${shift.day} ${shift.startTime}-${shift.endTime}`
+          }));
+        });
+        card.appendChild(shiftList);
+        historyGrid.appendChild(card);
+      });
+    }
+
+    section.appendChild(historyGrid);
+    return section;
+  };
+
+  const createStaffSwapSection = (requests, sessionUser, onAccept) => {
+    const section = uiHelpers.createElement('section', {
+      className: 'content-panel content-panel--span-8 staff-swap-section'
+    });
+    section.appendChild(uiHelpers.createPanelHeading(
+      'Swap requests',
+      'Requests connected to your future shifts.'
+    ));
+    const list = uiHelpers.createElement('div', { className: 'staff-swap-list' });
+
+    if (requests.length === 0) {
+      list.appendChild(uiHelpers.createElement('p', {
+        className: 'panel-copy',
+        text: 'No swap requests are waiting.'
+      }));
+    } else {
+      requests.forEach((request) => {
+        const item = uiHelpers.createElement('article', { className: 'staff-swap-item' });
+        item.appendChild(uiHelpers.createElement('strong', {
+          text: `${formatDate(request.shiftDate)} · ${request.shiftStartTime.slice(0, 5)}-${request.shiftEndTime.slice(0, 5)}`
+        }));
+        item.appendChild(uiHelpers.createElement('span', {
+          className: 'staff-swap-item-copy',
+          text: request.requesterStaffProfileId === sessionUser.staffProfileId
+            ? `Your request · ${request.status.toLowerCase()}`
+            : `${request.requesterName} · ${request.status.toLowerCase()}`
+        }));
+        const canAccept = request.status === 'PENDING' &&
+          request.requesterStaffProfileId !== sessionUser.staffProfileId &&
+          (!request.targetStaffProfileId || request.targetStaffProfileId === sessionUser.staffProfileId);
+        if (canAccept) {
+          const acceptButton = uiHelpers.createElement('button', {
+            className: 'action-button button-secondary',
+            text: 'Accept swap',
+            attributes: { type: 'button' }
+          });
+          acceptButton.addEventListener('click', () => onAccept(request.id, acceptButton));
+          item.appendChild(acceptButton);
+        }
+        list.appendChild(item);
+      });
+    }
+
+    section.appendChild(list);
+    const actions = uiHelpers.createElement('div', { className: 'actions-row' });
+    actions.appendChild(createButton('Open swap requests', 'swap-requests', 'ghost'));
+    section.appendChild(actions);
+    return section;
+  };
+
   const createSignInPanel = (workspaceElement) => {
     workspaceElement.textContent = '';
 
@@ -76,10 +182,12 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
   };
 
   const loadManagerDashboard = async (weekStart) => {
-    const [staffResult, leaveResult, shiftResult] = await Promise.all([
+    const [staffResult, leaveResult, shiftResult, passwordResult, swapResult] = await Promise.all([
       apiClient.get('/api/v1/staff?status=ALL'),
       apiClient.get('/api/v1/leave-requests?status=ALL'),
-      apiClient.get(`/api/v1/shifts?weekStart=${weekStart}`)
+      apiClient.get(`/api/v1/shifts?weekStart=${weekStart}`),
+      apiClient.get('/api/v1/auth/password-reset/requests'),
+      apiClient.get('/api/v1/shift-swaps')
     ]);
 
     const activeStaff = staffResult.staff.filter((staff) => staff.isActive);
@@ -90,18 +198,26 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
       activeStaff,
       openShifts,
       pendingLeave,
+      passwordResetRequests: passwordResult.requests,
       recentLeave: pendingLeave.slice(0, 4),
-      shifts: shiftResult.shifts
+      shifts: shiftResult.shifts,
+      swapRequests: swapResult.requests
     };
   };
 
   const loadStaffDashboard = async () => {
-    const leaveResult = await apiClient.get('/api/v1/leave-requests?status=ALL');
+    const [leaveResult, historyResult, swapResult] = await Promise.all([
+      apiClient.get('/api/v1/leave-requests?status=ALL'),
+      apiClient.get('/api/v1/rota/history'),
+      apiClient.get('/api/v1/shift-swaps')
+    ]);
     const pendingLeave = leaveResult.leaveRequests.filter((request) => request.status === 'PENDING');
 
     return {
+      history: historyResult.weeks,
       leaveRequests: leaveResult.leaveRequests,
-      pendingLeave
+      pendingLeave,
+      swapRequests: swapResult.requests
     };
   };
 
@@ -111,7 +227,7 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
     uiHelpers.renderIntroMetrics([
       { label: 'Time off waiting', value: String(dashboard.pendingLeave.length), tone: 'accent' },
       { label: 'Open shifts', value: String(dashboard.openShifts.length), tone: 'neutral' },
-      { label: 'Active staff', value: String(dashboard.activeStaff.length), tone: 'neutral' }
+      { label: 'Password requests', value: String(dashboard.passwordResetRequests.length), tone: 'neutral' }
     ]);
 
     const grid = uiHelpers.createElement('div', { className: 'workspace-grid workspace-grid--overview-manager' });
@@ -124,6 +240,34 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
           'Open the rota to change the week.'
         ],
         'overview-panel overview-panel--equal'
+      )
+    );
+
+    grid.appendChild(
+      createDashboardPanel(
+        'Password Requests',
+        'Recent recovery requests from active staff accounts.',
+        dashboard.passwordResetRequests.slice(0, 4).map((request) => {
+          return `${request.fullName || request.email}: ${new Date(request.createdAt).toLocaleString()}`;
+        }),
+        'No password requests are waiting.',
+        'overview',
+        'Refresh overview',
+        'overview-panel'
+      )
+    );
+
+    grid.appendChild(
+      createDashboardPanel(
+        'Shift swaps',
+        'Requests waiting for a staff member or manager decision.',
+        dashboard.swapRequests.slice(0, 4).map((request) => {
+          return `${request.requesterName}: ${formatDate(request.shiftDate)} ${request.shiftStartTime.slice(0, 5)}-${request.shiftEndTime.slice(0, 5)} (${request.status})`;
+        }),
+        'No shift swap requests are waiting.',
+        'rota',
+        'Open rota',
+        'overview-panel'
       )
     );
 
@@ -146,7 +290,7 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
         'Open shifts this week',
         'Open the rota and use the * menu to place someone on them.',
         dashboard.openShifts.slice(0, 4).map((shift) => {
-          return `${shift.shiftDate} ${shift.startTime.slice(0, 5)}-${shift.endTime.slice(0, 5)} needs ${uiHelpers.formatRole(shift.requiredRole)}`;
+          return `${formatDate(shift.shiftDate)} ${shift.startTime.slice(0, 5)}-${shift.endTime.slice(0, 5)} needs ${uiHelpers.formatRole(shift.requiredRole)}`;
         }),
         'No open shifts found for this week.',
         'rota',
@@ -173,57 +317,31 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
     workspaceElement.appendChild(grid);
   };
 
-  const renderStaffDashboard = (workspaceElement, weekStart, dashboard) => {
+  const renderStaffDashboard = (workspaceElement, weekStart, dashboard, sessionUser, onAcceptSwap) => {
     workspaceElement.textContent = '';
-
-    const approvedLeaveCount = dashboard.leaveRequests.filter((request) => request.status === 'APPROVED').length;
-
-    uiHelpers.renderIntroMetrics([
-      { label: 'My rota', value: 'View', tone: 'accent' },
-      { label: 'Time off waiting', value: String(dashboard.pendingLeave.length), tone: 'neutral' },
-      { label: 'Time off approved', value: String(approvedLeaveCount), tone: 'neutral' }
-    ]);
-
-    const grid = uiHelpers.createElement('div', { className: 'workspace-grid' });
-    grid.appendChild(
-      uiHelpers.createStepsPanel(
-        'My week',
-        `Week starting ${weekStart}.`,
-        [
-          'Check your rota first.',
-          'Open time off only if you need a day away.'
-        ],
-        'content-panel--span-16'
-      )
-    );
-
-    grid.appendChild(
-      createDashboardPanel(
-        'My time off',
-        'This shows whether your time off was approved.',
-        dashboard.leaveRequests.slice(0, 5).map((request) => {
-          return `${request.startDate} to ${request.endDate}: ${uiHelpers.formatStatus(request.status)}`;
-        }),
-        'You have not asked for time off yet.',
-        'leave',
-        'Ask for time off'
-      )
-    );
-
-    grid.appendChild(
-      createDashboardPanel(
-        'Weekly rota',
-        'Open the rota to check your shift and who else is working.',
-        [
-          'Your own shift still has the * option.',
-          'The full team rota shows there as well.'
-        ],
-        'Your rota is empty for this week.',
-        'rota',
-        'Open rota'
-      )
-    );
-
+    const grid = uiHelpers.createElement('div', { className: 'workspace-grid workspace-grid--staff-overview' });
+    grid.appendChild(createStaffHistorySection(dashboard.history, weekStart));
+    const sideColumn = uiHelpers.createElement('div', { className: 'staff-overview-side-column' });
+    sideColumn.appendChild(createStaffSwapSection(dashboard.swapRequests, sessionUser, onAcceptSwap));
+    sideColumn.appendChild(createDashboardPanel(
+      'Time off',
+      'Your leave requests and decisions.',
+      dashboard.leaveRequests.slice(0, 4).map((request) => `${formatDate(request.startDate)} to ${formatDate(request.endDate)}: ${uiHelpers.formatStatus(request.status)}`),
+      'You have not asked for time off yet.',
+      'leave',
+      'Open time off',
+      'content-panel--span-8 staff-time-off-section'
+    ));
+    sideColumn.appendChild(uiHelpers.createElement('button', {
+      className: 'content-panel overview-rota-link-card',
+      text: 'Back to main Rota',
+      attributes: {
+        'aria-label': 'Back to main Rota',
+        'data-target-page': 'rota',
+        type: 'button'
+      }
+    }));
+    grid.appendChild(sideColumn);
     workspaceElement.appendChild(grid);
   };
 
@@ -236,7 +354,7 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
 
     workspaceElement.textContent = '';
     uiHelpers.renderIntroMetrics([
-      { label: 'This week', value: 'Loading...', tone: 'accent' },
+      { label: 'Overview', value: 'Loading...', tone: 'accent' },
       { label: 'Week start', value: weekStart, tone: 'neutral' },
       { label: 'Page', value: 'Checking', tone: 'neutral' }
     ]);
@@ -258,7 +376,19 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
 
       const dashboard = await loadStaffDashboard(weekStart);
       if (isActiveRender(workspaceElement, renderToken)) {
-        renderStaffDashboard(workspaceElement, weekStart, dashboard);
+        const refresh = async (swapId, button) => {
+          button.disabled = true;
+          button.textContent = 'Accepting...';
+          try {
+            await apiClient.post(`/api/v1/shift-swaps/${swapId}/accept`, {});
+            const refreshed = await loadStaffDashboard(weekStart);
+            renderStaffDashboard(workspaceElement, weekStart, refreshed, sessionResult.user, refresh);
+          } catch (error) {
+            button.disabled = false;
+            button.textContent = error.message || 'Could not accept';
+          }
+        };
+        renderStaffDashboard(workspaceElement, weekStart, dashboard, sessionResult.user, refresh);
       }
     } catch (error) {
       if (!isActiveRender(workspaceElement, renderToken)) {
@@ -271,7 +401,7 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
       }
 
       uiHelpers.renderIntroMetrics([
-        { label: 'This week', value: 'Error', tone: 'accent' },
+        { label: 'Overview', value: 'Error', tone: 'accent' },
         { label: 'Week start', value: weekStart, tone: 'neutral' },
         { label: 'Live data', value: 'Problem', tone: 'neutral' }
       ]);
@@ -280,7 +410,7 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
       const grid = uiHelpers.createElement('div', { className: 'workspace-grid' });
       grid.appendChild(
         uiHelpers.createEmptyPanel(
-          'This week could not load',
+          'Overview could not load',
           'Try signing in again or reload the page.',
           'content-panel--span-16',
           {

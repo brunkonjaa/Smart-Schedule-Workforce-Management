@@ -1,8 +1,9 @@
 const express = require('express');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requireRole } = require('../middleware/auth');
 const {
   buildRotaFilters,
-  getRota
+  getRota,
+  getStaffWorkHistory
 } = require('../services/rota-service');
 
 const router = express.Router();
@@ -20,6 +21,16 @@ const sendValidationError = (response, details) => {
     message: 'The rota request contains invalid fields.'
   });
 };
+
+router.get(
+  '/history',
+  requireRole('STAFF'),
+  asyncHandler(async (request, response) => {
+    return response.status(200).json({
+      weeks: await getStaffWorkHistory(request.authUser.staffProfileId)
+    });
+  })
+);
 
 router.get(
   '/',

@@ -284,12 +284,28 @@ describe('rota routes', () => {
         state: 'ASSIGNED'
       })
     );
-    expect(assignedCell.assignmentId).toBeUndefined();
+    expect(assignedCell.assignmentId).toEqual(expect.stringMatching(/^[0-9a-f-]{36}$/i));
     expect(assignedCell.notes).toBeUndefined();
-    expect(assignedCell.shiftId).toBeUndefined();
+    expect(assignedCell.shiftId).toBe(assignedShiftId);
     expect(
       response.body.rota.rows.some((row) => row.staffName === 'Rota Leave Staff')
     ).toBe(true);
+  });
+
+  test('allows staff users to view their previous-week work history', async () => {
+    const agent = await loginAsStaff();
+    const response = await agent.get('/api/v1/rota/history');
+
+    expect(response.status).toBe(200);
+    expect(response.body.weeks).toEqual(expect.any(Array));
+    response.body.weeks.forEach((week) => {
+      expect(week).toEqual(expect.objectContaining({
+        hours: expect.any(Number),
+        shifts: expect.any(Array),
+        weekEnd: expect.any(String),
+        weekStart: expect.any(String)
+      }));
+    });
   });
 
   test('rejects invalid rota filters', async () => {

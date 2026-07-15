@@ -58,6 +58,101 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     });
   };
 
+  const getResetToken = () => {
+    const hashQuery = window.location.hash.split('?')[1] || '';
+    return new URLSearchParams(hashQuery).get('token') || '';
+  };
+
+  const renderPasswordResetRequest = (workspaceElement, flashMessage = null) => {
+    workspaceElement.textContent = '';
+    const grid = createElement('div', { className: 'workspace-grid workspace-grid--login' });
+    if (flashMessage) {
+      const flashPanel = createElement('section', {
+        className: `content-panel content-panel--span-16 content-panel--alert content-panel--alert-${flashMessage.tone}`
+      });
+      flashPanel.appendChild(createElement('p', { className: 'panel-copy panel-copy--strong', text: flashMessage.text }));
+      grid.appendChild(flashPanel);
+    }
+    const panel = createElement('section', { className: 'content-panel content-panel--form content-panel--span-8' });
+    const heading = createElement('div', { className: 'panel-heading' });
+    heading.appendChild(createElement('h3', { text: 'Forgot password' }));
+    heading.appendChild(createElement('p', { className: 'panel-copy', text: 'Enter your registered work email. If it belongs to an active account, Smart Schedule will send a reset link.' }));
+    panel.appendChild(heading);
+    const form = createElement('form', { className: 'form-shell', attributes: { autocomplete: 'off', novalidate: true } });
+    const field = createElement('label', { className: 'form-field form-field--span-12' });
+    field.appendChild(createElement('span', { text: 'Email address' }));
+    const input = createElement('input', { className: 'input-control', attributes: { autocomplete: 'email', inputmode: 'email', type: 'email', required: true } });
+    field.appendChild(input);
+    form.appendChild(field);
+    const actions = createElement('div', { className: 'actions-row' });
+    const submit = createElement('button', { className: 'action-button button-primary', text: 'Email reset link', attributes: { type: 'submit' } });
+    const back = createElement('button', { className: 'action-button button-ghost', text: 'Back to login', attributes: { type: 'button' } });
+    back.addEventListener('click', () => { window.location.hash = 'login'; });
+    actions.append(submit, back);
+    form.appendChild(actions);
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      submit.disabled = true;
+      submit.textContent = 'Sending...';
+      try {
+        const result = await apiClient.post('/api/v1/auth/password-reset/request', { email: input.value.trim() });
+        renderPasswordResetRequest(workspaceElement, { text: result.message, tone: 'success' });
+      } catch (error) {
+        renderPasswordResetRequest(workspaceElement, { text: error.message || 'Could not request a reset link.', tone: 'error' });
+      }
+    });
+    panel.appendChild(form);
+    grid.appendChild(panel);
+    workspaceElement.appendChild(grid);
+  };
+
+  const renderPasswordResetConfirm = (workspaceElement, token, flashMessage = null) => {
+    workspaceElement.textContent = '';
+    const grid = createElement('div', { className: 'workspace-grid workspace-grid--login' });
+    if (flashMessage) {
+      const flashPanel = createElement('section', { className: `content-panel content-panel--span-16 content-panel--alert content-panel--alert-${flashMessage.tone}` });
+      flashPanel.appendChild(createElement('p', { className: 'panel-copy panel-copy--strong', text: flashMessage.text }));
+      grid.appendChild(flashPanel);
+    }
+    const panel = createElement('section', { className: 'content-panel content-panel--form content-panel--span-8' });
+    const heading = createElement('div', { className: 'panel-heading' });
+    heading.appendChild(createElement('h3', { text: 'Create a new password' }));
+    heading.appendChild(createElement('p', { className: 'panel-copy', text: 'Choose a new password for your work account.' }));
+    panel.appendChild(heading);
+    const form = createElement('form', { className: 'form-shell', attributes: { autocomplete: 'off', novalidate: true } });
+    const formGrid = createElement('div', { className: 'form-grid' });
+    const passwordInput = createElement('input', { className: 'input-control', attributes: { autocomplete: 'new-password', type: 'password', required: true } });
+    const confirmInput = createElement('input', { className: 'input-control', attributes: { autocomplete: 'new-password', type: 'password', required: true } });
+    [['New password', passwordInput], ['Confirm new password', confirmInput]].forEach(([label, input]) => {
+      const field = createElement('label', { className: 'form-field form-field--span-12' });
+      field.append(createElement('span', { text: label }), input);
+      formGrid.appendChild(field);
+    });
+    form.appendChild(formGrid);
+    const submit = createElement('button', { className: 'action-button button-primary', text: 'Set new password', attributes: { type: 'submit' } });
+    form.appendChild(createElement('div', { className: 'actions-row' }));
+    form.lastChild.appendChild(submit);
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (passwordInput.value !== confirmInput.value) {
+        renderPasswordResetConfirm(workspaceElement, token, { text: 'The passwords do not match.', tone: 'error' });
+        return;
+      }
+      submit.disabled = true;
+      submit.textContent = 'Saving...';
+      try {
+        const result = await apiClient.post('/api/v1/auth/password-reset/confirm', { newPassword: passwordInput.value, token });
+        window.location.hash = 'login';
+        window.setTimeout(() => renderSignedOutState(workspaceElement, { text: result.message, tone: 'success' }), 0);
+      } catch (error) {
+        renderPasswordResetConfirm(workspaceElement, token, { text: error.message || 'Could not reset the password.', tone: 'error' });
+      }
+    });
+    panel.appendChild(form);
+    grid.appendChild(panel);
+    workspaceElement.appendChild(grid);
+  };
+
   const navigateToUserHome = (user) => {
     const nextRole = user.role === 'MANAGER' ? 'manager' : 'staff';
     const nextPage = 'rota';
@@ -186,16 +281,15 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
       attributes: { type: 'submit' }
     });
     actionsRow.appendChild(submitButton);
-    actionsRow.appendChild(
-      createElement('button', {
+    const forgotButton = createElement('button', {
         className: 'action-button button-ghost',
         text: 'Forgot password',
         attributes: {
-          title: 'Password recovery will be added later.',
           type: 'button'
         }
-      })
-    );
+      });
+    forgotButton.addEventListener('click', () => { window.location.hash = 'reset-password'; });
+    actionsRow.appendChild(forgotButton);
     form.appendChild(actionsRow);
 
     form.addEventListener('submit', async (event) => {
@@ -427,6 +521,16 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
   };
 
   const mount = async ({ page, workspaceElement, renderToken }) => {
+    if (page.id === 'reset-password') {
+      const token = getResetToken();
+      if (token) {
+        renderPasswordResetConfirm(workspaceElement, token);
+      } else {
+        renderPasswordResetRequest(workspaceElement);
+      }
+      return;
+    }
+
     if (page.id !== 'login') {
       return;
     }

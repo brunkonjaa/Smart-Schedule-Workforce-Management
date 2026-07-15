@@ -23,9 +23,10 @@ window.SmartSchedule.pageConfig = {
       id: 'overview',
       label: 'Overview',
       audience: 'both',
-      eyebrow: 'This week',
-      title: 'What needs doing',
-      summary: 'Open the rota first. Time off is next.',
+      hideIntro: true,
+      eyebrow: 'Overview',
+      title: 'Overview',
+      summary: 'Your work history, rota, time off, and swap requests.',
       context: 'The rota is the first place to check after sign in.',
       metrics: [
         { label: 'Open shifts', value: '3', tone: 'accent' },
@@ -43,6 +44,22 @@ window.SmartSchedule.pageConfig = {
           ]
         }
       ]
+    },
+    {
+      id: 'reset-password',
+      label: 'Reset password',
+      audience: 'both',
+      eyebrow: 'Account recovery',
+      title: 'Create a new password',
+      summary: 'Use the secure link from your Smart Schedule email.',
+      context: 'The reset link works once and expires after a short time.',
+      compactIntro: true,
+      metrics: [
+        { label: 'Link', value: 'One use', tone: 'accent' },
+        { label: 'Expiry', value: 'Short', tone: 'neutral' },
+        { label: 'Account', value: 'Protected', tone: 'neutral' }
+      ],
+      blocks: []
     },
     {
       id: 'login',
@@ -194,6 +211,22 @@ window.SmartSchedule.pageConfig = {
           ]
         }
       ]
+    },
+    {
+      id: 'swap-requests',
+      label: 'Swap Requests',
+      audience: 'both',
+      eyebrow: 'Shift swaps',
+      title: 'Swap requests',
+      summary: 'See future shift swaps requested by the team and respond when you can help.',
+      context: 'Staff can accept eligible requests. Managers make the final decision after a staff member accepts.',
+      compactIntro: true,
+      metrics: [
+        { label: 'Visibility', value: 'Team wide', tone: 'accent' },
+        { label: 'Staff action', value: 'Accept', tone: 'neutral' },
+        { label: 'Manager action', value: 'Decide', tone: 'neutral' }
+      ],
+      blocks: []
     },
   ]
 };
