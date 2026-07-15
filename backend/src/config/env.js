@@ -60,11 +60,6 @@ const config = {
     process.env.PASSWORD_RESET_EXPIRY_MINUTES,
     30
   ),
-  smtpFrom: process.env.SMTP_FROM || '',
-  smtpHost: process.env.SMTP_HOST || '',
-  smtpPassword: process.env.SMTP_PASSWORD || '',
-  smtpPort: parsePositiveInteger(process.env.SMTP_PORT, 587),
-  smtpUser: process.env.SMTP_USER || '',
   productionSessionEnvNames,
   sessionAbsoluteLifetimeHours: parsePositiveInteger(
     process.env.SESSION_ABSOLUTE_LIFETIME_HOURS,

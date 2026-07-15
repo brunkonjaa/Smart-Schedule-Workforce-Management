@@ -12,7 +12,7 @@ This is the stack actually used by the current Smart Schedule repo.
 | Hosted app | Render | This is the current hosted web-service direction. |
 | Sessions | `express-session` and `connect-pg-simple` | Login state stays server-side and session rows are stored in PostgreSQL. |
 | Passwords | `bcrypt` | Passwords are checked against hashes rather than stored as plain text. |
-| Email reset output | `nodemailer` with local console fallback | Reset links can be delivered by email when SMTP is configured; local work prints a safe test link. |
+| Email reset output | Brevo transactional email API with local console fallback | Render sends reset links through Brevo's HTTPS API. Local work prints a safe test link when Brevo is not configured. |
 | Testing | Jest and Supertest | The backend route suites cover auth, staff, leave, shifts, assignments, rota, password reset, and swaps. |
 | Tracking | Jira and GitHub | Jira records the work trail and GitHub stores the code checkpoints. |
 | Diagrams | Visual Paradigm | The exported diagrams support the SRS without inventing extra system parts. |
