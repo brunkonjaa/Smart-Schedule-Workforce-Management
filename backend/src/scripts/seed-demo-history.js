@@ -336,6 +336,20 @@ const deleteExistingDemoData = async (client) => {
   if (demoStaffProfileIds.length > 0) {
     await client.query(
       `
+        DELETE FROM security_events
+        WHERE staff_profile_id = ANY($1::uuid[])
+      `,
+      [demoStaffProfileIds]
+    );
+    await client.query(
+      `
+        DELETE FROM leave_requests
+        WHERE staff_profile_id = ANY($1::uuid[])
+      `,
+      [demoStaffProfileIds]
+    );
+    await client.query(
+      `
         DELETE FROM shift_assignments
         WHERE staff_profile_id = ANY($1::uuid[])
       `,
