@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const dns = require('dns');
 const config = require('../config/env');
 
 const hasSmtpConfiguration = () => {
@@ -9,6 +10,14 @@ const hasSmtpConfiguration = () => {
       config.smtpPassword &&
       config.smtpFrom
   );
+};
+
+const resolveSmtpHost = () => {
+  try {
+    return dns.resolve4Sync(config.smtpHost)[0] || config.smtpHost;
+  } catch (error) {
+    return config.smtpHost;
+  }
 };
 
 const buildTransport = () => {
@@ -23,9 +32,12 @@ const buildTransport = () => {
     },
     connectionTimeout: 10000,
     family: 4,
-    host: config.smtpHost,
+    host: resolveSmtpHost(),
     port: config.smtpPort,
-    secure: config.smtpPort === 465
+    secure: config.smtpPort === 465,
+    tls: {
+      servername: config.smtpHost
+    }
   });
 };
 
