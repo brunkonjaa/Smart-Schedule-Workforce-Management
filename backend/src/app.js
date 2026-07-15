@@ -79,6 +79,14 @@ app.use((error, request, response, next) => {
     return;
   }
 
+  console.error('[request-error]', {
+    method: request.method,
+    path: request.originalUrl,
+    message: error.message,
+    code: error.code,
+    stack: error.stack
+  });
+
   response.status(500).json({
     error: 'Internal Server Error',
     message: 'The server could not complete this request.'
