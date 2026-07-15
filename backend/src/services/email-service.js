@@ -2,6 +2,10 @@ const nodemailer = require('nodemailer');
 const dns = require('dns');
 const config = require('../config/env');
 
+const hasBrevoConfiguration = () => {
+  return Boolean(config.brevoApiKey && config.brevoFromEmail);
+};
+
 const hasSmtpConfiguration = () => {
   return Boolean(
     config.smtpHost &&
@@ -41,6 +45,34 @@ const buildTransport = () => {
   });
 };
 
+const sendWithBrevo = async (message) => {
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    headers: {
+      accept: 'application/json',
+      'api-key': config.brevoApiKey,
+      'content-type': 'application/json'
+    },
+    method: 'POST',
+    body: JSON.stringify({
+      htmlContent: message.html,
+      sender: {
+        email: config.brevoFromEmail,
+        name: config.brevoFromName
+      },
+      subject: message.subject,
+      textContent: message.text,
+      to: [{ email: message.to }]
+    }),
+    signal: AbortSignal.timeout(10000)
+  });
+
+  if (!response.ok) {
+    const error = new Error(`Brevo email request failed with status ${response.status}.`);
+    error.code = 'BREVO_SEND_FAILED';
+    throw error;
+  }
+};
+
 const sendPasswordResetEmail = async ({ email, fullName, resetUrl }) => {
   const message = {
     from: config.smtpFrom,
@@ -49,6 +81,11 @@ const sendPasswordResetEmail = async ({ email, fullName, resetUrl }) => {
     text: `Hello ${fullName || 'there'},\n\nUse this link to create a new Smart Schedule password: ${resetUrl}\n\nThe link expires in ${config.passwordResetExpiryMinutes} minutes and can only be used once. If you did not request this, you can ignore this email.`,
     to: email
   };
+  if (hasBrevoConfiguration()) {
+    await sendWithBrevo(message);
+    return { delivered: true, provider: 'brevo' };
+  }
+
   const transport = buildTransport();
 
   if (!transport) {
@@ -67,6 +104,7 @@ const sendPasswordResetEmail = async ({ email, fullName, resetUrl }) => {
 };
 
 module.exports = {
+  hasBrevoConfiguration,
   hasSmtpConfiguration,
   sendPasswordResetEmail
 };

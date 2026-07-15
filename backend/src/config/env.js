@@ -49,6 +49,9 @@ const productionSessionEnvNames = [
 
 const config = {
   appBaseUrl: process.env.APP_BASE_URL || `http://localhost:${Number(process.env.PORT) || 3000}`,
+  brevoApiKey: process.env.BREVO_API_KEY || '',
+  brevoFromEmail: process.env.BREVO_FROM_EMAIL || '',
+  brevoFromName: process.env.BREVO_FROM_NAME || 'Smart Schedule',
   databaseUrl: process.env.DATABASE_URL || '',
   firstManagerBootstrapToken: process.env.FIRST_MANAGER_BOOTSTRAP_TOKEN || '',
   nodeEnv: process.env.NODE_ENV || 'development',
