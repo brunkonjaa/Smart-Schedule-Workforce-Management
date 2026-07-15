@@ -2908,6 +2908,102 @@ body[data-theme='dark'] .rota-mobile-week-cell.is-selected:not(.is-filled) {
   }
 }
 
+/* Manager overview follows the same large-left and stacked-right layout as staff overview. */
+.workspace-grid--manager-overview {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.overview-manager-summary-card {
+  grid-column: span 8;
+  width: auto;
+  max-width: none;
+  min-height: 220px;
+  padding: 16px;
+  border-left: 4px solid var(--accent);
+  border-radius: 14px;
+  background: var(--surface-soft);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.overview-manager-summary-card .intro-kicker {
+  margin-bottom: 4px;
+}
+
+.overview-manager-summary-card h2 {
+  margin: 0;
+  font-size: clamp(1.35rem, 2vw, 1.8rem);
+}
+
+.overview-manager-summary-card .intro-summary {
+  margin: 6px 0 14px;
+}
+
+.overview-manager-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.overview-manager-summary-block {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.overview-manager-summary-block h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.overview-manager-summary-block .step-list,
+.overview-manager-summary-block .detail-list {
+  margin-top: 0;
+}
+
+.overview-manager-summary-block .actions-row {
+  margin-top: 12px;
+}
+
+.manager-overview-side-column {
+  grid-column: span 4;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
+.manager-overview-side-column .manager-overview-panel {
+  width: auto;
+  max-width: none;
+  min-height: 0;
+}
+
+@media (max-width: 1120px) {
+  .workspace-grid--manager-overview > .overview-manager-summary-card,
+  .workspace-grid--manager-overview > .manager-overview-side-column {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 620px) {
+  .workspace-grid--manager-overview {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workspace-grid--manager-overview > .overview-manager-summary-card,
+  .workspace-grid--manager-overview > .manager-overview-side-column {
+    grid-column: span 1;
+  }
+
+  .overview-manager-summary-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* Time Off uses the same floating-card layout as the overview and rota pages. */
 .workspace-grid--leave {
   display: grid;

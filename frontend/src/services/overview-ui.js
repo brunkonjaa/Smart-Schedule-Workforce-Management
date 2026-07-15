@@ -155,6 +155,54 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
     return section;
   };
 
+  const createManagerSummarySection = (weekStart, openShifts) => {
+    const section = uiHelpers.createElement('section', {
+      className: 'content-panel overview-manager-summary-card'
+    });
+    section.appendChild(uiHelpers.createElement('p', { className: 'intro-kicker', text: 'Manager view' }));
+    section.appendChild(uiHelpers.createElement('h2', { text: 'Weekly rota overview' }));
+    section.appendChild(uiHelpers.createElement('p', {
+      className: 'intro-summary',
+      text: `Week starting ${formatDate(weekStart)}. Check requests first, then open the rota to fill any gaps.`
+    }));
+
+    const summaryGrid = uiHelpers.createElement('div', { className: 'overview-manager-summary-grid' });
+    const startBlock = uiHelpers.createElement('div', { className: 'overview-manager-summary-block' });
+    startBlock.appendChild(uiHelpers.createElement('h3', { text: 'Start here' }));
+    const steps = uiHelpers.createElement('ol', { className: 'step-list' });
+    ['Check time off, password, and swap requests.', 'Open the rota to change the week or fill open shifts.'].forEach((text, index) => {
+      const item = uiHelpers.createElement('li', { className: 'step-item' });
+      item.appendChild(uiHelpers.createElement('span', { className: 'step-marker', text: String(index + 1) }));
+      item.appendChild(uiHelpers.createElement('span', { text }));
+      steps.appendChild(item);
+    });
+    startBlock.appendChild(steps);
+    summaryGrid.appendChild(startBlock);
+
+    const openBlock = uiHelpers.createElement('div', { className: 'overview-manager-summary-block' });
+    openBlock.appendChild(uiHelpers.createElement('h3', { text: 'Open shifts this week' }));
+    if (openShifts.length === 0) {
+      openBlock.appendChild(uiHelpers.createElement('p', {
+        className: 'panel-copy',
+        text: 'No open shifts found for this week.'
+      }));
+    } else {
+      const list = uiHelpers.createElement('ul', { className: 'detail-list' });
+      openShifts.slice(0, 4).forEach((shift) => {
+        list.appendChild(uiHelpers.createElement('li', {
+          text: `${formatDate(shift.shiftDate)} ${shift.startTime.slice(0, 5)}-${shift.endTime.slice(0, 5)} needs ${uiHelpers.formatRole(shift.requiredRole)}`
+        }));
+      });
+      openBlock.appendChild(list);
+    }
+    const actions = uiHelpers.createElement('div', { className: 'actions-row' });
+    actions.appendChild(createButton('Open rota', 'rota', 'ghost'));
+    openBlock.appendChild(actions);
+    summaryGrid.appendChild(openBlock);
+    section.appendChild(summaryGrid);
+    return section;
+  };
+
   const createSignInPanel = (workspaceElement) => {
     workspaceElement.textContent = '';
 
@@ -230,21 +278,10 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
       { label: 'Password requests', value: String(dashboard.passwordResetRequests.length), tone: 'neutral' }
     ]);
 
-    const grid = uiHelpers.createElement('div', { className: 'workspace-grid workspace-grid--overview-manager' });
-    grid.appendChild(
-      uiHelpers.createStepsPanel(
-        'Start here',
-        `Week starting ${weekStart}.`,
-        [
-          'Check time off first.',
-          'Open the rota to change the week.'
-        ],
-        'overview-panel overview-panel--equal'
-      )
-    );
-
-    grid.appendChild(
-      createDashboardPanel(
+    const grid = uiHelpers.createElement('div', { className: 'workspace-grid workspace-grid--manager-overview' });
+    grid.appendChild(createManagerSummarySection(weekStart, dashboard.openShifts));
+    const sideColumn = uiHelpers.createElement('div', { className: 'manager-overview-side-column' });
+    sideColumn.appendChild(createDashboardPanel(
         'Password Requests',
         'Recent recovery requests from active staff accounts.',
         dashboard.passwordResetRequests.slice(0, 4).map((request) => {
@@ -253,26 +290,20 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
         'No password requests are waiting.',
         'overview',
         'Refresh overview',
-        'overview-panel'
-      )
-    );
-
-    grid.appendChild(
-      createDashboardPanel(
+        'manager-overview-panel'
+      ));
+    sideColumn.appendChild(createDashboardPanel(
         'Shift swaps',
         'Requests waiting for a staff member or manager decision.',
         dashboard.swapRequests.slice(0, 4).map((request) => {
           return `${request.requesterName}: ${formatDate(request.shiftDate)} ${request.shiftStartTime.slice(0, 5)}-${request.shiftEndTime.slice(0, 5)} (${request.status})`;
         }),
         'No shift swap requests are waiting.',
-        'rota',
-        'Open rota',
-        'overview-panel'
-      )
-    );
-
-    grid.appendChild(
-      createDashboardPanel(
+        'swap-requests',
+        'Open swap requests',
+        'manager-overview-panel'
+      ));
+    sideColumn.appendChild(createDashboardPanel(
         'Time off waiting',
         'These still need a yes or no.',
         dashboard.recentLeave.map((request) => {
@@ -281,39 +312,18 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
         'No time off requests are waiting right now.',
         'leave',
         'Open time off',
-        'overview-panel'
-      )
-    );
-
-    grid.appendChild(
-      createDashboardPanel(
-        'Open shifts this week',
-        'Open the rota and use the * menu to place someone on them.',
-        dashboard.openShifts.slice(0, 4).map((shift) => {
-          return `${formatDate(shift.shiftDate)} ${shift.startTime.slice(0, 5)}-${shift.endTime.slice(0, 5)} needs ${uiHelpers.formatRole(shift.requiredRole)}`;
-        }),
-        'No open shifts found for this week.',
-        'rota',
-        'Open rota',
-        'overview-panel'
-      )
-    );
-
-    grid.appendChild(
-      createDashboardPanel(
-        'Rota',
-        'Open the rota to change names or times.',
-        [
-          'Use the * button inside the rota.',
-          'Open shifts stay at the top until they are filled.'
-        ],
-        'The rota is now the main screen after login.',
-        'rota',
-        'Open rota',
-        'overview-panel'
-      )
-    );
-
+        'manager-overview-panel'
+      ));
+    sideColumn.appendChild(uiHelpers.createElement('button', {
+      className: 'content-panel overview-rota-link-card',
+      text: 'Back to main Rota',
+      attributes: {
+        'aria-label': 'Back to main Rota',
+        'data-target-page': 'rota',
+        type: 'button'
+      }
+    }));
+    grid.appendChild(sideColumn);
     workspaceElement.appendChild(grid);
   };
 
