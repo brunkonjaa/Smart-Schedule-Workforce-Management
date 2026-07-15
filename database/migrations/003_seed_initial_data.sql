@@ -11,7 +11,7 @@ VALUES
   ),
   (
     '6c514db0-aabc-4da2-a3df-2a64875d5b02',
-    'alex.byrne@example.com',
+    'alexbyrnefake@gmail.com',
     '$2b$10$dLFPIarlDrdo6FiRvmrmqenONhPLqQ2MsAk3txrZ4gci8l11VASc2',
     'STAFF',
     TRUE,
@@ -20,7 +20,7 @@ VALUES
   ),
   (
     '8e97f39e-1a77-48b9-8f64-34765f418103',
-    'jamie.murphy@example.com',
+    'jamiemurphyfake@gmail.com',
     '$2b$10$nAsu9CQKF4Uz8v9D0gd1QeqJcEn1yTYsKaBgbZMBZkA0tcnRo0o/q',
     'STAFF',
     TRUE,
@@ -29,7 +29,7 @@ VALUES
   ),
   (
     'a1b55a6d-5d58-48c4-94ff-50ac61c7f904',
-    'casey.doyle@example.com',
+    'caseydoylefake@gmail.com',
     '$2b$10$vSsO06C.AiOGLGEe8QDc8OQ3L3lXu3122xWPO.V4vkj33GYG0yLIW',
     'STAFF',
     TRUE,

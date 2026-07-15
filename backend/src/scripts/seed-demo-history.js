@@ -4,7 +4,8 @@ const crypto = require('crypto');
 const config = require('../config/env');
 const { closePool, isLocalDatabaseUrl, pool } = require('../config/db');
 
-const demoDomain = 'demo.smart-schedule.test';
+const demoDomain = 'gmail.com';
+const legacyDemoDomain = 'demo.smart-schedule.test';
 const demoPassword = 'DemoStaffPass123!';
 const hashRounds = 12;
 const roles = ['BAR', 'FLOOR', 'KITCHEN', 'OTHER'];
@@ -49,8 +50,6 @@ const rolePlan = [
   ...Array(6).fill('OTHER')
 ];
 
-const pad = (value) => String(value).padStart(2, '0');
-
 const toIsoDate = (date) => date.toISOString().slice(0, 10);
 
 const parseIsoDate = (value) => new Date(`${value}T00:00:00Z`);
@@ -78,9 +77,11 @@ const getDayOfWeek = (dateText) => {
   return day === 0 ? 7 : day;
 };
 
-const slugify = (value) => {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, '.').replace(/\.+/g, '.');
-};
+const compactSlugify = (value) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+const buildDemoEmail = (fullName) => `${compactSlugify(fullName)}fake@${demoDomain}`;
+
+const getDemoEmailList = () => fakeFullNames.map(buildDemoEmail);
 
 const hasSameDayTimeConflict = (left, right) => {
   return left.startTime < right.endTime && left.endTime > right.startTime;
@@ -122,7 +123,6 @@ const buildStaff = () => {
 
   return Array.from({ length: staffCount }, (_, index) => {
     const fullName = fakeFullNames[index];
-    const paddedNumber = pad(index + 1);
     const isActive = index < activeStaffCount;
     const role = rolePlan[index];
     const startOffset = isActive ? -90 + (index % 40) : -104 + (index % 20);
@@ -130,7 +130,7 @@ const buildStaff = () => {
 
     return {
       contractHours: [12, 16, 20, 24, 28, 32, 36, 40][index % 8],
-      email: `${slugify(fullName)}.demo.${paddedNumber}@${demoDomain}`,
+      email: buildDemoEmail(fullName),
       endDate: endOffset === null ? null : addWeeks(currentWeekStart, endOffset),
       fullName,
       id: crypto.randomUUID(),
@@ -313,8 +313,9 @@ const getExistingDemoUserCount = async (client) => {
       SELECT COUNT(*)::int AS count
       FROM users
       WHERE email LIKE $1
+         OR email = ANY($2::text[])
     `,
-    [`%@${demoDomain}`]
+    [`%@${legacyDemoDomain}`, getDemoEmailList()]
   );
 
   return result.rows[0].count;
@@ -328,8 +329,9 @@ const deleteExistingDemoData = async (client) => {
       INNER JOIN users
         ON users.id = staff_profiles.user_id
       WHERE users.email LIKE $1
+         OR users.email = ANY($2::text[])
     `,
-    [`%@${demoDomain}`]
+    [`%@${legacyDemoDomain}`, getDemoEmailList()]
   );
   const demoStaffProfileIds = demoStaffResult.rows.map((row) => row.id);
 
@@ -367,8 +369,9 @@ const deleteExistingDemoData = async (client) => {
     `
       DELETE FROM users
       WHERE email LIKE $1
+         OR email = ANY($2::text[])
     `,
-    [`%@${demoDomain}`]
+    [`%@${legacyDemoDomain}`, getDemoEmailList()]
   );
 };
 

@@ -19,6 +19,7 @@ The migrations in this folder are ordered PostgreSQL changes. Do not renumber an
 13. `013_create_shift_swap_requests_schema.sql`
 14. `014_remove_weekly_availability.sql`
 15. `015_normalize_seed_staff_emails.sql`
+16. `016_normalize_seed_staff_fake_gmail.sql`
 
 ## Running them
 

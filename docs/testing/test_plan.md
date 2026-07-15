@@ -11,7 +11,7 @@ The current local migrated database run passes:
 84 tests passed
 ```
 
-The suites cover authentication, staff, leave, shifts, assignments, rota, recommendation scoring/routes, password reset, shift swaps, rate limiting, middleware, and database configuration. The test database needs migrations `001` to `015` before the password-reset and shift-swap suites can run.
+The suites cover authentication, staff, leave, shifts, assignments, rota, recommendation scoring/routes, password reset, shift swaps, rate limiting, middleware, and database configuration. The test database needs migrations `001` to `016` before the password-reset and shift-swap suites can run.
 
 Run it from `backend/`:
 

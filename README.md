@@ -63,7 +63,7 @@ npm run db:seed:staff-history
 npm run local:evidence:start
 ```
 
-The local evidence scripts refuse non-local database targets. The demo-history reset creates 24 active Irish-named staff records, weekday rota data, and the current/next week. The staff-history seed gives `alex.byrne@example.com` twelve previous worked weeks for the overview page.
+The local evidence scripts refuse non-local database targets. The demo-history reset creates 24 active Irish-named staff records, weekday rota data, and the current/next week. The staff-history seed gives `alexbyrnefake@gmail.com` twelve previous worked weeks for the overview page.
 
 ## Testing
 
@@ -73,7 +73,7 @@ Run from `backend/`:
 npm test -- --runInBand
 ```
 
-The current local database run has 13 suites and 84 passing tests. The test environment must have migrations `012` to `015` applied as well as the earlier schema files.
+The current local database run has 13 suites and 84 passing tests. The test environment must have migrations `012` to `016` applied as well as the earlier schema files.
 
 ## Main project files
 

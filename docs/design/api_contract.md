@@ -209,7 +209,7 @@ Current request shape:
 
 ```json
 {
-  "email": "alex.byrne@example.com",
+  "email": "alexbyrnefake@gmail.com",
   "password": "InitialTempPassword123",
   "fullName": "Alex Byrne",
   "primaryRole": "FLOOR",

@@ -19,12 +19,13 @@ This file follows the migration order that is actually in `database/migrations/`
 13. `013_create_shift_swap_requests_schema.sql`
 14. `014_remove_weekly_availability.sql`
 15. `015_normalize_seed_staff_emails.sql`
+16. `016_normalize_seed_staff_fake_gmail.sql`
 
 ## Why this order was used
 
 First I needed the migration runner and the `users` table. The `staff_profiles` table depends on that identity row. Leave and shifts came next because assignment checks need both approved leave and real shift times. `shift_assignments` then gives the manager workflow somewhere to save the result.
 
-After that, `OTHER` was added for the Kitchen Porter rota tab, audit rows were added for manager shift and assignment changes, and the security migrations added password-change/reset support and security events. The swap table came after the assignment table because a swap is attached to an existing assignment. Migration `014` retires weekly availability because the final workflow uses leave and shift swaps instead of a new availability submission every week. Migration `015` changes the three starter staff emails to match their names.
+After that, `OTHER` was added for the Kitchen Porter rota tab, audit rows were added for manager shift and assignment changes, and the security migrations added password-change/reset support and security events. The swap table came after the assignment table because a swap is attached to an existing assignment. Migration `014` retires weekly availability because the final workflow uses leave and shift swaps instead of a new availability submission every week. Migration `015` changes the three starter staff emails to match their names, and migration `016` makes those accounts visibly fake with `firstname...fake@gmail.com` addresses.
 
 ## Current database rules
 

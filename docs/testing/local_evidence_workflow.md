@@ -29,7 +29,7 @@ npm run db:seed:demo-history:reset
 npm run db:seed:staff-history
 ```
 
-The first command creates 24 active Irish-named staff records, Monday-Friday demo shifts, and the current/next week. The second command gives `alex.byrne@example.com` two assigned shifts in each of the previous twelve weeks.
+The first command creates 24 active Irish-named staff records, Monday-Friday demo shifts, and the current/next week. The second command gives `alexbyrnefake@gmail.com` two assigned shifts in each of the previous twelve weeks.
 
 ## Evidence accounts
 

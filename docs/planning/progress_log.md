@@ -53,6 +53,17 @@ Each entry should answer four practical things:
 ### Still not done
 
 1. no audit log viewing page
+
+## 2026-07-15 - Make seeded email addresses visibly fake
+
+The seeded accounts now use addresses like `alexbyrnefake@gmail.com` and `aoifeosullivanfake@gmail.com`. This is still fake data, but the `fake` part makes that obvious if the login list is shown in a demo.
+
+1. `016_normalize_seed_staff_fake_gmail.sql` updates Alex Byrne, Jamie Murphy, and Casey Doyle in existing databases.
+2. `seed-demo-history.js` now creates compact name-based `...fake@gmail.com` addresses and removes both the old `demo.smart-schedule.test` records and the new fake Gmail records during a reset.
+3. `seed-staff-history.js` now targets `alexbyrnefake@gmail.com` by default.
+4. local PostgreSQL and Neon were migrated through `016` and reseeded with 24 staff, 840 shifts, 840 assignments, and 5 approved leave records.
+
+The demo password remains `DemoStaffPass123!`. These accounts are seed data only and are not real humans.
 2. hosted UAT and final cross-browser evidence still need a focused pass
 3. the current browser connector was not available for fresh automated screenshots, so visual checks used the running local page and supplied browser captures
 

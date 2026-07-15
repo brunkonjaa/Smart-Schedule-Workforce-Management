@@ -12,7 +12,7 @@ dotenv.config({
 const config = require('../config/env');
 const { closePool, isLocalDatabaseUrl, pool } = require('../config/db');
 
-const targetEmail = process.env.STAFF_HISTORY_EMAIL || 'alex.byrne@example.com';
+const targetEmail = process.env.STAFF_HISTORY_EMAIL || 'alexbyrnefake@gmail.com';
 const historyWeeks = 12;
 const historyNote = 'Demo previous weeks worked history';
 
