@@ -3201,7 +3201,7 @@ body[data-theme='dark'] .rota-mobile-week-cell.is-selected:not(.is-filled) {
 
 .rota-draft-cards {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1rem;
   margin: 1.5rem 0;
 }
@@ -3311,7 +3311,7 @@ body[data-theme='dark'] .rota-mobile-week-cell.is-selected:not(.is-filled) {
 }
 
 @media (max-width: 760px) {
-  .rota-draft-cards { grid-template-columns: 1fr; }
+  .rota-draft-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .rota-draft-shell { border-radius: 20px; padding: 1rem; }
   .rota-draft-actions { justify-content: stretch; }
   .rota-draft-actions .action-button { flex: 1 1 100%; }

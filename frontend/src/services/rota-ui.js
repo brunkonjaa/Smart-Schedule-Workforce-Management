@@ -209,14 +209,49 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     return Math.max(0, (getMinutes(cell.endTime) - getMinutes(cell.startTime)) / 60);
   };
 
-  const buildDraftRota = (state) => {
-    const openShifts = getOpenShiftItems(state).map((item) => ({
+  const collectShiftTemplates = (rota) => {
+    const templates = new Map();
+    (rota?.rows || []).forEach((row) => {
+      Object.values(row.days || {}).flat().forEach((cell) => {
+        if (!cell.shiftId || !cell.shiftDate || !cell.startTime || !cell.endTime) {
+          return;
+        }
+        templates.set(cell.shiftId, {
+          endTime: cell.endTime,
+          requiredRole: cell.department || row.primaryRole,
+          shiftDate: cell.shiftDate,
+          startTime: cell.startTime
+        });
+      });
+    });
+    return [...templates.values()];
+  };
+
+  const buildDraftRota = (state, shiftTemplates = []) => {
+    const existingOpenShifts = getOpenShiftItems(state).map((item) => ({
       endTime: item.cell.endTime,
       requiredRole: item.cell.department,
       shiftDate: item.day.date,
       shiftId: item.cell.shiftId,
       startTime: item.cell.startTime
     }));
+    const existingKeys = new Set(existingOpenShifts.map((shift) => `${shift.shiftDate}|${shift.startTime}|${shift.endTime}|${shift.requiredRole}`));
+    const generatedShifts = shiftTemplates
+      .map((template) => ({
+        ...template,
+        shiftDate: addDays(template.shiftDate, 7),
+        shiftId: null,
+        generated: true
+      }))
+      .filter((shift) => {
+        const key = `${shift.shiftDate}|${shift.startTime}|${shift.endTime}|${shift.requiredRole}`;
+        if (existingKeys.has(key)) {
+          return false;
+        }
+        existingKeys.add(key);
+        return true;
+      });
+    const openShifts = [...existingOpenShifts, ...generatedShifts];
     const staffRows = (state.rota?.rows || []).filter((row) => !row.systemRow);
     const workloads = new Map();
 
@@ -283,7 +318,9 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
 
     return {
       suggestions,
+      sourceShiftCount: shiftTemplates.length,
       unfilled,
+      generatedShifts: generatedShifts.length,
       weekStart: state.weekStart,
       summary: {
         assigned: suggestions.length,
@@ -555,7 +592,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       text: 'Draft rota · not saved yet'
     }));
     heading.appendChild(uiHelpers.createElement('h2', { text: `Next week starting ${formatDate(state.draft.weekStart)}` }));
-    heading.appendChild(uiHelpers.createElement('p', { className: 'panel-copy', text: 'Review the suggestions below. Approval runs the conflict checks again before anything is saved.' }));
+    heading.appendChild(uiHelpers.createElement('p', { className: 'panel-copy', text: 'The shift pattern is copied from this week, then staff are suggested for next week. Review it before approval. Nothing is saved yet.' }));
     shell.appendChild(heading);
 
     const legend = uiHelpers.createElement('div', { className: 'rota-draft-legend' });
@@ -572,8 +609,16 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     });
     shell.appendChild(legend);
 
+    if (state.draft.sourceShiftCount === 0 && state.draft.summary.assigned === 0) {
+      const emptyNotice = uiHelpers.createElement('div', { className: 'rota-draft-warning' });
+      emptyNotice.appendChild(uiHelpers.createElement('strong', { text: 'No shift pattern found' }));
+      emptyNotice.appendChild(uiHelpers.createElement('span', { text: 'Create at least one shift in the current week first. The next-week preview copies the current rota pattern.' }));
+      shell.appendChild(emptyNotice);
+    }
+
     const cards = uiHelpers.createElement('div', { className: 'rota-draft-cards' });
     [
+      ['New shifts', state.draft.generatedShifts, 'accent'],
       ['Suggested', state.draft.summary.assigned, 'accent'],
       ['Hours', state.draft.summary.hours, 'neutral'],
       ['Needs attention', state.draft.summary.unfilled, state.draft.summary.unfilled ? 'warning' : 'success']
@@ -1477,12 +1522,22 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       state.draftLoading = true;
       state.draft = null;
       state.draftSaving = false;
-      state.weekStart = addDays(uiHelpers.getCurrentWeekStart(), 7);
+      const sourceWeekStart = state.weekStart;
+      state.weekStart = sourceWeekStart;
       state.selectedDay = null;
       render();
-      await loadRota();
-      await loadStaff();
-      state.draft = buildDraftRota(state);
+      try {
+        await loadRota();
+        const shiftTemplates = collectShiftTemplates(state.rota);
+        state.weekStart = addDays(sourceWeekStart, 7);
+        state.selectedDay = null;
+        await loadRota();
+        await loadStaff();
+        state.draft = buildDraftRota(state, shiftTemplates);
+      } catch (error) {
+        const feedback = uiHelpers.getErrorFeedback(error, 'Could not prepare next week.');
+        setFlash(state, 'error', feedback.text, feedback.details);
+      }
       state.draftLoading = false;
       render();
     };
@@ -1497,8 +1552,20 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       let savedCount = 0;
       try {
         for (const suggestion of state.draft.suggestions) {
+          let shiftId = suggestion.shiftId;
+          if (!shiftId) {
+            const createdShift = await apiClient.post('/api/v1/shifts', {
+              endTime: suggestion.endTime,
+              notes: 'Generated from the previous week rota pattern.',
+              requiredRole: suggestion.requiredRole,
+              shiftDate: suggestion.shiftDate,
+              startTime: suggestion.startTime,
+              status: 'OPEN'
+            });
+            shiftId = createdShift.shift.id;
+          }
           await apiClient.post('/api/v1/assignments', {
-            shiftId: suggestion.shiftId,
+            shiftId,
             staffProfileId: suggestion.staffProfileId
           });
           savedCount += 1;
