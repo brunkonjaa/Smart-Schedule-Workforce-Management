@@ -140,9 +140,9 @@ const verifyAuthentication = async ({ userId, response, expectedChallenge }) => 
 
   const { origin, rpID } = getWebAuthnConfig();
   const verification = await verifyAuthenticationResponse({
-    authenticator: {
-      credentialID: Buffer.from(passkey.credential_id),
-      credentialPublicKey: Buffer.from(passkey.public_key),
+    credential: {
+      id: Buffer.from(passkey.credential_id),
+      publicKey: Buffer.from(passkey.public_key),
       counter: Number(passkey.counter)
     },
     expectedChallenge,
