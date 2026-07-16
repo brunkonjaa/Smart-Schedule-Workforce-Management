@@ -3758,6 +3758,159 @@ body[data-theme='dark'] .rota-mobile-week-cell.is-selected:not(.is-filled) {
   text-decoration: none;
 }
 
+/* Keep the live pages centred at desktop widths, then move to one calm column
+   before the cards become too narrow. */
+.intro-meta--page-metrics {
+  justify-self: center;
+}
+
+.workspace-grid--staff-records {
+  justify-content: center;
+}
+
+.workspace-grid--staff-records .content-panel--toolbar,
+.workspace-grid--staff-records .staff-form-panel,
+.workspace-grid--staff-records .staff-guide-panel {
+  flex-basis: 360px;
+  width: 360px;
+  min-width: 0;
+  max-width: 360px;
+}
+
+.workspace-grid--staff-records .content-panel--table {
+  flex-basis: min(100%, 1080px);
+  width: min(100%, 1080px);
+  max-width: 1080px;
+}
+
+.workspace-grid--leave {
+  display: grid;
+  width: min(100%, 1180px);
+  margin-inline: auto;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+.workspace-grid--leave .leave-form-panel,
+.workspace-grid--leave .leave-decision-panel,
+.workspace-grid--leave .leave-guide-panel,
+.workspace-grid--leave .leave-toolbar-panel {
+  grid-column: span 4;
+}
+
+.workspace-grid--leave .leave-toolbar-panel { order: 3; }
+
+.workspace-grid--leave .leave-table-panel {
+  grid-column: 2 / span 10;
+  order: 4;
+}
+
+.workspace-grid--swap-requests {
+  display: grid;
+  width: min(100%, 1180px);
+  margin-inline: auto;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.workspace-grid--swap-requests > .content-panel--alert {
+  grid-column: 1 / -1;
+}
+
+.swap-requests-main-column { display: contents; }
+
+.workspace-grid--swap-requests .swap-requests-guide,
+.workspace-grid--swap-requests .swap-requests-panel,
+.workspace-grid--swap-requests .swap-location-panel {
+  grid-column: span 1;
+}
+
+.workspace-grid--manager-overview {
+  width: min(100%, 1180px);
+  margin-inline: auto;
+}
+
+.workspace-grid--password {
+  display: grid;
+  width: min(100%, 760px);
+  margin-inline: auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  justify-content: center;
+}
+
+.workspace-grid--password .content-panel--span-8 {
+  width: auto;
+  max-width: none;
+}
+
+.workspace-grid--password .content-panel--span-8:first-of-type {
+  grid-column: span 2;
+}
+
+@media (max-width: 1120px) {
+  .workspace-grid--manager-overview {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workspace-grid--manager-overview > .overview-manager-summary-card,
+  .workspace-grid--manager-overview > .manager-overview-side-column {
+    grid-column: 1 / -1;
+  }
+
+  .manager-overview-side-column {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .workspace-grid--leave {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .workspace-grid--leave .leave-form-panel,
+  .workspace-grid--leave .leave-decision-panel,
+  .workspace-grid--leave .leave-guide-panel {
+    grid-column: span 2;
+  }
+
+  .workspace-grid--leave .leave-toolbar-panel,
+  .workspace-grid--leave .leave-table-panel {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 900px) {
+  .workspace-grid--swap-requests {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .swap-requests-main-column { display: grid; }
+
+  .workspace-grid--swap-requests .swap-requests-guide,
+  .workspace-grid--swap-requests .swap-requests-panel,
+  .workspace-grid--swap-requests .swap-location-panel {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 620px) {
+  .manager-overview-side-column { grid-template-columns: minmax(0, 1fr); }
+
+  .workspace-grid--leave {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workspace-grid--leave .leave-form-panel,
+  .workspace-grid--leave .leave-decision-panel,
+  .workspace-grid--leave .leave-guide-panel,
+  .workspace-grid--leave .leave-toolbar-panel,
+  .workspace-grid--leave .leave-table-panel {
+    grid-column: 1 / -1;
+  }
+
+  .workspace-grid--password { grid-template-columns: minmax(0, 1fr); }
+
+  .workspace-grid--password .content-panel--span-8:first-of-type {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (max-width: 900px) {
   .workspace-grid--swap-requests {
     grid-template-columns: minmax(0, 1fr);

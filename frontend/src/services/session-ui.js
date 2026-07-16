@@ -448,7 +448,7 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
       }
     ]);
 
-    const grid = createElement('div', { className: 'workspace-grid' });
+    const grid = createElement('div', { className: 'workspace-grid workspace-grid--password' });
 
     if (flashMessage) {
       const flashPanel = createElement('section', {

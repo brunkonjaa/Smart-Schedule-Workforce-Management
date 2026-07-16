@@ -18,6 +18,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       department: 'BAR',
       draft: null,
       draftLoading: false,
+      draftProgress: 0,
       draftSaving: false,
       draftSourceWeekStart: null,
       flash: null,
@@ -261,12 +262,10 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       templatesByDay.set(dayOffset, dayTemplates);
     });
 
-    const busiestDayTemplates = [...templatesByDay.values()]
-      .sort((left, right) => right.length - left.length)[0] || [];
-
     return Array.from({ length: 7 }, (_, dayOffset) => {
       const shiftDate = addDays(targetWeekStart, dayOffset);
-      return busiestDayTemplates.map((template) => ({
+      const dayTemplates = templatesByDay.get(dayOffset) || [];
+      return dayTemplates.map((template) => ({
         ...template,
         shiftDate,
         shiftId: null,
@@ -609,10 +608,16 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       controls.appendChild(button);
     });
     if (state.sessionUser?.role === 'MANAGER') {
+      const sourceWeekStart = state.draft?.weekStart || state.weekStart;
+      const targetWeekStart = addDays(sourceWeekStart, 7);
       const populateButton = uiHelpers.createElement('button', {
         className: 'action-button button-primary rota-populate-button',
-        text: 'Populate next week',
-        attributes: { disabled: state.draftLoading, type: 'button' }
+        text: `Generate ${formatDate(targetWeekStart)} to ${formatDate(addDays(targetWeekStart, 6))}`,
+        attributes: {
+          'aria-label': `Generate rota for ${formatDate(targetWeekStart)} to ${formatDate(addDays(targetWeekStart, 6))}`,
+          disabled: state.draftLoading,
+          type: 'button'
+        }
       });
       populateButton.addEventListener('click', actions.generateDraft);
       controls.appendChild(populateButton);
@@ -634,7 +639,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       text: 'Draft rota · not saved yet'
     }));
     heading.appendChild(uiHelpers.createElement('h2', { text: `Next week starting ${formatDate(state.draft.weekStart)}` }));
-    heading.appendChild(uiHelpers.createElement('p', { className: 'panel-copy', text: 'The shift pattern is copied from this week, then staff are suggested for next week. Review it before approval. Nothing is saved yet.' }));
+    heading.appendChild(uiHelpers.createElement('p', { className: 'panel-copy', text: 'The current week is used as the source. Its day-by-day shifts are moved forward one week and staff are suggested for the new dates. Nothing is saved until approval.' }));
     shell.appendChild(heading);
 
     const legend = uiHelpers.createElement('div', { className: 'rota-draft-legend' });
@@ -705,7 +710,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     }
 
     const actionsRow = uiHelpers.createElement('div', { className: 'rota-draft-actions' });
-    const approve = uiHelpers.createElement('button', { className: 'action-button button-primary', text: `Approve ${state.draft.summary.assigned} suggestions`, attributes: { disabled: state.draft.summary.assigned === 0 || state.draftSaving, type: 'button' } });
+    const approve = uiHelpers.createElement('button', { className: 'action-button button-primary', text: state.draftSaving ? `Saving ${state.draftProgress || 0} of ${state.draft.summary.assigned}...` : `Approve ${state.draft.summary.assigned} suggestions`, attributes: { disabled: state.draft.summary.assigned === 0 || state.draftSaving, type: 'button' } });
     const retry = uiHelpers.createElement('button', { className: 'action-button button-secondary', text: 'Try again', attributes: { disabled: state.draftSaving, type: 'button' } });
     const dismiss = uiHelpers.createElement('button', { className: 'action-button button-ghost', text: 'Dismiss', attributes: { disabled: state.draftSaving, type: 'button' } });
     approve.addEventListener('click', actions.approveDraft);
@@ -1621,7 +1626,8 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     };
 
     const generateDraft = async () => {
-      const sourceWeekStart = state.draftSourceWeekStart || state.weekStart;
+      const previousDraft = state.draft;
+      const sourceWeekStart = previousDraft?.weekStart || state.weekStart;
       state.draftSourceWeekStart = sourceWeekStart;
       state.draftLoading = true;
       state.draft = null;
@@ -1631,7 +1637,14 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       render();
       try {
         await loadRota();
-        const shiftTemplates = collectShiftTemplates(state.rota);
+        const shiftTemplates = previousDraft?.suggestions?.length
+          ? previousDraft.suggestions.map((suggestion) => ({
+              endTime: suggestion.endTime,
+              requiredRole: suggestion.requiredRole,
+              shiftDate: suggestion.shiftDate,
+              startTime: suggestion.startTime
+            }))
+          : collectShiftTemplates(state.rota);
         state.weekStart = addDays(sourceWeekStart, 7);
         state.selectedDay = null;
         await loadRota();
@@ -1652,30 +1665,41 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       }
 
       state.draftSaving = true;
+      state.draftProgress = 0;
       render();
       let savedCount = 0;
+      const generatedShiftIds = new Map();
       try {
-        for (const suggestion of state.draft.suggestions) {
+        const suggestions = state.draft.suggestions;
+        for (const suggestion of suggestions) {
           let shiftId = suggestion.shiftId;
           if (!shiftId) {
-            const createdShift = await apiClient.post('/api/v1/shifts', {
-              endTime: suggestion.endTime,
-              notes: 'Generated from the busiest previous day pattern across all seven days.',
-              requiredRole: suggestion.requiredRole,
-              shiftDate: suggestion.shiftDate,
-              startTime: suggestion.startTime,
-              status: 'OPEN'
-            });
-            shiftId = createdShift.shift.id;
+            const shiftKey = `${suggestion.shiftDate}|${suggestion.startTime}|${suggestion.endTime}|${suggestion.requiredRole}`;
+            shiftId = generatedShiftIds.get(shiftKey);
+            if (!shiftId) {
+              const createdShift = await apiClient.post('/api/v1/shifts', {
+                endTime: suggestion.endTime,
+                notes: 'Generated by moving the current week shift pattern forward one week.',
+                requiredRole: suggestion.requiredRole,
+                shiftDate: suggestion.shiftDate,
+                startTime: suggestion.startTime,
+                status: 'OPEN'
+              });
+              shiftId = createdShift.shift.id;
+              generatedShiftIds.set(shiftKey, shiftId);
+            }
           }
           await apiClient.post('/api/v1/assignments', {
             shiftId,
             staffProfileId: suggestion.staffProfileId
           });
           savedCount += 1;
+          state.draftProgress = savedCount;
+          render();
         }
         state.draft = null;
         state.draftSaving = false;
+        state.draftProgress = 0;
         state.draftSourceWeekStart = null;
         await loadRota({
           details: [],
@@ -1684,6 +1708,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
         });
       } catch (error) {
         state.draftSaving = false;
+        state.draftProgress = 0;
         const feedback = uiHelpers.getErrorFeedback(error, 'Approval stopped because one assignment changed.');
         await loadRota({
           details: feedback.details,
