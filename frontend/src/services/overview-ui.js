@@ -44,7 +44,9 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
     }
 
     const actions = uiHelpers.createElement('div', { className: 'actions-row' });
-    actions.appendChild(createButton(actionLabel, targetPage, rows.length === 0 ? 'secondary' : 'ghost'));
+    const linkButton = createButton(actionLabel, targetPage, rows.length === 0 ? 'secondary' : 'ghost');
+    linkButton.classList.add('overview-panel-link');
+    actions.appendChild(linkButton);
     panel.appendChild(actions);
     return panel;
   };
@@ -80,9 +82,15 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
       weeks.forEach((week) => {
         const card = uiHelpers.createElement('article', { className: 'staff-history-card' });
         const heading = uiHelpers.createElement('div', { className: 'staff-history-card-heading' });
-        heading.appendChild(uiHelpers.createElement('div', {
-          className: 'staff-history-week',
-          text: formatWeekLabel(week)
+        heading.appendChild(uiHelpers.createElement('button', {
+          className: 'staff-history-week staff-history-week-button',
+          text: formatWeekLabel(week),
+          attributes: {
+            'aria-label': `Open rota for ${formatWeekLabel(week)}`,
+            'data-rota-week-start': week.weekStart,
+            'data-target-page': 'rota',
+            type: 'button'
+          }
         }));
         heading.appendChild(uiHelpers.createElement('strong', {
           className: 'staff-history-hours',

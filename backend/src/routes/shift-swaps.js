@@ -36,8 +36,20 @@ router.post('/', requireRole('STAFF'), requireMutationProtection, asyncHandler(a
 
 router.post('/:swapId/accept', requireRole('STAFF'), requireMutationProtection, asyncHandler(async (request, response) => {
   if (!uuidPattern.test(request.params.swapId)) return sendValidationError(response, ['swapId must be a valid UUID']);
-  const result = await acceptSwapRequest({ swapId: request.params.swapId, staffProfileId: request.authUser.staffProfileId });
-  if (result.code) return response.status(result.code === 'FORBIDDEN' ? 403 : 409).json({ error: 'Swap Request Failed', message: result.code === 'FORBIDDEN' ? 'You cannot accept this swap request.' : result.code === 'TARGET_INELIGIBLE' ? 'You are not eligible for this shift.' : 'This swap request is no longer available.' });
+  const result = await acceptSwapRequest({
+    allowIneligible: request.body?.allowIneligible === true,
+    swapId: request.params.swapId,
+    staffProfileId: request.authUser.staffProfileId
+  });
+  if (result.code) return response.status(result.code === 'FORBIDDEN' ? 403 : 409).json({
+    code: result.code,
+    error: 'Swap Request Failed',
+    message: result.code === 'FORBIDDEN'
+      ? 'You cannot accept this swap request.'
+      : result.code === 'TARGET_INELIGIBLE'
+        ? 'You are not currently eligible for this shift.'
+        : 'This swap request is no longer available.'
+  });
   return response.status(200).json({ message: 'Swap request accepted and sent to the manager.', request: result.swap });
 }));
 
@@ -52,7 +64,14 @@ router.put('/:swapId/reject', requireRole('MANAGER'), requireMutationProtection,
 async function decideSwap(request, response, decision) {
   if (!uuidPattern.test(request.params.swapId)) return sendValidationError(response, ['swapId must be a valid UUID']);
   const result = await decideSwapRequest({ decision, managerNote: String(request.body?.managerNote || '').trim(), managerUserId: request.authUser.id, swapId: request.params.swapId });
-  if (result.code) return response.status(409).json({ error: 'Swap Request Failed', message: result.code === 'STAFF_NOT_ACCEPTED' ? 'A staff member must accept this swap before approval.' : 'This swap request is no longer available.' });
+  if (result.code) {
+    const message = result.code === 'STAFF_NOT_ACCEPTED'
+      ? 'A staff member must accept this swap before approval.'
+      : result.code === 'ASSIGNMENT_CONFLICT'
+        ? `The swap could not be approved because the rota checks still block this assignment. ${result.detail || ''}`.trim()
+        : 'This swap request is no longer available.';
+    return response.status(409).json({ code: result.code, error: 'Swap Request Failed', message });
+  }
   return response.status(200).json({ message: decision === 'APPROVE' ? 'Shift swap approved.' : 'Shift swap rejected.', request: result.swap });
 }
 

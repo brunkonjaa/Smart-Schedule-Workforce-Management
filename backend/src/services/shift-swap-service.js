@@ -139,7 +139,7 @@ const listSwapRequests = async (authUser) => {
   return result.rows.map(mapSwap);
 };
 
-const acceptSwapRequest = async ({ swapId, staffProfileId }) => {
+const acceptSwapRequest = async ({ allowIneligible = false, swapId, staffProfileId }) => {
   return withTransaction(async (client) => {
     const swap = await findSwap(swapId, client, true);
     if (!swap || swap.status !== 'PENDING') return { code: 'NOT_AVAILABLE' };
@@ -161,7 +161,7 @@ const acceptSwapRequest = async ({ swapId, staffProfileId }) => {
         client
       )
       : { eligible: false };
-    if (!eligibility.eligible) {
+    if (!eligibility.eligible && !allowIneligible) {
       return { code: 'TARGET_INELIGIBLE' };
     }
     await client.query(
@@ -177,11 +177,19 @@ const decideSwapRequest = async ({ decision, managerNote, swapId, managerUserId 
   if (!swap || !['PENDING', 'ACCEPTED'].includes(swap.status)) return { code: 'NOT_AVAILABLE' };
   if (decision === 'APPROVE') {
     if (!swap.acceptedByStaffProfileId) return { code: 'STAFF_NOT_ACCEPTED' };
-    const result = await updateAssignment(
-      swap.assignmentId,
-      { staffProfileId: swap.acceptedByStaffProfileId },
-      managerUserId
-    );
+    let result;
+    try {
+      result = await updateAssignment(
+        swap.assignmentId,
+        { staffProfileId: swap.acceptedByStaffProfileId },
+        managerUserId
+      );
+    } catch (error) {
+      if (error.code?.startsWith('ASSIGNMENT_')) {
+        return { code: 'ASSIGNMENT_CONFLICT', detail: error.message };
+      }
+      throw error;
+    }
     if (result.missingResource) return { code: 'NOT_FOUND' };
   }
   const nextStatus = decision === 'APPROVE' ? 'APPROVED' : 'REJECTED';

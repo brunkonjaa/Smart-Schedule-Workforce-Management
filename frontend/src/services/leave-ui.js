@@ -457,7 +457,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
       uiHelpers.renderIntroMetrics([
         {
           label: 'Role',
-          value: state.sessionUser ? uiHelpers.formatRole(state.sessionUser.role) : 'Loading',
+          value: state.sessionUser ? uiHelpers.formatRole(state.sessionUser.primaryRole || state.sessionUser.role) : 'Loading',
           tone: 'accent'
         },
         {

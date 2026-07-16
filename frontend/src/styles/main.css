@@ -81,6 +81,20 @@ body[data-theme='dark'] {
     url('/assets/images/gentle_hospitality_background.png');
 }
 
+body[data-page='reset-password'] {
+  background-image:
+    linear-gradient(rgba(245, 247, 251, 0.72), rgba(245, 247, 251, 0.72)),
+    url('/assets/images/cyber_security.png');
+  background-position: center;
+  background-size: cover;
+}
+
+body[data-theme='dark'][data-page='reset-password'] {
+  background-image:
+    linear-gradient(rgba(9, 17, 31, 0.76), rgba(9, 17, 31, 0.76)),
+    url('/assets/images/cyber_security.png');
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -470,8 +484,12 @@ textarea {
 }
 
 .metric-pill strong {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
   font-size: 0.94rem;
   font-weight: 650;
+  overflow-wrap: anywhere;
 }
 
 .metric-pill--accent {
@@ -527,7 +545,33 @@ textarea {
 }
 
 .metric-row--intro .metric-pill strong {
-  font-size: 0.98rem;
+  font-size: 0.84rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#page-intro[data-page='login'] .metric-row--intro .metric-pill:nth-child(2) {
+  flex-basis: 170px;
+  width: 170px;
+  max-width: 170px;
+}
+
+#page-intro[data-page='login'] .metric-row--intro .metric-pill span {
+  font-size: 0.68rem;
+}
+
+#page-intro[data-page='login'] .metric-row--intro .metric-pill strong {
+  font-size: 0.78rem;
+}
+
+#page-intro[data-page='login'] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+#page-intro[data-page='login'] .intro-meta--page-metrics {
+  justify-self: center;
+  margin-top: 10px;
 }
 
 .workspace-grid {
@@ -551,6 +595,7 @@ textarea {
   max-width: 420px;
   padding: 10px 12px;
   border: 1px solid var(--line);
+  border-top: 3px solid var(--accent);
   border-radius: 8px;
   background: var(--surface);
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
@@ -797,6 +842,7 @@ textarea {
   min-width: 0;
   padding: 12px;
   border: 1px solid var(--line);
+  border-top: 3px solid var(--accent);
   border-radius: 12px;
   background: var(--surface-soft);
 }
@@ -811,6 +857,26 @@ textarea {
 
 .staff-history-week {
   font-weight: 700;
+}
+
+.staff-history-week-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition: color 160ms ease, text-decoration-color 160ms ease;
+}
+
+.staff-history-week-button:hover,
+.staff-history-week-button:focus-visible {
+  color: var(--accent);
+  text-decoration-color: currentColor;
 }
 
 .staff-history-hours {
@@ -851,6 +917,11 @@ textarea {
   gap: 14px;
 }
 
+.staff-overview-side-column > .content-panel,
+.staff-overview-side-column > .overview-rota-link-card {
+  background: var(--surface-soft);
+}
+
 .overview-rota-link-card {
   width: 100%;
   min-height: 74px;
@@ -872,6 +943,24 @@ textarea {
   border-color: var(--accent);
   box-shadow: 0 14px 28px rgba(15, 23, 42, 0.1);
   transform: translateY(-1px);
+}
+
+.overview-panel-link {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
+  font-weight: 650;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+}
+
+.overview-panel-link:hover,
+.overview-panel-link:focus-visible {
+  border-color: var(--accent);
+  background: var(--bg-elevated);
+  color: var(--accent);
+  text-decoration-color: currentColor;
 }
 
 .staff-swap-list {
@@ -950,6 +1039,63 @@ textarea {
 .swap-request-note {
   color: var(--text-muted);
   font-size: 0.88rem;
+}
+
+.swap-eligibility-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.28);
+  backdrop-filter: blur(5px);
+  animation: swap-warning-fade-in 180ms ease-out both;
+}
+
+.swap-eligibility-dialog {
+  width: min(100%, 520px);
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--accent);
+  border-radius: 16px;
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow);
+  animation: swap-warning-rise-in 220ms cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+.swap-eligibility-dialog h2 {
+  margin: 0 0 8px;
+  font-size: 1.2rem;
+}
+
+.swap-eligibility-dialog .panel-copy {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.swap-eligibility-warning-detail {
+  margin: 14px 0 0;
+  padding: 9px 11px;
+  border-radius: 9px;
+  background: var(--surface-soft);
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+.swap-eligibility-dialog .actions-row {
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+
+@keyframes swap-warning-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes swap-warning-rise-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .workspace-grid--staff-records .content-panel--alert,
@@ -2141,6 +2287,21 @@ td {
   justify-items: stretch;
 }
 
+/* Discourages casual copying of rota details. Browser and operating-system screenshots cannot be blocked reliably. */
+.rota-protected-view,
+.rota-protected-view * {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.rota-protected-view input,
+.rota-protected-view textarea,
+.rota-protected-view select {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 .rota-toolbar,
 .rota-tabs,
 .rota-open-strip,
@@ -3224,7 +3385,7 @@ body[data-theme='dark'] .rota-mobile-week-cell.is-selected:not(.is-filled) {
 }
 
 .workspace-grid--leave .leave-toolbar-panel {
-  grid-column: 1 / -1;
+  grid-column: span 8;
   order: 3;
   width: auto;
   min-width: 0;
@@ -3234,7 +3395,7 @@ body[data-theme='dark'] .rota-mobile-week-cell.is-selected:not(.is-filled) {
 }
 
 .workspace-grid--leave .leave-table-panel {
-  grid-column: 1 / -1;
+  grid-column: span 8;
   order: 4;
   width: auto;
   min-width: 0;

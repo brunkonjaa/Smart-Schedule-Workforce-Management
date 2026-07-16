@@ -48,7 +48,7 @@ window.SmartSchedule.pageConfig = {
     {
       id: 'reset-password',
       label: 'Reset password',
-      audience: 'both',
+      audience: 'guest',
       eyebrow: 'Account recovery',
       title: 'Create a new password',
       summary: 'Use the secure link from your Smart Schedule email.',

@@ -29,6 +29,60 @@ window.SmartSchedule.swapRequestsUi = (function createSwapRequestsUi() {
     return button;
   };
 
+  const clearEligibilityWarning = () => {
+    document.getElementById('swap-eligibility-warning')?.remove();
+  };
+
+  const showEligibilityWarning = (request, onConfirm) => {
+    clearEligibilityWarning();
+    const backdrop = uiHelpers.createElement('div', {
+      className: 'swap-eligibility-backdrop',
+      attributes: { id: 'swap-eligibility-warning' }
+    });
+    const dialog = uiHelpers.createElement('section', {
+      className: 'swap-eligibility-dialog',
+      attributes: {
+        'aria-describedby': 'swap-eligibility-warning-copy',
+        'aria-labelledby': 'swap-eligibility-warning-title',
+        'aria-modal': 'true',
+        role: 'dialog'
+      }
+    });
+    dialog.appendChild(uiHelpers.createElement('h2', {
+      text: 'This swap needs manager review',
+      attributes: { id: 'swap-eligibility-warning-title' }
+    }));
+    dialog.appendChild(uiHelpers.createElement('p', {
+      className: 'panel-copy',
+      text: 'You are not currently eligible for this shift under the rota checks. You may still accept the swap request, but please inform the current manager on duty so they can confirm that the change is safe and acceptable.'
+    }));
+    dialog.appendChild(uiHelpers.createElement('p', {
+      className: 'swap-eligibility-warning-detail',
+      text: `${formatShift(request)} · ${request.targetName || 'Open to eligible colleagues'}`,
+      attributes: { id: 'swap-eligibility-warning-copy' }
+    }));
+    const actions = uiHelpers.createElement('div', { className: 'actions-row' });
+    const cancelButton = uiHelpers.createElement('button', {
+      className: 'action-button button-ghost',
+      text: 'Cancel',
+      attributes: { type: 'button' }
+    });
+    cancelButton.addEventListener('click', clearEligibilityWarning);
+    const confirmButton = uiHelpers.createElement('button', {
+      className: 'action-button button-primary',
+      text: 'Continue to manager review',
+      attributes: { type: 'button' }
+    });
+    confirmButton.addEventListener('click', () => {
+      clearEligibilityWarning();
+      onConfirm();
+    });
+    actions.append(cancelButton, confirmButton);
+    dialog.appendChild(actions);
+    backdrop.appendChild(dialog);
+    document.body.appendChild(backdrop);
+  };
+
   const renderRequestCard = (request, sessionUser, actions) => {
     const card = uiHelpers.createElement('article', { className: 'swap-request-card' });
     const heading = uiHelpers.createElement('div', { className: 'swap-request-card-heading' });
@@ -87,7 +141,7 @@ window.SmartSchedule.swapRequestsUi = (function createSwapRequestsUi() {
       uiHelpers.renderIntroMetrics([
         { label: 'Visibility', value: 'Team wide', tone: 'accent' },
         { label: 'Requests', value: loading ? 'Loading...' : String(requests.length), tone: 'neutral' },
-        { label: 'Role', value: sessionUser ? uiHelpers.formatRole(sessionUser.role) : 'Loading', tone: 'neutral' }
+        { label: 'Role', value: sessionUser ? uiHelpers.formatRole(sessionUser.primaryRole || sessionUser.role) : 'Loading', tone: 'neutral' }
       ]);
 
       const grid = uiHelpers.createElement('div', { className: 'workspace-grid workspace-grid--swap-requests' });
@@ -116,11 +170,15 @@ window.SmartSchedule.swapRequestsUi = (function createSwapRequestsUi() {
         list.appendChild(uiHelpers.createElement('p', { className: 'panel-copy', text: 'No active swap requests.' }));
       } else {
         const actions = {
-          accept: async (request) => {
+          accept: async (request, allowIneligible = false) => {
             try {
-              await apiClient.post(`/api/v1/shift-swaps/${request.id}/accept`, {});
+              await apiClient.post(`/api/v1/shift-swaps/${request.id}/accept`, { allowIneligible });
               await load('Swap accepted and sent to the manager.', 'success');
             } catch (error) {
+              if (!allowIneligible && error.payload?.code === 'TARGET_INELIGIBLE') {
+                showEligibilityWarning(request, () => actions.accept(request, true));
+                return;
+              }
               flash = { text: error.message || 'Could not accept this swap.', tone: 'error', details: [] };
               render();
             }

@@ -13,7 +13,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
   };
   const modalHostId = 'rota-modal-host';
 
-  const buildState = () => {
+  const buildState = (initialWeekStart) => {
     return {
       department: 'BAR',
       draft: null,
@@ -27,7 +27,9 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       sessionUser: null,
       staff: [],
       staffLoading: false,
-      weekStart: uiHelpers.getCurrentWeekStart()
+      weekStart: /^\d{4}-\d{2}-\d{2}$/.test(initialWeekStart || '')
+        ? initialWeekStart
+        : uiHelpers.getCurrentWeekStart()
     };
   };
 
@@ -51,6 +53,11 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     const date = new Date(`${dateValue}T00:00:00Z`);
     date.setUTCDate(date.getUTCDate() + offsetDays);
     return date.toISOString().slice(0, 10);
+  };
+
+  const getDayOffset = (dateValue) => {
+    const day = new Date(`${dateValue}T00:00:00Z`).getUTCDay();
+    return day === 0 ? 6 : day - 1;
   };
 
   const getCurrentIsoDate = () => {
@@ -222,6 +229,33 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     return [...templates.values()];
   };
 
+  const buildBalancedShiftTemplates = (shiftTemplates, targetWeekStart) => {
+    if (shiftTemplates.length === 0) {
+      return [];
+    }
+
+    const templatesByDay = new Map();
+    shiftTemplates.forEach((template) => {
+      const dayOffset = getDayOffset(template.shiftDate);
+      const dayTemplates = templatesByDay.get(dayOffset) || [];
+      dayTemplates.push(template);
+      templatesByDay.set(dayOffset, dayTemplates);
+    });
+
+    const busiestDayTemplates = [...templatesByDay.values()]
+      .sort((left, right) => right.length - left.length)[0] || [];
+
+    return Array.from({ length: 7 }, (_, dayOffset) => {
+      const shiftDate = addDays(targetWeekStart, dayOffset);
+      return busiestDayTemplates.map((template) => ({
+        ...template,
+        shiftDate,
+        shiftId: null,
+        generated: true
+      }));
+    }).flat();
+  };
+
   const buildDraftRota = (state, shiftTemplates = []) => {
     const existingOpenShifts = getOpenShiftItems(state).map((item) => ({
       endTime: item.cell.endTime,
@@ -231,13 +265,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       startTime: item.cell.startTime
     }));
     const existingKeys = new Set(existingOpenShifts.map((shift) => `${shift.shiftDate}|${shift.startTime}|${shift.endTime}|${shift.requiredRole}`));
-    const generatedShifts = shiftTemplates
-      .map((template) => ({
-        ...template,
-        shiftDate: addDays(template.shiftDate, 7),
-        shiftId: null,
-        generated: true
-      }))
+    const generatedShifts = buildBalancedShiftTemplates(shiftTemplates, state.weekStart)
       .filter((shift) => {
         const key = `${shift.shiftDate}|${shift.startTime}|${shift.endTime}|${shift.requiredRole}`;
         if (existingKeys.has(key)) {
@@ -692,7 +720,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
         state.department = department;
         state.modal = null;
         state.selectedDay = null;
-        actions.loadRota();
+        actions.loadRota(null, true);
       });
       tabs.appendChild(button);
     });
@@ -896,7 +924,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
         state.department = department;
         state.selectedDay = null;
         state.modal = null;
-        actions.loadRota();
+        actions.loadRota(null, true);
       });
       tabs.appendChild(button);
     });
@@ -1323,7 +1351,10 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     const targetField = uiHelpers.createElement('label', { className: 'form-field form-field--span-12' });
     targetField.appendChild(uiHelpers.createElement('span', { text: 'Request from' }));
     const targetSelect = uiHelpers.createElement('select', { className: 'input-control' });
-    targetSelect.appendChild(uiHelpers.createElement('option', { text: 'Anyone eligible' }));
+    targetSelect.appendChild(uiHelpers.createElement('option', {
+      text: 'Anyone eligible',
+      attributes: { value: '' }
+    }));
     const candidates = (state.rota?.rows || []).filter((row) => {
       return row.staffProfileId && row.staffProfileId !== state.sessionUser?.staffProfileId && row.primaryRole === context.cell?.department;
     });
@@ -1406,12 +1437,12 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     }
   };
 
-  const mount = async ({ page, workspaceElement, renderToken }) => {
+  const mount = async ({ page, workspaceElement, renderToken, initialWeekStart }) => {
     if (page.id !== 'rota') {
       return;
     }
 
-    const state = buildState();
+    const state = buildState(initialWeekStart);
 
     const render = () => {
       if (!isActiveRender(workspaceElement, renderToken)) {
@@ -1420,7 +1451,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
 
       clearModalHost();
       workspaceElement.textContent = '';
-      const grid = uiHelpers.createElement('div', { className: 'workspace-grid rota-workspace' });
+      const grid = uiHelpers.createElement('div', { className: 'workspace-grid rota-workspace rota-protected-view' });
       const flashPanel = uiHelpers.renderFlash(state.flash);
 
       if (flashPanel) {
@@ -1473,7 +1504,38 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       }
     };
 
-    const loadRota = async (nextFlash = null) => {
+    const animateDepartmentChange = async (direction) => {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        return;
+      }
+
+      const animation = workspaceElement.animate(
+        direction === 'out'
+          ? [
+              { opacity: 1, transform: 'translateY(0)' },
+              { opacity: 0, transform: 'translateY(8px)' }
+            ]
+          : [
+              { opacity: 0, transform: 'translateY(-8px)' },
+              { opacity: 1, transform: 'translateY(0)' }
+            ],
+        {
+          duration: direction === 'out' ? 140 : 260,
+          easing: direction === 'out'
+            ? 'cubic-bezier(0.4, 0, 0.2, 1)'
+            : 'cubic-bezier(0.32, 0.72, 0, 1)',
+          fill: 'forwards'
+        }
+      );
+
+      await animation.finished.catch(() => undefined);
+    };
+
+    const loadRota = async (nextFlash = null, shouldAnimate = false) => {
+      if (shouldAnimate) {
+        await animateDepartmentChange('out');
+      }
+
       state.loading = true;
       state.flash = nextFlash || null;
       render();
@@ -1494,6 +1556,9 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
         state.loading = false;
         state.flash = nextFlash;
         render();
+        if (shouldAnimate) {
+          await animateDepartmentChange('in');
+        }
       } catch (error) {
         if (!isActiveRender(workspaceElement, renderToken)) {
           return;
@@ -1503,6 +1568,9 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
         const feedback = uiHelpers.getErrorFeedback(error, 'Could not load the rota.');
         setFlash(state, 'error', feedback.text, feedback.details);
         render();
+        if (shouldAnimate) {
+          await animateDepartmentChange('in');
+        }
       }
     };
 
@@ -1551,7 +1619,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
           if (!shiftId) {
             const createdShift = await apiClient.post('/api/v1/shifts', {
               endTime: suggestion.endTime,
-              notes: 'Generated from the previous week rota pattern.',
+              notes: 'Generated from the busiest previous day pattern across all seven days.',
               requiredRole: suggestion.requiredRole,
               shiftDate: suggestion.shiftDate,
               startTime: suggestion.startTime,

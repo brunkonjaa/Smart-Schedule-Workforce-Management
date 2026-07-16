@@ -82,7 +82,7 @@
   function resolveState() {
     const previousState = stateStore.get();
     const hashPage = currentHash();
-    const resolvedRole = ['login', 'reset-password'].includes(hashPage)
+    const resolvedRole = hashPage === 'reset-password'
       ? 'guest'
       : previousState.role;
     const rolePages = pagesForRole(resolvedRole);
@@ -96,7 +96,7 @@
 
     const resolvedState = nextState({
       page: chosenPage,
-      role: chosenPage === 'login' ? 'guest' : resolvedRole
+      role: resolvedRole
     });
     if (chosenPage !== 'reset-password' && window.location.hash !== `#${chosenPage}`) {
       window.location.hash = chosenPage;
@@ -115,7 +115,8 @@
     navElement.innerHTML = pagesForRole(state.role)
       .map((page) => {
         if (page.id === 'login' && state.role !== 'guest') {
-          return '<button class="nav-link nav-link--button" type="button" data-action="logout">Logout</button>';
+          const activeClass = page.id === state.page ? ' is-active' : '';
+          return `<a class="nav-link${activeClass}" href="#login">Password</a><button class="nav-link nav-link--button" type="button" data-action="logout">Logout</button>`;
         }
 
         const activeClass = page.id === state.page ? ' is-active' : '';
@@ -150,6 +151,7 @@
     const page = allPages.find((entry) => entry.id === state.page);
     clearTransientOverlays();
     pageIntroElement.dataset.page = page.id;
+    document.body.dataset.page = page.id;
     pageIntroElement.innerHTML = layout.renderPageIntro(page, state.role);
     workspaceElement.innerHTML =
       page.id === 'login' ? '' : layout.renderWorkspace(page);
@@ -221,11 +223,16 @@
 
     if (rotaUi) {
       await rotaUi.mount({
+        initialWeekStart: state.rotaWeekStart,
         page,
         renderToken,
         role: state.role,
         workspaceElement
       });
+
+      if (state.rotaWeekStart) {
+        nextState({ rotaWeekStart: null });
+      }
     }
 
     if (sessionUi) {
@@ -388,6 +395,10 @@
     const nextPage = targetButton.dataset.targetPage;
     if (!nextPage) {
       return;
+    }
+
+    if (targetButton.dataset.rotaWeekStart) {
+      nextState({ rotaWeekStart: targetButton.dataset.rotaWeekStart });
     }
 
     navigateToPage(nextPage);

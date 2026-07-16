@@ -429,7 +429,7 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     uiHelpers.renderIntroMetrics([
       {
         label: 'Signed in as',
-        value: uiHelpers.formatRole(sessionUser.role),
+        value: uiHelpers.formatRole(sessionUser.primaryRole || sessionUser.role),
         tone: 'accent'
       },
       {
@@ -616,6 +616,42 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
 
     passwordPanel.appendChild(passwordForm);
     grid.appendChild(passwordPanel);
+
+    const resetPanel = createElement('section', {
+      className: 'content-panel content-panel--note content-panel--span-8'
+    });
+    const resetHeading = createElement('div', { className: 'panel-heading' });
+    resetHeading.appendChild(createElement('h3', { text: 'Reset Password' }));
+    resetHeading.appendChild(createElement('p', {
+      className: 'panel-copy',
+      text: 'If you do not remember your current password, send a reset link to your work email.'
+    }));
+    resetPanel.appendChild(resetHeading);
+    const resetButton = createElement('button', {
+      className: 'action-button button-secondary',
+      text: 'Email reset link',
+      attributes: { type: 'button' }
+    });
+    resetButton.addEventListener('click', async () => {
+      try {
+        resetButton.disabled = true;
+        resetButton.textContent = 'Sending...';
+        const result = await apiClient.post('/api/v1/auth/password-reset/request', {
+          email: sessionUser.email
+        });
+        renderSignedInState(workspaceElement, sessionUser, {
+          text: result.message || 'If the account is active, a reset link has been sent.',
+          tone: 'success'
+        }, renderToken);
+      } catch (error) {
+        renderSignedInState(workspaceElement, sessionUser, {
+          text: error.message || 'Could not request a reset link right now.',
+          tone: 'error'
+        }, renderToken);
+      }
+    });
+    resetPanel.appendChild(resetButton);
+    grid.appendChild(resetPanel);
 
     if (sessionUser.role === 'MANAGER') {
       const passkeyPanel = createElement('section', {
