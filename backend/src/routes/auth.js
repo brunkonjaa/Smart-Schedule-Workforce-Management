@@ -31,6 +31,13 @@ const {
   validateResetPasswordInput
 } = require('../services/password-reset-service');
 const { requireRole } = require('../middleware/auth');
+const {
+  buildAuthenticationOptions,
+  buildRegistrationOptions,
+  countActivePasskeys,
+  saveRegistration,
+  verifyAuthentication
+} = require('../services/passkey-service');
 
 const router = express.Router();
 
@@ -64,6 +71,27 @@ const saveSession = (request) => {
       resolve();
     });
   });
+};
+
+const passkeyChallengeLifetimeMs = 5 * 60 * 1000;
+
+const getFreshPasskeyChallenge = (request, name) => {
+  const challengeRecord = request.session?.[name];
+
+  if (!challengeRecord || typeof challengeRecord !== 'object') {
+    return null;
+  }
+
+  if (
+    typeof challengeRecord.value !== 'string' ||
+    !Number.isFinite(challengeRecord.createdAt) ||
+    Date.now() - challengeRecord.createdAt > passkeyChallengeLifetimeMs
+  ) {
+    delete request.session[name];
+    return null;
+  }
+
+  return challengeRecord.value;
 };
 
 const logSecurityEventSafely = async (eventInput) => {
@@ -246,6 +274,27 @@ router.post(
       });
     }
 
+    const passkeyCount =
+      authenticatedUser.role === 'MANAGER'
+        ? await countActivePasskeys(authenticatedUser.id)
+        : 0;
+
+    if (passkeyCount > 0) {
+      await regenerateSession(request);
+      request.session.pendingPasskeyUser = {
+        ...authenticatedUser,
+        rememberMe
+      };
+      await saveSession(request);
+      setNoStoreHeaders(response);
+
+      return response.status(200).json({
+        message: 'Passkey verification required.',
+        mfaRequired: true,
+        user: null
+      });
+    }
+
     await regenerateSession(request);
 
     applySessionPolicy(request, {
@@ -275,6 +324,182 @@ router.post(
       message: 'Login successful.',
       user: authenticatedUser
     });
+  })
+);
+
+router.post(
+  '/passkeys/registration/options',
+  requireRole('MANAGER'),
+  requireMutationProtection,
+  asyncHandler(async (request, response) => {
+    const options = await buildRegistrationOptions({ user: request.authUser });
+    request.session.passkeyRegistrationChallenge = {
+      createdAt: Date.now(),
+      value: options.challenge
+    };
+    await saveSession(request);
+    setNoStoreHeaders(response);
+    return response.status(200).json({ options });
+  })
+);
+
+router.post(
+  '/passkeys/registration/verify',
+  requireRole('MANAGER'),
+  requireMutationProtection,
+  asyncHandler(async (request, response) => {
+    const challenge = getFreshPasskeyChallenge(
+      request,
+      'passkeyRegistrationChallenge'
+    );
+
+    if (!challenge || !request.body || typeof request.body !== 'object') {
+      return response.status(400).json({
+        error: 'Passkey Registration Failed',
+        message: 'The passkey registration has expired. Start again.'
+      });
+    }
+
+    try {
+      const result = await saveRegistration({
+        expectedChallenge: challenge,
+        response: request.body,
+        userId: request.authUser.id
+      });
+      delete request.session.passkeyRegistrationChallenge;
+      await saveSession(request);
+
+      if (!result.verified) {
+        return response.status(400).json({
+          error: 'Passkey Registration Failed',
+          message: 'The passkey could not be verified.'
+        });
+      }
+
+      await logSecurityEventSafely({
+        actorUserId: request.authUser.id,
+        eventType: 'PASSKEY_REGISTERED',
+        ipAddress: request.ip,
+        outcome: 'SUCCESS',
+        staffProfileId: request.authUser.staffProfileId,
+        targetUserId: request.authUser.id
+      });
+
+      return response.status(201).json({
+        message: 'Passkey registered. Future manager logins will require it.'
+      });
+    } catch (error) {
+      delete request.session.passkeyRegistrationChallenge;
+      await saveSession(request);
+      return response.status(400).json({
+        error: 'Passkey Registration Failed',
+        message: 'The passkey could not be verified.'
+      });
+    }
+  })
+);
+
+router.post(
+  '/passkeys/login/options',
+  requireMutationProtection,
+  asyncHandler(async (request, response) => {
+    const pendingUser = request.session.pendingPasskeyUser;
+
+    if (!pendingUser || pendingUser.role !== 'MANAGER') {
+      return response.status(401).json({
+        error: 'Authentication Required',
+        message: 'Start manager login with your email and password first.'
+      });
+    }
+
+    const options = await buildAuthenticationOptions({ userId: pendingUser.id });
+    request.session.passkeyAuthenticationChallenge = {
+      createdAt: Date.now(),
+      value: options.challenge
+    };
+    await saveSession(request);
+    setNoStoreHeaders(response);
+    return response.status(200).json({ options });
+  })
+);
+
+router.post(
+  '/passkeys/login/verify',
+  requireMutationProtection,
+  asyncHandler(async (request, response) => {
+    const pendingUser = request.session.pendingPasskeyUser;
+    const challenge = getFreshPasskeyChallenge(
+      request,
+      'passkeyAuthenticationChallenge'
+    );
+
+    if (
+      !pendingUser ||
+      pendingUser.role !== 'MANAGER' ||
+      !challenge ||
+      !request.body ||
+      typeof request.body !== 'object'
+    ) {
+      return response.status(401).json({
+        error: 'Authentication Failed',
+        message: 'The passkey verification has expired. Start again.'
+      });
+    }
+
+    try {
+      const result = await verifyAuthentication({
+        expectedChallenge: challenge,
+        response: request.body,
+        userId: pendingUser.id
+      });
+
+      if (!result.verified) {
+        await logSecurityEventSafely({
+          actorUserId: pendingUser.id,
+          eventType: 'PASSKEY_LOGIN',
+          ipAddress: request.ip,
+          outcome: 'FAILURE',
+          targetUserId: pendingUser.id
+        });
+        return response.status(401).json({
+          error: 'Authentication Failed',
+          message: 'The passkey could not be verified.'
+        });
+      }
+
+      await regenerateSession(request);
+      applySessionPolicy(request, {
+        rememberMe: pendingUser.rememberMe,
+        role: pendingUser.role
+      });
+      request.session.user = {
+        email: pendingUser.email,
+        id: pendingUser.id,
+        primaryRole: pendingUser.primaryRole,
+        role: pendingUser.role,
+        staffProfileId: pendingUser.staffProfileId
+      };
+      await saveSession(request);
+      setNoStoreHeaders(response);
+      await logSecurityEventSafely({
+        actorUserId: pendingUser.id,
+        eventType: 'PASSKEY_LOGIN',
+        ipAddress: request.ip,
+        outcome: 'SUCCESS',
+        staffProfileId: pendingUser.staffProfileId,
+        targetUserId: pendingUser.id
+      });
+
+      return response.status(200).json({
+        message: 'Passkey login successful.',
+        user: pendingUser
+      });
+    } catch (error) {
+      return response.status(401).json({
+        error: 'Authentication Failed',
+        message: 'The passkey could not be verified.'
+      });
+    }
   })
 );
 

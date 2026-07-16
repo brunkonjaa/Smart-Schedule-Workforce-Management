@@ -5,6 +5,64 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
   const previewState = window.SmartSchedule.previewState;
   const uiHelpers = window.SmartSchedule.liveUiHelpers;
 
+  const base64UrlToBytes = (value) => {
+    const normalized = String(value || '').replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+    const binary = window.atob(padded);
+    return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  };
+
+  const bytesToBase64Url = (value) => {
+    const bytes = new Uint8Array(value);
+    let binary = '';
+    bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
+    return window.btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+  };
+
+  const prepareRegistrationOptions = (options) => ({
+    ...options,
+    challenge: base64UrlToBytes(options.challenge),
+    user: { ...options.user, id: base64UrlToBytes(options.user.id) },
+    excludeCredentials: (options.excludeCredentials || []).map((credential) => ({
+      ...credential,
+      id: base64UrlToBytes(credential.id)
+    }))
+  });
+
+  const prepareAuthenticationOptions = (options) => ({
+    ...options,
+    challenge: base64UrlToBytes(options.challenge),
+    allowCredentials: (options.allowCredentials || []).map((credential) => ({
+      ...credential,
+      id: base64UrlToBytes(credential.id)
+    }))
+  });
+
+  const serializeRegistrationCredential = (credential) => ({
+    id: credential.id,
+    rawId: bytesToBase64Url(credential.rawId),
+    response: {
+      attestationObject: bytesToBase64Url(credential.response.attestationObject),
+      clientDataJSON: bytesToBase64Url(credential.response.clientDataJSON),
+      transports: credential.response.getTransports ? credential.response.getTransports() : []
+    },
+    type: credential.type
+  });
+
+  const serializeAuthenticationCredential = (credential) => ({
+    id: credential.id,
+    rawId: bytesToBase64Url(credential.rawId),
+    response: {
+      authenticatorData: bytesToBase64Url(credential.response.authenticatorData),
+      clientDataJSON: bytesToBase64Url(credential.response.clientDataJSON),
+      signature: bytesToBase64Url(credential.response.signature),
+      userHandle: credential.response.userHandle
+        ? bytesToBase64Url(credential.response.userHandle)
+        : null
+    },
+    type: credential.type
+  });
+
   const createElement = (tagName, { className, text, attributes } = {}) => {
     const element = document.createElement(tagName);
 
@@ -166,6 +224,42 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     window.location.hash = nextPage;
   };
 
+  const renderPasskeyLogin = (workspaceElement, renderToken, flashMessage = null) => {
+    workspaceElement.textContent = '';
+    const grid = createElement('div', { className: 'workspace-grid workspace-grid--login' });
+    const panel = createElement('section', { className: 'content-panel content-panel--form content-panel--span-8' });
+    const heading = createElement('div', { className: 'panel-heading' });
+    heading.appendChild(createElement('h3', { text: 'Manager passkey required' }));
+    heading.appendChild(createElement('p', { className: 'panel-copy', text: 'Use Windows Hello, your phone, a fingerprint, or a security key to finish signing in.' }));
+    panel.appendChild(heading);
+    if (flashMessage) {
+      panel.appendChild(createElement('p', { className: `panel-copy panel-copy--${flashMessage.tone}`, text: flashMessage.text }));
+    }
+    const actions = createElement('div', { className: 'actions-row' });
+    const verifyButton = createElement('button', { className: 'action-button button-primary', text: 'Use passkey', attributes: { type: 'button' } });
+    actions.appendChild(verifyButton);
+    panel.appendChild(actions);
+    verifyButton.addEventListener('click', async () => {
+      try {
+        if (!window.PublicKeyCredential || !navigator.credentials) {
+          throw new Error('This browser does not support passkeys.');
+        }
+        verifyButton.disabled = true;
+        verifyButton.textContent = 'Waiting for passkey...';
+        const optionResult = await apiClient.post('/api/v1/auth/passkeys/login/options', {});
+        const credential = await navigator.credentials.get({
+          publicKey: prepareAuthenticationOptions(optionResult.options)
+        });
+        const result = await apiClient.post('/api/v1/auth/passkeys/login/verify', serializeAuthenticationCredential(credential));
+        navigateToUserHome(result.user);
+      } catch (error) {
+        renderPasskeyLogin(workspaceElement, renderToken, { text: error.message || 'Passkey verification failed.', tone: 'error' });
+      }
+    });
+    grid.appendChild(panel);
+    workspaceElement.appendChild(grid);
+  };
+
   const renderSignedOutState = (workspaceElement, flashMessage) => {
     workspaceElement.textContent = '';
 
@@ -304,6 +398,11 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
           password: passwordInput.value,
           rememberMe: rememberInput.checked
         });
+
+        if (result.mfaRequired) {
+          renderPasskeyLogin(workspaceElement, null);
+          return;
+        }
 
         navigateToUserHome(result.user);
       } catch (error) {
@@ -517,6 +616,36 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
 
     passwordPanel.appendChild(passwordForm);
     grid.appendChild(passwordPanel);
+
+    if (sessionUser.role === 'MANAGER') {
+      const passkeyPanel = createElement('section', {
+        className: 'content-panel content-panel--note content-panel--span-8'
+      });
+      const passkeyHeading = createElement('div', { className: 'panel-heading' });
+      passkeyHeading.appendChild(createElement('h3', { text: 'Passkey protection' }));
+      passkeyHeading.appendChild(createElement('p', { className: 'panel-copy', text: 'Add a passkey to protect future manager logins with your device PIN, biometrics, phone, or security key.' }));
+      passkeyPanel.appendChild(passkeyHeading);
+      const registerButton = createElement('button', { className: 'action-button button-secondary', text: 'Add passkey', attributes: { type: 'button' } });
+      passkeyPanel.appendChild(registerButton);
+      registerButton.addEventListener('click', async () => {
+        try {
+          if (!window.PublicKeyCredential || !navigator.credentials) {
+            throw new Error('This browser does not support passkeys.');
+          }
+          registerButton.disabled = true;
+          registerButton.textContent = 'Waiting for passkey...';
+          const optionResult = await apiClient.post('/api/v1/auth/passkeys/registration/options', {});
+          const credential = await navigator.credentials.create({
+            publicKey: prepareRegistrationOptions(optionResult.options)
+          });
+          const result = await apiClient.post('/api/v1/auth/passkeys/registration/verify', serializeRegistrationCredential(credential));
+          renderSignedInState(workspaceElement, sessionUser, { text: result.message, tone: 'success' }, renderToken);
+        } catch (error) {
+          renderSignedInState(workspaceElement, sessionUser, { text: error.message || 'Passkey registration failed.', tone: 'error' }, renderToken);
+        }
+      });
+      grid.appendChild(passkeyPanel);
+    }
     workspaceElement.appendChild(grid);
   };
 

@@ -171,6 +171,31 @@ describe('auth routes', () => {
     });
   });
 
+  test('manager can start passkey registration and receives a server challenge', async () => {
+    const agent = request.agent(app);
+
+    const loginResponse = await agent.post('/api/v1/auth/login').send({
+      email: testEmail,
+      password: testPassword
+    });
+
+    expect(loginResponse.status).toBe(200);
+
+    const optionsResponse = await agent
+      .post('/api/v1/auth/passkeys/registration/options')
+      .set(mutationHeader)
+      .send({});
+
+    expect(optionsResponse.status).toBe(200);
+    expect(optionsResponse.body.options).toEqual(
+      expect.objectContaining({
+        challenge: expect.any(String),
+        rp: expect.objectContaining({ name: 'Smart Schedule' }),
+        user: expect.objectContaining({ name: testEmail })
+      })
+    );
+  });
+
   test('remember me issues a longer session cookie than the default login', async () => {
     const shortSessionResponse = await request(app).post('/api/v1/auth/login').send({
       email: testEmail,
