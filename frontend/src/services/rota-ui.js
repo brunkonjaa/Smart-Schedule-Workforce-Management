@@ -16,6 +16,9 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
   const buildState = () => {
     return {
       department: 'BAR',
+      draft: null,
+      draftLoading: false,
+      draftSaving: false,
       flash: null,
       loading: true,
       modal: null,
@@ -190,6 +193,104 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
         };
       });
     });
+  };
+
+  const getMinutes = (timeValue) => {
+    const [hours, minutes] = String(timeValue || '00:00').split(':').map(Number);
+    return (hours * 60) + minutes;
+  };
+
+  const overlaps = (left, right) => {
+    return getMinutes(left.startTime) <= getMinutes(right.endTime) &&
+      getMinutes(right.startTime) <= getMinutes(left.endTime);
+  };
+
+  const getCellHours = (cell) => {
+    return Math.max(0, (getMinutes(cell.endTime) - getMinutes(cell.startTime)) / 60);
+  };
+
+  const buildDraftRota = (state) => {
+    const openShifts = getOpenShiftItems(state).map((item) => ({
+      endTime: item.cell.endTime,
+      requiredRole: item.cell.department,
+      shiftDate: item.day.date,
+      shiftId: item.cell.shiftId,
+      startTime: item.cell.startTime
+    }));
+    const staffRows = (state.rota?.rows || []).filter((row) => !row.systemRow);
+    const workloads = new Map();
+
+    staffRows.forEach((row) => {
+      const workload = { hours: 0, shifts: 0, cells: [] };
+      Object.values(row.days || {}).flat().forEach((cell) => {
+        if (cell.state === 'ASSIGNED') {
+          workload.hours += getCellHours(cell);
+          workload.shifts += 1;
+          workload.cells.push(cell);
+        }
+      });
+      workloads.set(row.staffProfileId, workload);
+    });
+
+    const suggestions = [];
+    const unfilled = [];
+    const orderedShifts = [...openShifts].sort((left, right) => {
+      const leftMatches = state.staff.filter((staff) => staff.primaryRole === left.requiredRole).length;
+      const rightMatches = state.staff.filter((staff) => staff.primaryRole === right.requiredRole).length;
+      return leftMatches - rightMatches || left.shiftDate.localeCompare(right.shiftDate) || left.startTime.localeCompare(right.startTime);
+    });
+
+    orderedShifts.forEach((shift) => {
+      const candidates = state.staff.filter((staff) => {
+        const workload = workloads.get(staff.id);
+        const row = staffRows.find((candidateRow) => candidateRow.staffProfileId === staff.id);
+        const dayCells = row?.days?.[shift.shiftDate] || [];
+        const onLeave = dayCells.some((cell) => cell.state === 'APPROVED_LEAVE');
+        const hasConflict = [...(workload?.cells || []), ...(suggestions.filter((item) => item.staffProfileId === staff.id))]
+          .some((cell) => cell.shiftDate === shift.shiftDate && overlaps(cell, shift));
+
+        return staff.primaryRole === shift.requiredRole &&
+          workload &&
+          !onLeave &&
+          !hasConflict &&
+          workload.shifts < 5 &&
+          workload.hours + getCellHours(shift) <= 40;
+      }).sort((left, right) => {
+        const leftWorkload = workloads.get(left.id);
+        const rightWorkload = workloads.get(right.id);
+        return (leftWorkload.shifts - rightWorkload.shifts) ||
+          (leftWorkload.hours - rightWorkload.hours) ||
+          left.fullName.localeCompare(right.fullName);
+      });
+
+      const selectedStaff = candidates[0];
+      if (!selectedStaff) {
+        unfilled.push({ ...shift, reason: 'No eligible staff member passed the role, leave, conflict, and weekly-limit checks.' });
+        return;
+      }
+
+      const workload = workloads.get(selectedStaff.id);
+      const suggestion = {
+        ...shift,
+        fullName: selectedStaff.fullName,
+        staffProfileId: selectedStaff.id,
+        status: 'SUGGESTED'
+      };
+      suggestions.push(suggestion);
+      workload.shifts += 1;
+      workload.hours += getCellHours(shift);
+    });
+
+    return {
+      suggestions,
+      unfilled,
+      weekStart: state.weekStart,
+      summary: {
+        assigned: suggestions.length,
+        hours: Number(suggestions.reduce((total, shift) => total + getCellHours(shift), 0).toFixed(2)),
+        unfilled: unfilled.length
+      }
+    };
   };
 
   const getCellsForDay = (row, dayDate) => {
@@ -428,9 +529,104 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       });
       controls.appendChild(button);
     });
+    if (state.sessionUser?.role === 'MANAGER') {
+      const populateButton = uiHelpers.createElement('button', {
+        className: 'action-button button-primary rota-populate-button',
+        text: 'Populate next week',
+        attributes: { disabled: state.draftLoading, type: 'button' }
+      });
+      populateButton.addEventListener('click', actions.generateDraft);
+      controls.appendChild(populateButton);
+    }
     panel.appendChild(controls);
 
     return panel;
+  };
+
+  const renderDraftPreview = (state, actions) => {
+    if (!state.draft) {
+      return null;
+    }
+
+    const shell = uiHelpers.createElement('section', { className: 'rota-draft-shell' });
+    const heading = uiHelpers.createElement('div', { className: 'rota-draft-heading' });
+    heading.appendChild(uiHelpers.createElement('div', {
+      className: 'rota-draft-eyebrow',
+      text: 'Draft rota · not saved yet'
+    }));
+    heading.appendChild(uiHelpers.createElement('h2', { text: `Next week starting ${formatDate(state.draft.weekStart)}` }));
+    heading.appendChild(uiHelpers.createElement('p', { className: 'panel-copy', text: 'Review the suggestions below. Approval runs the conflict checks again before anything is saved.' }));
+    shell.appendChild(heading);
+
+    const legend = uiHelpers.createElement('div', { className: 'rota-draft-legend' });
+    [
+      ['Suggested', 'New assignment from this preview', 'is-suggested'],
+      ['Existing', 'Already saved on the rota', 'is-existing'],
+      ['Leave', 'Approved leave marker', 'is-leave']
+    ].forEach(([label, explanation, tone]) => {
+      const item = uiHelpers.createElement('span', { className: 'rota-draft-legend-item' });
+      item.appendChild(uiHelpers.createElement('b', { className: `rota-draft-legend-dot ${tone}` }));
+      item.appendChild(uiHelpers.createElement('strong', { text: label }));
+      item.appendChild(uiHelpers.createElement('small', { text: explanation }));
+      legend.appendChild(item);
+    });
+    shell.appendChild(legend);
+
+    const cards = uiHelpers.createElement('div', { className: 'rota-draft-cards' });
+    [
+      ['Suggested', state.draft.summary.assigned, 'accent'],
+      ['Hours', state.draft.summary.hours, 'neutral'],
+      ['Needs attention', state.draft.summary.unfilled, state.draft.summary.unfilled ? 'warning' : 'success']
+    ].forEach(([label, value, tone]) => {
+      const card = uiHelpers.createElement('article', { className: `rota-draft-card rota-draft-card--${tone}` });
+      card.appendChild(uiHelpers.createElement('span', { text: label }));
+      card.appendChild(uiHelpers.createElement('strong', { text: String(value) }));
+      cards.appendChild(card);
+    });
+    shell.appendChild(cards);
+
+    const tablePanel = uiHelpers.createElement('div', { className: 'rota-draft-table-panel' });
+    const table = uiHelpers.createElement('table', { className: 'rota-draft-table' });
+    const header = uiHelpers.createElement('tr');
+    header.appendChild(uiHelpers.createElement('th', { text: 'Staff member' }));
+    (state.rota?.days || []).forEach((day) => header.appendChild(uiHelpers.createElement('th', { text: day.label.slice(0, 3) })));
+    table.appendChild(header);
+    (state.rota?.rows || []).filter((row) => !row.systemRow).forEach((row) => {
+      const tableRow = uiHelpers.createElement('tr');
+      tableRow.appendChild(uiHelpers.createElement('th', { text: row.staffName }));
+      (state.rota?.days || []).forEach((day) => {
+        const cell = uiHelpers.createElement('td');
+        const existing = (row.days?.[day.date] || []).filter((entry) => entry.state === 'ASSIGNED' || entry.state === 'APPROVED_LEAVE');
+        const drafts = state.draft.suggestions.filter((entry) => entry.staffProfileId === row.staffProfileId && entry.shiftDate === day.date);
+        [...existing, ...drafts].forEach((entry) => {
+          const badge = uiHelpers.createElement('span', { className: `rota-draft-shift${entry.status === 'SUGGESTED' ? ' is-suggested' : ''}`, text: entry.state === 'APPROVED_LEAVE' ? 'Leave' : `${formatCompactClock(entry.startTime)}-${formatCompactClock(entry.endTime)}` });
+          cell.appendChild(badge);
+        });
+        if (!cell.childNodes.length) cell.appendChild(uiHelpers.createElement('span', { className: 'rota-draft-off', text: '—' }));
+        tableRow.appendChild(cell);
+      });
+      table.appendChild(tableRow);
+    });
+    tablePanel.appendChild(table);
+    shell.appendChild(tablePanel);
+
+    if (state.draft.unfilled.length > 0) {
+      const warning = uiHelpers.createElement('div', { className: 'rota-draft-warning' });
+      warning.appendChild(uiHelpers.createElement('strong', { text: `${state.draft.unfilled.length} shift${state.draft.unfilled.length === 1 ? '' : 's'} still open` }));
+      state.draft.unfilled.slice(0, 4).forEach((shift) => warning.appendChild(uiHelpers.createElement('span', { text: `${formatDate(shift.shiftDate)} · ${formatCompactClock(shift.startTime)}-${formatCompactClock(shift.endTime)} · ${shift.reason}` })));
+      shell.appendChild(warning);
+    }
+
+    const actionsRow = uiHelpers.createElement('div', { className: 'rota-draft-actions' });
+    const approve = uiHelpers.createElement('button', { className: 'action-button button-primary', text: `Approve ${state.draft.summary.assigned} suggestions`, attributes: { disabled: state.draft.summary.assigned === 0 || state.draftSaving, type: 'button' } });
+    const retry = uiHelpers.createElement('button', { className: 'action-button button-secondary', text: 'Try again', attributes: { disabled: state.draftSaving, type: 'button' } });
+    const dismiss = uiHelpers.createElement('button', { className: 'action-button button-ghost', text: 'Dismiss', attributes: { disabled: state.draftSaving, type: 'button' } });
+    approve.addEventListener('click', actions.approveDraft);
+    retry.addEventListener('click', actions.generateDraft);
+    dismiss.addEventListener('click', actions.dismissDraft);
+    actionsRow.append(approve, retry, dismiss);
+    shell.appendChild(actionsRow);
+    return shell;
   };
 
   const renderDepartmentTabs = (state, actions) => {
@@ -1199,6 +1395,12 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
 
       grid.appendChild(renderWeekControls(state, actions));
 
+      if (state.draft) {
+        grid.appendChild(renderDraftPreview(state, actions));
+        workspaceElement.appendChild(grid);
+        return;
+      }
+
       const tabs = renderDepartmentTabs(state, actions);
       if (tabs) {
         grid.appendChild(tabs);
@@ -1261,6 +1463,61 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
         const feedback = uiHelpers.getErrorFeedback(error, 'Could not load the rota.');
         setFlash(state, 'error', feedback.text, feedback.details);
         render();
+      }
+    };
+
+    const dismissDraft = () => {
+      state.draft = null;
+      state.draftSaving = false;
+      state.weekStart = uiHelpers.getCurrentWeekStart();
+      loadRota();
+    };
+
+    const generateDraft = async () => {
+      state.draftLoading = true;
+      state.draft = null;
+      state.draftSaving = false;
+      state.weekStart = addDays(uiHelpers.getCurrentWeekStart(), 7);
+      state.selectedDay = null;
+      render();
+      await loadRota();
+      await loadStaff();
+      state.draft = buildDraftRota(state);
+      state.draftLoading = false;
+      render();
+    };
+
+    const approveDraft = async () => {
+      if (!state.draft || state.draft.suggestions.length === 0) {
+        return;
+      }
+
+      state.draftSaving = true;
+      render();
+      let savedCount = 0;
+      try {
+        for (const suggestion of state.draft.suggestions) {
+          await apiClient.post('/api/v1/assignments', {
+            shiftId: suggestion.shiftId,
+            staffProfileId: suggestion.staffProfileId
+          });
+          savedCount += 1;
+        }
+        state.draft = null;
+        state.draftSaving = false;
+        await loadRota({
+          details: [],
+          text: `${savedCount} next-week assignment${savedCount === 1 ? '' : 's'} approved and saved.`,
+          tone: 'success'
+        });
+      } catch (error) {
+        state.draftSaving = false;
+        const feedback = uiHelpers.getErrorFeedback(error, 'Approval stopped because one assignment changed.');
+        await loadRota({
+          details: feedback.details,
+          text: `${savedCount} saved. ${feedback.text}`,
+          tone: 'warning'
+        });
       }
     };
 
@@ -1466,6 +1723,9 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
 
     const actions = {
       addShiftForStaff,
+      approveDraft,
+      dismissDraft,
+      generateDraft,
       loadRota,
       openAddModal,
       openEditTimeModal,

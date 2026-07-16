@@ -3142,3 +3142,177 @@ body[data-theme='dark'] .rota-mobile-week-cell.is-selected:not(.is-filled) {
     grid-column: 1 / -1;
   }
 }
+.rota-draft-shell {
+  flex: 1 1 100%;
+  grid-column: 1 / -1;
+  width: 100%;
+  padding: clamp(1.25rem, 2.5vw, 2.5rem);
+  border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
+  border-radius: 28px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--bg-elevated) 94%, #7c8cff 6%), var(--bg-elevated));
+  box-shadow: 0 24px 70px rgba(28, 36, 72, 0.12);
+}
+
+.rota-draft-heading h2 {
+  margin: 0.25rem 0 0.5rem;
+  font-size: clamp(1.5rem, 2.4vw, 2.4rem);
+  letter-spacing: -0.04em;
+}
+
+.rota-draft-eyebrow {
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.rota-draft-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem 1.25rem;
+  margin-top: 1.1rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--bg-elevated) 70%, transparent);
+}
+
+.rota-draft-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.rota-draft-legend-item small { color: var(--text-muted); }
+
+.rota-draft-legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--line-strong);
+}
+
+.rota-draft-legend-dot.is-suggested { background: var(--accent); }
+.rota-draft-legend-dot.is-existing { background: #64748b; }
+.rota-draft-legend-dot.is-leave { background: #e0a236; }
+
+.rota-draft-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.rota-draft-card {
+  min-height: 116px;
+  padding: 1.2rem 1.35rem;
+  border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--bg-elevated) 92%, transparent);
+}
+
+.rota-draft-card span,
+.rota-draft-card strong {
+  display: block;
+}
+
+.rota-draft-card span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.rota-draft-card strong {
+  margin-top: 0.55rem;
+  font-size: 2rem;
+  letter-spacing: -0.05em;
+}
+
+.rota-draft-card--accent { border-color: color-mix(in srgb, var(--accent) 38%, var(--line)); }
+.rota-draft-card--warning { border-color: #e0a236; }
+.rota-draft-card--success { border-color: #49a779; }
+
+.rota-draft-table-panel {
+  overflow-x: auto;
+  border: 1px solid color-mix(in srgb, var(--line) 68%, transparent);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--bg-elevated) 96%, transparent);
+}
+
+.rota-draft-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+}
+
+.rota-draft-table th,
+.rota-draft-table td {
+  padding: 0.85rem 0.9rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 58%, transparent);
+  text-align: left;
+  vertical-align: top;
+}
+
+.rota-draft-table thead th,
+.rota-draft-table > tr:first-child th {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.rota-draft-table td {
+  min-width: 92px;
+}
+
+.rota-draft-shift {
+  display: block;
+  width: fit-content;
+  margin: 0.18rem 0;
+  padding: 0.32rem 0.5rem;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--line) 40%, transparent);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.rota-draft-shift.is-suggested {
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  background: color-mix(in srgb, var(--accent) 15%, var(--bg-elevated));
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.rota-draft-off { color: var(--text-muted); opacity: 0.55; }
+
+.rota-draft-warning {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 1rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid #e0a236;
+  border-radius: 18px;
+  background: color-mix(in srgb, #e0a236 10%, var(--bg-elevated));
+}
+
+.rota-draft-warning span { color: var(--text-muted); font-size: 0.86rem; }
+
+.rota-draft-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1.35rem;
+}
+
+@media (max-width: 760px) {
+  .rota-draft-cards { grid-template-columns: 1fr; }
+  .rota-draft-shell { border-radius: 20px; padding: 1rem; }
+  .rota-draft-actions { justify-content: stretch; }
+  .rota-draft-actions .action-button { flex: 1 1 100%; }
+}
