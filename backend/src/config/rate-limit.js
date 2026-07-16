@@ -28,11 +28,12 @@ const buildLoginRateLimiter = (options = {}) => {
 
 const buildApiRateLimiter = (options = {}) => {
   return buildRateLimiter({
-    limit: options.limit || 120,
+    limit: options.limit || 300,
     message: {
       error: 'Too Many Requests',
       message: 'Too many API requests. Please slow down and try again soon.'
     },
+    skip: (request) => request.method === 'GET' && request.path === '/auth/me',
     windowMs: options.windowMs || 15 * 60 * 1000
   });
 };

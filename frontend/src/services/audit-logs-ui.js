@@ -6,27 +6,62 @@ window.SmartSchedule.auditLogsUi = (function createAuditLogsUi() {
 
   const formatDateTime = (value) => {
     if (!value) return 'Unknown time';
-    return new Date(value).toLocaleString();
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return 'Unknown time';
+    return date.toLocaleString('en-GB', {
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      month: '2-digit',
+      second: '2-digit',
+      year: 'numeric',
+      hour12: false
+    });
   };
 
-  const formatState = (value) => {
-    if (!value) return 'No recorded state';
-    return JSON.stringify(value, null, 2);
+  const formatStateDate = (value) => {
+    if (!value) return null;
+    const date = new Date(`${value}T00:00:00Z`);
+    return Number.isNaN(date.getTime())
+      ? value
+      : date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', timeZone: 'UTC', year: 'numeric' });
   };
 
-  const createStateDetails = (log) => {
-    const details = helpers.createElement('details', { className: 'audit-log-details' });
-    details.appendChild(helpers.createElement('summary', { text: 'Show recorded state' }));
-    const state = helpers.createElement('div', { className: 'audit-log-state' });
-    const before = helpers.createElement('div');
-    before.appendChild(helpers.createElement('strong', { text: 'Before' }));
-    before.appendChild(helpers.createElement('pre', { text: formatState(log.beforeState) }));
-    const after = helpers.createElement('div');
-    after.appendChild(helpers.createElement('strong', { text: 'After' }));
-    after.appendChild(helpers.createElement('pre', { text: formatState(log.afterState) }));
-    state.append(before, after);
-    details.appendChild(state);
-    return details;
+  const getState = (log) => log.afterState || log.beforeState || {};
+
+  const getStaffName = (state) => {
+    const name = String(state?.fullName || '').trim();
+    const placeholderNames = new Set(['Reset Staff', 'Swap Requester', 'Swap Target']);
+    return name && !placeholderNames.has(name) ? name : 'Staff member';
+  };
+
+  const getReadableTime = (state) => {
+    if (!state.startTime || !state.endTime) return 'Time not recorded';
+    return `${String(state.startTime).slice(0, 5)}-${String(state.endTime).slice(0, 5)}`;
+  };
+
+  const getReadableShift = (state) => {
+    if (!state.shiftDate) return 'Shift date not recorded';
+    return `${formatStateDate(state.shiftDate)} · ${getReadableTime(state)}`;
+  };
+
+  const getReadableChange = (log) => {
+    switch (log.action) {
+      case 'ASSIGNMENT_CREATED':
+        return 'Assigned staff member';
+      case 'ASSIGNMENT_UPDATED':
+        return 'Changed assignment';
+    case 'ASSIGNMENT_DELETED':
+      return 'Removed assignment';
+    case 'SHIFT_CREATED':
+      return `Created ${getState(log).requiredRole || 'work'} shift`;
+      case 'SHIFT_UPDATED':
+        return 'Changed shift time';
+      case 'SHIFT_DELETED':
+        return 'Removed shift';
+      default:
+        return log.summary || 'A rota change was recorded.';
+    }
   };
 
   const renderLogs = (workspaceElement, logs) => {
@@ -50,7 +85,7 @@ window.SmartSchedule.auditLogsUi = (function createAuditLogsUi() {
       const table = helpers.createElement('table', { className: 'audit-log-table' });
       const head = helpers.createElement('thead');
       const headRow = helpers.createElement('tr');
-      ['When', 'Action', 'Actor', 'Record', 'Details'].forEach((label) => {
+      ['When', 'Change', 'Manager', 'Staff member', 'Shift'].forEach((label) => {
         headRow.appendChild(helpers.createElement('th', { text: label }));
       });
       head.appendChild(headRow);
@@ -59,13 +94,10 @@ window.SmartSchedule.auditLogsUi = (function createAuditLogsUi() {
       logs.forEach((log) => {
         const row = helpers.createElement('tr');
         row.appendChild(helpers.createTableCell('When', formatDateTime(log.createdAt)));
-        row.appendChild(helpers.createTableCell('Action', log.action));
-        row.appendChild(helpers.createTableCell('Actor', log.actorName || log.actorEmail || 'System record'));
-        row.appendChild(helpers.createTableCell('Record', `${log.entityType} ${log.entityId}`));
-        const detailsCell = helpers.createElement('td', { attributes: { 'data-label': 'Details' } });
-        detailsCell.appendChild(helpers.createElement('p', { className: 'audit-log-summary', text: log.summary }));
-        detailsCell.appendChild(createStateDetails(log));
-        row.appendChild(detailsCell);
+        row.appendChild(helpers.createTableCell('Change', getReadableChange(log)));
+        row.appendChild(helpers.createTableCell('Manager', log.actorName || log.actorEmail || 'Manager account'));
+        row.appendChild(helpers.createTableCell('Staff member', getStaffName(getState(log))));
+        row.appendChild(helpers.createTableCell('Shift', getReadableShift(getState(log))));
         body.appendChild(row);
       });
       table.appendChild(body);
@@ -80,18 +112,16 @@ window.SmartSchedule.auditLogsUi = (function createAuditLogsUi() {
   const mount = async ({ page, workspaceElement }) => {
     if (page.id !== 'audit-logs') return;
 
-    helpers.renderIntroMetrics([
-      { label: 'Audit log', value: 'Loading...', tone: 'accent' },
-      { label: 'Access', value: 'Manager', tone: 'neutral' },
-      { label: 'Source', value: 'Backend', tone: 'neutral' }
+      helpers.renderIntroMetrics([
+        { label: 'Audit log', value: 'Loading...', tone: 'accent' },
+      { label: 'Access', value: 'Manager', tone: 'neutral' }
     ]);
 
     try {
       const result = await apiClient.get('/api/v1/audit-logs?limit=100');
       helpers.renderIntroMetrics([
         { label: 'Audit log', value: String(result.logs.length), tone: 'accent' },
-        { label: 'Access', value: 'Manager', tone: 'neutral' },
-        { label: 'Source', value: 'Backend', tone: 'neutral' }
+        { label: 'Access', value: 'Manager', tone: 'neutral' }
       ]);
       renderLogs(workspaceElement, result.logs);
     } catch (error) {

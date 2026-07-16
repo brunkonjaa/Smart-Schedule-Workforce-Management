@@ -14,12 +14,17 @@
   const rotaUi = shell.rotaUi;
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
+  if ('scrollRestoration' in window.history) {
+    window.history.scrollRestoration = 'manual';
+  }
+
   const navElement = document.querySelector('.top-nav');
   const themeToggleElement = document.getElementById('theme-toggle');
   const userGreetingElement = document.getElementById('user-greeting');
   const pageIntroElement = document.getElementById('page-intro');
   const workspaceElement = document.getElementById('workspace');
   const footerElement = document.querySelector('.app-footer');
+  const backToTopElement = document.getElementById('back-to-top');
   const footerRevealDistance = 150;
   let lastPointerY = 0;
   let suppressNextHashChange = false;
@@ -35,9 +40,23 @@
     footerElement.classList.toggle('is-peeked', pointerY >= revealStart);
   }
 
+  function updateBackToTop() {
+    if (!backToTopElement) {
+      return;
+    }
+
+    const shouldShow = window.scrollY > 280;
+    backToTopElement.classList.toggle('is-visible', shouldShow);
+  }
+
   window.addEventListener('mousemove', (event) => updateFooterReveal(event.clientY), { passive: true });
   window.addEventListener('resize', () => updateFooterReveal(), { passive: true });
+  window.addEventListener('scroll', updateBackToTop, { passive: true });
+  backToTopElement?.addEventListener('click', () => {
+    window.scrollTo({ behavior: 'smooth', top: 0 });
+  });
   updateFooterReveal();
+  updateBackToTop();
 
   function clearTransientOverlays() {
     document.getElementById('rota-modal-host')?.remove();
@@ -224,7 +243,7 @@
     }
 
     const options = {
-      duration: 180,
+      duration: 140,
       easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
       fill: 'forwards'
     };
@@ -232,15 +251,15 @@
     return Promise.all([
       pageIntroElement.animate(
         [
-          { opacity: 1, transform: 'translateY(0px) scale(1)' },
-          { opacity: 0, transform: 'translateY(10px) scale(0.995)' }
+          { opacity: 1 },
+          { opacity: 0 }
         ],
         options
       ).finished,
       workspaceElement.animate(
         [
-          { opacity: 1, transform: 'translateY(0px)' },
-          { opacity: 0, transform: 'translateY(12px)' }
+          { opacity: 1 },
+          { opacity: 0 }
         ],
         options
       ).finished
@@ -253,7 +272,7 @@
     }
 
     const options = {
-      duration: 220,
+      duration: 260,
       easing: 'cubic-bezier(0.32, 0.72, 0, 1)',
       fill: 'forwards'
     };
@@ -261,15 +280,15 @@
     return Promise.all([
       pageIntroElement.animate(
         [
-          { opacity: 0, transform: 'translateY(10px) scale(0.995)' },
-          { opacity: 1, transform: 'translateY(0px) scale(1)' }
+          { opacity: 0 },
+          { opacity: 1 }
         ],
         options
       ).finished,
       workspaceElement.animate(
         [
-          { opacity: 0, transform: 'translateY(12px)' },
-          { opacity: 1, transform: 'translateY(0px)' }
+          { opacity: 0 },
+          { opacity: 1 }
         ],
         options
       ).finished
@@ -280,11 +299,12 @@
     const state = resolveState();
     if (shouldAnimate) {
       await animateStageOut();
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     }
     applyTheme(state.theme);
     renderNavigation(state);
-    await renderUserGreeting(state);
     await renderPage(state);
+    await renderUserGreeting(state);
 
     if (shouldAnimate) {
       await animateStageIn();
@@ -292,7 +312,22 @@
   }
 
   function queueRender(shouldAnimate = false) {
-    renderQueue = renderQueue.then(() => render(shouldAnimate));
+    renderQueue = renderQueue.then(() => {
+      if (shouldAnimate && typeof document.startViewTransition === 'function') {
+        try {
+          const transition = document.startViewTransition(() => {
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+            return render(false);
+          });
+
+          return transition.finished.catch(() => undefined);
+        } catch (error) {
+          return render(true);
+        }
+      }
+
+      return render(shouldAnimate);
+    });
     return renderQueue;
   }
 
@@ -374,5 +409,8 @@
     queueRender(true);
   });
 
-  queueRender(false);
+  queueRender(false).finally(() => {
+    document.documentElement.classList.remove('app-loading');
+    document.documentElement.classList.add('app-ready');
+  });
 })();

@@ -100,11 +100,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       return String(timeValue);
     }
 
-    const suffix = hour >= 12 ? 'pm' : 'am';
-    const displayHour = hour % 12 || 12;
-    return minuteText === '00'
-      ? `${displayHour}${suffix}`
-      : `${displayHour}:${minuteText}${suffix}`;
+    return `${String(hour).padStart(2, '0')}:${minuteText}`;
   };
 
   const formatCompactClock = (timeValue) => {
@@ -119,8 +115,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       return String(timeValue);
     }
 
-    const displayHour = hour % 12 || 12;
-    return minuteText === '00' ? `${displayHour}` : `${displayHour}:${minuteText}`;
+    return `${String(hour).padStart(2, '0')}:${minuteText}`;
   };
 
   const formatShiftTime = (cell) => {

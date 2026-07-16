@@ -19,6 +19,7 @@ const auditLogRoutes = require('./routes/audit-logs');
 
 const frontendPublicDirectory = path.resolve(__dirname, '../../frontend/public');
 const frontendSourceDirectory = path.resolve(__dirname, '../../frontend/src');
+const assetsDirectory = path.resolve(__dirname, '../../assets');
 
 const app = express();
 
@@ -48,6 +49,7 @@ app.use(sessionMiddleware);
 app.use(express.json({ limit: '32kb' }));
 app.use(express.urlencoded({ extended: false, limit: '10kb', parameterLimit: 25 }));
 app.use('/src', express.static(frontendSourceDirectory));
+app.use('/assets', express.static(assetsDirectory));
 app.use('/api/v1', apiRateLimiter);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/staff', staffRoutes);

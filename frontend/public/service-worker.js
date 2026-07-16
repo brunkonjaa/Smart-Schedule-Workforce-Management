@@ -1,4 +1,4 @@
-const CACHE_NAME = 'smart-schedule-shell-v1';
+const CACHE_NAME = 'smart-schedule-shell-v11';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

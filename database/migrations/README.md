@@ -20,6 +20,9 @@ The migrations in this folder are ordered PostgreSQL changes. Do not renumber an
 14. `014_remove_weekly_availability.sql`
 15. `015_normalize_seed_staff_emails.sql`
 16. `016_normalize_seed_staff_fake_gmail.sql`
+17. `017_add_bruno_demo_profile.sql`
+18. `018_create_user_passkeys_schema.sql`
+19. `019_remove_placeholder_staff.sql`
 
 ## Running them
 

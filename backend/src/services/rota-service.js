@@ -97,6 +97,7 @@ const listRotaStaff = async (department) => {
         ON users.id = staff_profiles.user_id
       WHERE staff_profiles.is_active = TRUE
         AND users.is_active = TRUE
+        AND staff_profiles.full_name NOT IN ('Reset Staff', 'Swap Requester', 'Swap Target')
         ${filterByDepartment ? 'AND staff_profiles.primary_role = $1' : ''}
       ORDER BY staff_profiles.primary_role ASC, staff_profiles.full_name ASC
     `,
