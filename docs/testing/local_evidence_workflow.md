@@ -20,7 +20,7 @@ npm run local:evidence:seed
 npm run local:evidence:start
 ```
 
-`npm run local:evidence:all` runs the local check, pending migrations, and recommendation seed in sequence.
+`npm run local:evidence:all` runs the local check, pending migrations, and rota evidence seed in sequence.
 
 For the full rota seed and staff overview history:
 
@@ -33,14 +33,14 @@ The first command creates 24 active Irish-named staff records, Monday-Friday dem
 
 ## Evidence accounts
 
-The recommendation evidence manager is:
+The local evidence manager is:
 
 ```text
 evidence.manager@evidence.smart-schedule.test
 EvidenceManager123!
 ```
 
-The controlled recommendation week is `2026-07-13`, with a target open shift on `2026-07-15` from `15:00` to `21:00` for `BAR`.
+The controlled rota week is `2026-07-13`. It contains staff, shifts, leave and assignment-limit cases for repeatable manager testing.
 
 The local seed script prints the exact account names and domain it creates. Do not put local passwords or reset tokens into committed screenshots or Markdown.
 

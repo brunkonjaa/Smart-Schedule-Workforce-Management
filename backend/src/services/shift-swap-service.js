@@ -81,6 +81,7 @@ const createSwapRequest = async ({ requesterStaffProfileId, swapInput }) => {
     const assignmentResult = await client.query(
       `
         SELECT assignments.id, assignments.staff_profile_id, shifts.shift_date,
+               shifts.shift_date <= CURRENT_DATE AS is_past_or_today,
                shifts.status, shifts.required_role
         FROM shift_assignments assignments
         INNER JOIN shifts ON shifts.id = assignments.shift_id
@@ -93,7 +94,7 @@ const createSwapRequest = async ({ requesterStaffProfileId, swapInput }) => {
 
     if (!assignment) return { code: 'NOT_FOUND' };
     if (assignment.staff_profile_id !== requesterStaffProfileId) return { code: 'FORBIDDEN' };
-    if (assignment.shift_date <= new Date().toISOString().slice(0, 10)) return { code: 'PAST_SHIFT' };
+    if (assignment.is_past_or_today) return { code: 'PAST_SHIFT' };
     if (assignment.status !== 'OPEN') return { code: 'SHIFT_NOT_OPEN' };
 
     if (swapInput.targetStaffProfileId === requesterStaffProfileId) {

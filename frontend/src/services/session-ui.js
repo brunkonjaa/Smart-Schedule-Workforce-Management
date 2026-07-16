@@ -429,7 +429,11 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     uiHelpers.renderIntroMetrics([
       {
         label: 'Signed in as',
-        value: uiHelpers.formatRole(sessionUser.primaryRole || sessionUser.role),
+        value: uiHelpers.formatRole(
+          sessionUser.role === 'MANAGER'
+            ? sessionUser.role
+            : sessionUser.primaryRole || sessionUser.role
+        ),
         tone: 'accent'
       },
       {

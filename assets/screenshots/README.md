@@ -136,13 +136,13 @@ Examples:
 - `088` hosted manager rota week loaded
 - `089` hosted manager staff list loaded
 - `090` hosted staff rota read-only actions
-- `091` rota recommendation modal local
-- `092` rota recommendation excluded staff local
+- `091` historical local recommendation modal before the weekly rota flow replaced it
+- `092` historical local recommendation exclusions before the weekly rota flow replaced it
 - `093` local evidence check local database
-- `094` local evidence seed recommendation data
+- `094` local evidence seed output from the earlier recommendation checkpoint
 - `095` backend test menu full suite passing
 - `096` security access-control test suite passing
-- `097` recommendation test suite passing
+- `097` historical recommendation test suite before that route left the final scope
 - `098` dependency audit zero vulnerabilities
 - `099` rota manager desktop department-filtered view
 - `100` centered desktop login account access

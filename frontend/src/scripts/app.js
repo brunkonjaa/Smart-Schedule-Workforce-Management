@@ -19,6 +19,7 @@
   }
 
   const navElement = document.querySelector('.top-nav');
+  const brandMarkElement = document.querySelector('.brand-mark');
   const themeToggleElement = document.getElementById('theme-toggle');
   const userGreetingElement = document.getElementById('user-greeting');
   const pageIntroElement = document.getElementById('page-intro');
@@ -383,6 +384,18 @@
 
     const nextPage = link.getAttribute('href').replace('#', '');
     navigateToPage(nextPage);
+  });
+
+  brandMarkElement?.addEventListener('click', (event) => {
+    event.preventDefault();
+    const currentState = stateStore.get();
+    const homePage = currentState.role === 'guest' ? 'login' : 'overview';
+
+    if (currentState.page === homePage) {
+      return;
+    }
+
+    navigateToPage(homePage);
   });
 
   workspaceElement.addEventListener('click', (event) => {

@@ -22,7 +22,6 @@ The backend uses three access states: unauthenticated, `STAFF`, and `MANAGER`. T
 | `POST /api/v1/shifts` | Deny | Deny | Allow | Manager creates shift |
 | `PUT /api/v1/shifts/{id}` | Deny | Deny | Allow | Manager edits shift |
 | `DELETE /api/v1/shifts/{id}` | Deny | Deny | Allow | Manager deletes shift |
-| `GET /api/v1/shifts/{id}/recommendations` | Deny | Deny | Allow | Advisory manager-only result |
 | `POST /api/v1/assignments` | Deny | Deny | Allow | Manager assigns staff |
 | `PUT /api/v1/assignments/{id}` | Deny | Deny | Allow | Manager changes assignment |
 | `DELETE /api/v1/assignments/{id}` | Deny | Deny | Allow | Manager removes assignment |

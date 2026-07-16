@@ -36,6 +36,7 @@ describe('shift routes', () => {
   };
   const nextWeekStart = getMondayOffset(1);
   const nextShiftDate = getDateFromWeek(nextWeekStart, 4);
+  let createdShiftId;
 
   beforeAll(async () => {
     const managerPasswordHash = await bcrypt.hash(managerPassword, 10);
@@ -136,6 +137,7 @@ describe('shift routes', () => {
       });
 
     expect(response.status).toBe(201);
+    createdShiftId = response.body.shift.id;
     expect(response.body.shift).toEqual(
       expect.objectContaining({
         requiredRole: 'BAR',
@@ -205,20 +207,9 @@ describe('shift routes', () => {
   });
 
   test('updates shifts for managers', async () => {
-    const createdShift = await query(
-      `
-        SELECT id
-        FROM shifts
-        WHERE shift_date = $1
-          AND start_time = '14:00'
-        LIMIT 1
-      `,
-      [nextShiftDate]
-    );
-
     const agent = await loginAsManager();
     const response = await agent
-      .put(`/api/v1/shifts/${createdShift.rows[0].id}`)
+      .put(`/api/v1/shifts/${createdShiftId}`)
       .set(mutationHeader)
       .send({
         notes: 'Busy Friday service updated',
@@ -241,14 +232,14 @@ describe('shift routes', () => {
           AND action = 'SHIFT_UPDATED'
         LIMIT 1
       `,
-      [createdShift.rows[0].id]
+      [createdShiftId]
     );
     expect(auditLog.rowCount).toBe(1);
     expect(auditLog.rows[0]).toEqual(
       expect.objectContaining({
         action: 'SHIFT_UPDATED',
         actor_user_id: managerId,
-        entity_id: createdShift.rows[0].id,
+        entity_id: createdShiftId,
         entity_type: 'SHIFT'
       })
     );
@@ -257,26 +248,15 @@ describe('shift routes', () => {
   });
 
   test('deletes shifts for managers', async () => {
-    const createdShift = await query(
-      `
-        SELECT id
-        FROM shifts
-        WHERE shift_date = $1
-          AND start_time = '14:00'
-        LIMIT 1
-      `,
-      [nextShiftDate]
-    );
-
     const agent = await loginAsManager();
     const response = await agent
-      .delete(`/api/v1/shifts/${createdShift.rows[0].id}`)
+      .delete(`/api/v1/shifts/${createdShiftId}`)
       .set(mutationHeader);
 
     expect(response.status).toBe(204);
 
     const deletedShift = await query('SELECT id FROM shifts WHERE id = $1', [
-      createdShift.rows[0].id
+      createdShiftId
     ]);
     expect(deletedShift.rowCount).toBe(0);
 
@@ -288,7 +268,7 @@ describe('shift routes', () => {
           AND action = 'SHIFT_DELETED'
         LIMIT 1
       `,
-      [createdShift.rows[0].id]
+      [createdShiftId]
     );
     expect(auditLog.rowCount).toBe(1);
     expect(auditLog.rows[0]).toEqual(
@@ -296,7 +276,7 @@ describe('shift routes', () => {
         action: 'SHIFT_DELETED',
         actor_user_id: managerId,
         after_state: null,
-        entity_id: createdShift.rows[0].id,
+        entity_id: createdShiftId,
         entity_type: 'SHIFT'
       })
     );

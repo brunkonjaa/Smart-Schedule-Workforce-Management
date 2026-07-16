@@ -7,11 +7,11 @@ This plan describes the checks used for the current Smart Schedule workflow. The
 The current local migrated database run passes:
 
 ```text
-13 test suites passed
-84 tests passed
+12 test suites passed
+82 tests passed
 ```
 
-The suites cover authentication, staff, leave, shifts, assignments, rota, recommendation scoring/routes, password reset, shift swaps, rate limiting, middleware, and database configuration. The test database needs migrations `001` to `016` before the password-reset and shift-swap suites can run.
+The suites cover authentication, staff, leave, shifts, assignments, rota, password reset, shift swaps, rate limiting, middleware, and database configuration. The test database needs all current migrations before the full suite runs.
 
 Run it from `backend/`:
 
@@ -37,9 +37,8 @@ node -r dotenv/config node_modules/jest/bin/jest.js --runInBand
 7. assignment creation, duplicate protection, leave, role, inactive staff, overlap, touching shift, weekly shift, and weekly hour rules
 8. contract-hour warning output
 9. rota week, department, staff visibility, and manager action behavior
-10. recommendation eligibility, exclusions, scores, and route authorization
-11. password reset generic response, token expiry, single-use behavior, and manager request visibility
-12. shift swap creation, open/targeted requests, target acceptance, manager approval/rejection, ownership, and conflict checks
+10. password reset generic response, token expiry, single-use behavior, and manager request visibility
+11. shift swap creation, past-shift rejection, open/targeted requests, target acceptance, manager approval/rejection, ownership, and conflict checks
 
 ## Local database checks
 
@@ -60,7 +59,7 @@ The seed data has 24 Irish-named active staff across Bar, Floor, Kitchen, and Ki
 2. staff logs in and sees the full roster without manager edit actions
 3. staff submits time off and the manager approves or rejects it
 4. manager creates a shift and assigns a matching active staff member
-5. the rota shows leave markers, filled shifts, open shifts, and department tabs
+5. the rota shows leave markers, filled shifts, department tabs, and the manager next-week draft
 6. staff starts a future-shift swap, chooses a person or open request, and sees the shared request page
 7. the target accepts and the manager approves the swap
 8. forgot password creates a manager-visible request and a reset link in the configured email output
@@ -73,4 +72,4 @@ Screenshots belong under `assets/screenshots/tests/`, use one project-wide numbe
 
 ## Still to do
 
-Hosted UAT and final cross-browser evidence still need a focused pass. The audit records exist for shift and assignment changes, but there is no audit viewing screen to test yet.
+The four confirmed fixes passed focused local regression on 16 July 2026. The remaining work is final report and evidence alignment, followed by one hosted check after this checkpoint is committed and deployed.

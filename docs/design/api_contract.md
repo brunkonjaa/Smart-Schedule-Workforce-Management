@@ -190,8 +190,7 @@ That means:
 
 1. the route shapes here are a mix of current and next
 2. the repo already exposes the staff, leave, shift, assignment, swap, and rota read surface
-3. audit log records are written internally, but there is no audit read endpoint yet
-4. one selected open shift can now return a manager-only recommendation result before any assignment is saved
+3. manager audit records can be read through the protected audit-log route
 
 ## Staff Routes
 
@@ -309,78 +308,7 @@ Purpose:
 Delete a current or future shift. Manager only. Live now.
 
 Audit note:
-Shift create, update, and delete actions now write to `audit_logs`. There is no public audit route yet.
-
-### `GET /api/v1/shifts/{shiftId}/recommendations`
-
-Purpose:
-Rank possible staff for one selected open shift. Manager only. Live now.
-
-Current behavior:
-
-1. this route does not save an assignment
-2. it reuses the current assignment conflict rules before any scoring happens
-3. staff who fail a hard rule are returned under `excluded`
-4. only eligible staff are scored and returned under `recommendations`
-5. the result is advisory, because the assignment save route still rechecks everything later
-
-Current success `200`:
-
-```json
-{
-  "excluded": [
-    {
-      "name": "Aoife O'Sullivan",
-      "reason": {
-        "code": "ASSIGNMENT_LEAVE_CONFLICT",
-        "message": "This staff member has approved leave on this shift date."
-      },
-      "staffId": "uuid"
-    }
-  ],
-  "recommendations": [
-    {
-      "contractHours": 30,
-      "currentWeeklyHours": 22,
-      "name": "Cian Murphy",
-      "projectedWeeklyHours": 28,
-      "reasons": [
-        {
-          "code": "BELOW_CONTRACT_HOURS",
-          "message": "Currently below contracted weekly hours.",
-          "scoreChange": 20
-        }
-      ],
-      "role": "BAR",
-      "score": 130,
-      "staffId": "uuid",
-      "warnings": []
-    }
-  ],
-  "shift": {
-    "date": "2026-07-22",
-    "endTime": "22:00",
-    "id": "uuid",
-    "requiredRole": "BAR",
-    "startTime": "14:00"
-  }
-}
-```
-
-Current conflict cases:
-
-1. `404` unknown shift
-2. `409` shift not open
-3. `409` shift already assigned
-
-Current hard-rule codes used in recommendation exclusions:
-
-1. `STAFF_NOT_ACTIVE`
-2. `ASSIGNMENT_ROLE_CONFLICT`
-3. `ASSIGNMENT_LEAVE_CONFLICT`
-4. `ASSIGNMENT_OVERLAP_CONFLICT`
-5. `ASSIGNMENT_WEEKLY_SHIFT_LIMIT`
-6. `ASSIGNMENT_WEEKLY_HOURS_LIMIT`
+Shift create, update, and delete actions write to `audit_logs`. Managers can review the latest records through `GET /api/v1/audit-logs`.
 
 ## Assignment Route
 
@@ -521,7 +449,7 @@ Current behavior:
 2. department tabs use `BAR`, `FLOOR`, `KITCHEN`, and `OTHER`
 3. manager responses include shift notes and status for editing context
 4. staff responses omit manager-only shift note fields
-5. manager open-shift actions now include a recommendation path that reads `GET /api/v1/shifts/{shiftId}/recommendations`
+5. `Populate next week` builds a client-side draft from the current weekly pattern and saves only after manager approval
 6. state-changing rota actions still go through manager-only shift and assignment routes
 
 ## Security Rules For The Contract

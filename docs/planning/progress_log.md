@@ -27,6 +27,54 @@ Each entry should answer four practical things:
 3. what proves it
 4. what comes next
 
+## 2026-07-17
+
+### Snapshot
+
+- Phase: Final workflow cleanup and regression fixes
+- Sprint: Final project checks
+- Status: recommendation route removed, weekly rota flow kept, and local suite passing
+
+### What Changed
+
+1. I removed the one-shift recommendation route, service and focused tests. It was no longer part of the final rota flow.
+2. I kept `Populate next week` because the manager still controls the draft, checks it and decides whether anything gets saved.
+3. I fixed the retry state so `Try again` rebuilds the same target week instead of moving another week forward.
+4. Past shifts are now rejected when staff try to create a swap request.
+5. The rota and swap warning dialogs now keep keyboard focus inside the dialog, close with Escape and return focus to the action that opened them.
+6. I added the favicon links and made the Smart Schedule mark return signed-in users to Overview.
+7. The Swap Requests page now has a small demo workplace panel. It is clearly marked as a project example and opens Google Maps directions to the general Dublin city centre area.
+8. I updated the README, API contract, RBAC table, evidence workflow and test plan so they no longer describe the removed recommendation route as current work.
+
+### Why It Changed
+
+The recommendation feature started as a middle step between manual assignment and automatic scheduling, but it made the final project harder to explain beside `Populate next week`. The weekly draft is enough. It also matches the real manager workflow better because the manager prepares and approves the rota instead of asking the system to choose one person from one open shift.
+
+The smaller fixes came from the final button and workflow checks. They were not new project sections. They were things like a retry moving to the wrong week, a past swap still being accepted, keyboard focus escaping a dialog, and the missing browser icon.
+
+### Drawback Accepted
+
+1. The demo location is not a real premises. The card says this directly and the name and address can be replaced later.
+2. Removing the recommendation service reduces the backend test count from the earlier checkpoint. The remaining `82` tests cover the final workflow that is still in the app.
+3. The hosted app still needs one check after this commit is deployed.
+
+### Evidence
+
+1. `backend/src/routes/shifts.js`
+2. `backend/src/services/shift-swap-service.js`
+3. `backend/src/__tests__/shift-swap-routes.test.js`
+4. `frontend/src/services/rota-ui.js`
+5. `frontend/src/services/swap-requests-ui.js`
+6. `frontend/src/scripts/app.js`
+7. `frontend/public/index.html`
+8. `npm test` - `12` suites and `82` tests passed
+
+### Next Steps
+
+1. let Render deploy this checkpoint
+2. check the hosted manager and staff flows again
+3. align the final report and evidence references with the final build
+
 ## 2026-07-14 - Current documentation and workflow alignment
 
 ### What changed

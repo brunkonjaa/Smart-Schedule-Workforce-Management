@@ -27,14 +27,13 @@ The current build includes:
 13. contract-hour warnings when an assignment can still be saved but goes above the staff member's contract
 14. weekly rota tabs for Bar, Floor, Kitchen and Kitchen Porter
 15. a full manager rota and a read-only staff rota, with the manager actions kept inside the shift menu
-16. rule-based staff recommendations for one open shift
-17. password reset requests and single-use reset links sent through Brevo on the hosted app
-18. a manager password-request page that does not expose passwords or reset tokens
-19. future shift swaps with target acceptance followed by manager approval or rejection
-20. a manager audit-log page for the shift and assignment changes recorded by the backend
-21. serializable assignment transactions and a staff-week lock so two requests cannot quietly save conflicting assignment results at the same time
-22. installable PWA files for supported phone browsers
-23. demo seed data with 24 Irish-named staff, filled weekday shifts and twelve previous weeks of rota history
+16. password reset requests and single-use reset links sent through Brevo on the hosted app
+17. a manager password-request page that does not expose passwords or reset tokens
+18. future shift swaps with target acceptance, manager approval, and a clearly marked demo workplace directions link
+19. a manager audit-log page for the shift and assignment changes recorded by the backend
+20. serializable assignment transactions and a staff-week lock so two requests cannot quietly save conflicting assignment results at the same time
+21. installable PWA files for supported phone browsers
+22. demo seed data with 24 Irish-named staff, filled weekday shifts and twelve previous weeks of rota history
 
 Weekly availability submission was removed from the final workflow in migration `014_remove_weekly_availability.sql`. Staff should not have to fill in another weekly availability form just so the rota can be created. Approved leave, active status, role matching, shift overlap and weekly limits still stay in the assignment checks because those are the rules that stop an invalid rota being saved.
 
@@ -46,7 +45,7 @@ Nothing from this preview is saved straight away. The manager can check the sugg
 
 ## Current check
 
-The backend suite currently passes with `90` tests across `14` suites. The screenshot evidence log reaches `111`, including the hosted PWA prompt, staff swap page, manager overview and hosted manager rota.
+The backend suite currently passes with `82` tests across `12` suites. The screenshot evidence log reaches `111`, including the hosted PWA prompt, staff swap page, manager overview and hosted manager rota.
 
 The main code workflows are in place. Fresh hosted manager and staff UAT still needs a final pass, then the report and evidence references need to be checked against this version of the app. I have not described those as finished because the final UAT has not happened yet.
 
@@ -57,7 +56,7 @@ The backend is mounted under `/api/v1`:
 1. `/auth` for login, logout, current session, password change, password reset and passkeys
 2. `/staff` for manager staff management
 3. `/leave-requests` for time off
-4. `/shifts` for shift records and staff recommendations
+4. `/shifts` for manager shift records
 5. `/assignments` for manager assignment changes
 6. `/rota` for the weekly rota response
 7. `/shift-swaps` for staff swap requests and manager decisions
@@ -109,7 +108,7 @@ Run from `backend/`:
 npm test
 ```
 
-The current result is `14` passed suites and `90` passed tests. The test database needs the migrations through `019_remove_placeholder_staff.sql`, not only the older password-reset and swap migrations.
+The current result is `12` passed suites and `82` passed tests. The test database needs the migrations through `019_remove_placeholder_staff.sql`, not only the older password-reset and swap migrations.
 
 ## Main project files
 

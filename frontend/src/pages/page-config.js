@@ -29,8 +29,8 @@ window.SmartSchedule.pageConfig = {
       summary: 'Your work history, rota, time off, and swap requests.',
       context: 'The rota is the first place to check after sign in.',
       metrics: [
-        { label: 'Open shifts', value: '3', tone: 'accent' },
-        { label: 'Time off waiting', value: '2', tone: 'neutral' },
+        { label: 'Rota', value: 'Weekly', tone: 'accent' },
+        { label: 'Next week', value: 'Draft first', tone: 'neutral' },
         { label: 'Active staff', value: '12', tone: 'neutral' }
       ],
       blocks: [

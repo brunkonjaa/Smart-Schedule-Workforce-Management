@@ -4,6 +4,15 @@ window.SmartSchedule.swapRequestsUi = (function createSwapRequestsUi() {
   const apiClient = window.SmartSchedule.apiClient;
   const uiHelpers = window.SmartSchedule.liveUiHelpers;
 
+  const workplaceLocation = Object.freeze({
+    name: 'Demo workplace',
+    address: 'Dublin city centre, Dublin, Ireland'
+  });
+
+  const getDirectionsUrl = () => {
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(workplaceLocation.address)}`;
+  };
+
   const isActiveRender = (workspaceElement, renderToken) => {
     return workspaceElement.dataset.renderToken === renderToken;
   };
@@ -33,8 +42,23 @@ window.SmartSchedule.swapRequestsUi = (function createSwapRequestsUi() {
     document.getElementById('swap-eligibility-warning')?.remove();
   };
 
+  const getDialogFocusableElements = (dialog) => {
+    return Array.from(
+      dialog.querySelectorAll(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )
+    );
+  };
+
   const showEligibilityWarning = (request, onConfirm) => {
+    const returnFocusElement = document.activeElement;
     clearEligibilityWarning();
+    const closeWarning = () => {
+      clearEligibilityWarning();
+      if (returnFocusElement?.isConnected) {
+        returnFocusElement.focus();
+      }
+    };
     const backdrop = uiHelpers.createElement('div', {
       className: 'swap-eligibility-backdrop',
       attributes: { id: 'swap-eligibility-warning' }
@@ -45,7 +69,8 @@ window.SmartSchedule.swapRequestsUi = (function createSwapRequestsUi() {
         'aria-describedby': 'swap-eligibility-warning-copy',
         'aria-labelledby': 'swap-eligibility-warning-title',
         'aria-modal': 'true',
-        role: 'dialog'
+        role: 'dialog',
+        tabindex: '-1'
       }
     });
     dialog.appendChild(uiHelpers.createElement('h2', {
@@ -67,7 +92,7 @@ window.SmartSchedule.swapRequestsUi = (function createSwapRequestsUi() {
       text: 'Cancel',
       attributes: { type: 'button' }
     });
-    cancelButton.addEventListener('click', clearEligibilityWarning);
+    cancelButton.addEventListener('click', closeWarning);
     const confirmButton = uiHelpers.createElement('button', {
       className: 'action-button button-primary',
       text: 'Continue to manager review',
@@ -79,8 +104,31 @@ window.SmartSchedule.swapRequestsUi = (function createSwapRequestsUi() {
     });
     actions.append(cancelButton, confirmButton);
     dialog.appendChild(actions);
+    dialog.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeWarning();
+        return;
+      }
+
+      if (event.key !== 'Tab') {
+        return;
+      }
+
+      const focusableElements = getDialogFocusableElements(dialog);
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+      }
+    });
     backdrop.appendChild(dialog);
     document.body.appendChild(backdrop);
+    window.requestAnimationFrame(() => cancelButton.focus());
   };
 
   const renderRequestCard = (request, sessionUser, actions) => {
@@ -127,6 +175,52 @@ window.SmartSchedule.swapRequestsUi = (function createSwapRequestsUi() {
     return card;
   };
 
+  const renderLocationPanel = () => {
+    const panel = uiHelpers.createElement('aside', {
+      className: 'content-panel swap-location-panel',
+      attributes: { 'aria-labelledby': 'swap-location-title' }
+    });
+    panel.appendChild(uiHelpers.createPanelHeading(
+      'Workplace location',
+      'Open directions before travelling to a shift.'
+    ));
+    panel.querySelector('h3')?.setAttribute('id', 'swap-location-title');
+
+    const map = uiHelpers.createElement('div', {
+      className: 'swap-location-map',
+      attributes: { 'aria-hidden': 'true' }
+    });
+    const pin = uiHelpers.createElement('span', { className: 'swap-location-pin' });
+    pin.appendChild(uiHelpers.createElement('span', { className: 'swap-location-pin-dot' }));
+    map.appendChild(pin);
+    panel.appendChild(map);
+
+    const details = uiHelpers.createElement('div', { className: 'swap-location-details' });
+    details.appendChild(uiHelpers.createElement('span', {
+      className: 'status-tag status-tag--warning',
+      text: 'Project example'
+    }));
+    details.appendChild(uiHelpers.createElement('strong', { text: workplaceLocation.name }));
+    details.appendChild(uiHelpers.createElement('address', { text: workplaceLocation.address }));
+    details.appendChild(uiHelpers.createElement('p', {
+      className: 'panel-copy',
+      text: 'This is an example location for project testing. It can be replaced when a real premises is chosen.'
+    }));
+    panel.appendChild(details);
+
+    panel.appendChild(uiHelpers.createElement('a', {
+      className: 'action-button button-primary swap-location-link',
+      text: 'Get directions',
+      attributes: {
+        'aria-label': `Get directions to ${workplaceLocation.name} in Google Maps`,
+        href: getDirectionsUrl(),
+        rel: 'noopener noreferrer',
+        target: '_blank'
+      }
+    }));
+    return panel;
+  };
+
   const mount = async ({ page, workspaceElement, renderToken }) => {
     if (page.id !== 'swap-requests') return;
 
@@ -147,7 +241,9 @@ window.SmartSchedule.swapRequestsUi = (function createSwapRequestsUi() {
       const grid = uiHelpers.createElement('div', { className: 'workspace-grid workspace-grid--swap-requests' });
       const flashPanel = uiHelpers.renderFlash(flash);
       if (flashPanel) grid.appendChild(flashPanel);
-      grid.appendChild(uiHelpers.createStepsPanel(
+
+      const mainColumn = uiHelpers.createElement('div', { className: 'swap-requests-main-column' });
+      const guidePanel = uiHelpers.createStepsPanel(
         sessionUser?.role === 'MANAGER' ? 'How manager decisions work' : 'How swaps work',
         sessionUser?.role === 'MANAGER'
           ? 'A staff member must accept before the manager can approve the change.'
@@ -155,10 +251,11 @@ window.SmartSchedule.swapRequestsUi = (function createSwapRequestsUi() {
         sessionUser?.role === 'MANAGER'
           ? ['Check the shift and staff member.', 'Reject it if it cannot go ahead.', 'Approve it after a colleague accepts.']
           : ['Read the shift details.', 'Accept a request if you can work it.', 'The manager makes the final decision.'],
-        'content-panel--span-5'
-      ));
+        'swap-requests-guide'
+      );
+      mainColumn.appendChild(guidePanel);
 
-      const panel = uiHelpers.createElement('section', { className: 'content-panel content-panel--span-11 swap-requests-panel' });
+      const panel = uiHelpers.createElement('section', { className: 'content-panel swap-requests-panel' });
       panel.appendChild(uiHelpers.createPanelHeading(
         'Active swap requests',
         sessionUser?.role === 'MANAGER' ? 'All future requests waiting for staff or manager action.' : 'All future requests from the team.'
@@ -196,7 +293,8 @@ window.SmartSchedule.swapRequestsUi = (function createSwapRequestsUi() {
         requests.forEach((request) => list.appendChild(renderRequestCard(request, sessionUser, actions)));
       }
       panel.appendChild(list);
-      grid.appendChild(panel);
+      mainColumn.appendChild(panel);
+      grid.append(mainColumn, renderLocationPanel());
       workspaceElement.appendChild(grid);
     };
 

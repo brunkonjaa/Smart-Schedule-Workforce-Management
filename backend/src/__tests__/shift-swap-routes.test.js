@@ -16,6 +16,8 @@ describe('shift swap routes', () => {
   const targetProfileId = crypto.randomUUID();
   const shiftId = crypto.randomUUID();
   const assignmentId = crypto.randomUUID();
+  const pastShiftId = crypto.randomUUID();
+  const pastAssignmentId = crypto.randomUUID();
   const managerEmail = `swap-manager-${Date.now()}@example.com`;
   const requesterEmail = `swap-requester-${Date.now()}@example.com`;
   const targetEmail = `swap-target-${Date.now()}@example.com`;
@@ -26,6 +28,12 @@ describe('shift swap routes', () => {
     const date = new Date();
     const day = date.getUTCDay() || 7;
     date.setUTCDate(date.getUTCDate() - day + 8);
+    return date.toISOString().slice(0, 10);
+  };
+
+  const yesterday = () => {
+    const date = new Date();
+    date.setUTCDate(date.getUTCDate() - 1);
     return date.toISOString().slice(0, 10);
   };
 
@@ -54,20 +62,22 @@ describe('shift swap routes', () => {
     );
     await query(
       `INSERT INTO shifts (id, shift_date, start_time, end_time, required_role, status, notes, created_at, updated_at)
-       VALUES ($1, $2, '12:00', '20:00', 'BAR', 'OPEN', 'Swap route test', NOW(), NOW())`,
-      [shiftId, shiftDate]
+       VALUES ($1, $2, '12:00', '20:00', 'BAR', 'OPEN', 'Swap route test', NOW(), NOW()),
+              ($3, $4, '12:00', '20:00', 'BAR', 'OPEN', 'Past swap route test', NOW(), NOW())`,
+      [shiftId, shiftDate, pastShiftId, yesterday()]
     );
     await query(
       `INSERT INTO shift_assignments (id, shift_id, staff_profile_id, assigned_by_user_id, assigned_at, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, NOW(), NOW(), NOW())`,
-      [assignmentId, shiftId, requesterProfileId, managerId]
+       VALUES ($1, $2, $3, $4, NOW(), NOW(), NOW()),
+              ($5, $6, $3, $4, NOW(), NOW(), NOW())`,
+      [assignmentId, shiftId, requesterProfileId, managerId, pastAssignmentId, pastShiftId]
     );
   });
 
   afterAll(async () => {
-    await query('DELETE FROM shift_swap_requests WHERE assignment_id = $1', [assignmentId]);
-    await query('DELETE FROM shift_assignments WHERE id = $1', [assignmentId]);
-    await query('DELETE FROM shifts WHERE id = $1', [shiftId]);
+    await query('DELETE FROM shift_swap_requests WHERE assignment_id IN ($1, $2)', [assignmentId, pastAssignmentId]);
+    await query('DELETE FROM shift_assignments WHERE id IN ($1, $2)', [assignmentId, pastAssignmentId]);
+    await query('DELETE FROM shifts WHERE id IN ($1, $2)', [shiftId, pastShiftId]);
     await query('DELETE FROM staff_profiles WHERE id IN ($1, $2, $3)', [managerProfileId, requesterProfileId, targetProfileId]);
     await query('DELETE FROM users WHERE id IN ($1, $2, $3)', [managerId, requesterId, targetId]);
     await closePool();
@@ -105,5 +115,20 @@ describe('shift swap routes', () => {
 
     const assignment = await query('SELECT staff_profile_id FROM shift_assignments WHERE id = $1', [assignmentId]);
     expect(assignment.rows[0].staff_profile_id).toBe(targetProfileId);
+  });
+
+  test('rejects swap requests for shifts that have already passed', async () => {
+    const requester = await login(requesterEmail);
+    const response = await requester
+      .post('/api/v1/shift-swaps')
+      .set(mutationHeader)
+      .send({
+        assignmentId: pastAssignmentId,
+        targetStaffProfileId: targetProfileId,
+        reason: 'This shift is already over'
+      });
+
+    expect(response.status).toBe(409);
+    expect(response.body.message).toBe('Only future shifts can be swapped.');
   });
 });

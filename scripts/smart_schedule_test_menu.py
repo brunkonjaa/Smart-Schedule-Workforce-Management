@@ -51,11 +51,6 @@ WORKFLOW_TESTS = [
     "src/__tests__/rota-routes.test.js",
 ]
 
-RECOMMENDATION_TESTS = [
-    "src/__tests__/shift-recommendation-service.test.js",
-    "src/__tests__/shift-recommendation-routes.test.js",
-]
-
 SERVER_PROCESS: subprocess.Popen[str] | None = None
 SERVER_LOG_HANDLE = None
 
@@ -472,10 +467,6 @@ def run_workflow_tests() -> int:
     return run_selected_tests("Core workflow route Jest tests", WORKFLOW_TESTS)
 
 
-def run_recommendation_tests() -> int:
-    return run_selected_tests("Recommendation Jest tests", RECOMMENDATION_TESTS)
-
-
 def run_dependency_audit() -> int:
     return run_command(
         "npm dependency security audit",
@@ -564,14 +555,14 @@ def open_local_app() -> None:
     print("Opening http://localhost:3000 in the default browser.")
     webbrowser.open("http://localhost:3000")
     print()
-    print("Manual recommendation check:")
+    print("Manual weekly rota check:")
     print("1. Log in with the local evidence manager account from docs/testing/local_evidence_workflow.md.")
     print("2. Go to Weekly rota.")
-    print("3. Use week 2026-07-13 to 2026-07-19.")
-    print("4. Use the BAR tab.")
-    print("5. Open the 2026-07-15 shift 15:00 - 21:00.")
-    print("6. Click Recommend staff.")
-    print("7. Check ranked recommendation cards and excluded staff.")
+    print("3. Check the department tabs and week controls.")
+    print("4. Click Populate next week.")
+    print("5. Review the draft before saving anything.")
+    print("6. Click Try again and confirm the same next week is rebuilt.")
+    print("7. Use Dismiss if this is only a test.")
 
 
 def capture_terminal_screenshot(label: str = "terminal-result") -> Path | None:
@@ -692,14 +683,13 @@ def print_menu() -> None:
     print("6. Run full backend Jest suite")
     print("7. Run security and access-control Jest tests")
     print("8. Run core workflow route Jest tests")
-    print("9. Run recommendation Jest tests")
-    print("10. Run npm dependency security audit")
-    print("11. Start local evidence server and check health")
-    print("12. Check http://localhost:3000/health")
-    print("13. Stop server started by this menu")
-    print("14. Open local app and print manual recommendation steps")
-    print("15. Take terminal screenshot now")
-    print("16. Show latest local test logs/screenshots")
+    print("9. Run npm dependency security audit")
+    print("10. Start local evidence server and check health")
+    print("11. Check http://localhost:3000/health")
+    print("12. Stop server started by this menu")
+    print("13. Open local app and print manual rota steps")
+    print("14. Take terminal screenshot now")
+    print("15. Show latest local test logs/screenshots")
     print("0. Exit")
 
 
@@ -715,14 +705,13 @@ def main() -> int:
         "6": run_full_backend_tests,
         "7": run_security_tests,
         "8": run_workflow_tests,
-        "9": run_recommendation_tests,
-        "10": run_dependency_audit,
-        "11": start_local_server,
-        "12": check_health,
-        "13": stop_local_server,
-        "14": open_local_app,
-        "15": capture_terminal_screenshot,
-        "16": show_latest_logs,
+        "9": run_dependency_audit,
+        "10": start_local_server,
+        "11": check_health,
+        "12": stop_local_server,
+        "13": open_local_app,
+        "14": capture_terminal_screenshot,
+        "15": show_latest_logs,
     }
 
     while True:

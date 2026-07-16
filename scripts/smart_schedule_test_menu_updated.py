@@ -68,11 +68,6 @@ WORKFLOW_TESTS = [
     "src/__tests__/rota-routes.test.js",
 ]
 
-RECOMMENDATION_TESTS = [
-    "src/__tests__/shift-recommendation-service.test.js",
-    "src/__tests__/shift-recommendation-routes.test.js",
-]
-
 SERVER_PROCESS: subprocess.Popen[str] | None = None
 SERVER_LOG_HANDLE: Any = None
 CURRENT_RUN_ID: str | None = None
@@ -862,14 +857,6 @@ def run_workflow_tests(*, prompt_screenshot: bool = True) -> int:
     )
 
 
-def run_recommendation_tests(*, prompt_screenshot: bool = True) -> int:
-    return run_selected_tests(
-        "Recommendation Jest tests",
-        RECOMMENDATION_TESTS,
-        prompt_screenshot=prompt_screenshot,
-    )
-
-
 def run_dependency_audit(*, prompt_screenshot: bool = True) -> int:
     return run_command(
         "npm dependency security audit",
@@ -1516,10 +1503,6 @@ def run_complete_evidence_suite() -> int:
             lambda: run_workflow_tests(prompt_screenshot=False),
         ),
         (
-            "Recommendation Jest group",
-            lambda: run_recommendation_tests(prompt_screenshot=False),
-        ),
-        (
             "Dependency audit",
             lambda: run_dependency_audit(prompt_screenshot=False),
         ),
@@ -1572,14 +1555,14 @@ def open_local_app() -> int:
     print("Opening http://localhost:3000 in the default browser.")
     webbrowser.open(LOCAL_BASE_URL)
     print()
-    print("Manual recommendation check:")
+    print("Manual weekly rota check:")
     print("1. Log in with the local evidence manager account.")
     print("2. Go to Weekly rota.")
-    print("3. Use week 2026-07-13 to 2026-07-19.")
-    print("4. Use the BAR tab.")
-    print("5. Open the 2026-07-15 shift 15:00 - 21:00.")
-    print("6. Click Recommend staff.")
-    print("7. Check ranked recommendation cards and excluded staff.")
+    print("3. Check the department tabs and week controls.")
+    print("4. Click Populate next week.")
+    print("5. Review the draft before saving anything.")
+    print("6. Click Try again and confirm the same next week is rebuilt.")
+    print("7. Use Dismiss if this is only a test.")
     record_result(
         "Open local application",
         "PASS",
@@ -1738,18 +1721,17 @@ def print_menu() -> None:
     print("6. Run full backend Jest suite")
     print("7. Run security and access-control Jest tests")
     print("8. Run core workflow route Jest tests")
-    print("9. Run recommendation Jest tests")
-    print("10. Run npm dependency security audit")
-    print("11. Validate the complete npm dependency tree")
-    print("12. Start local evidence server and check health")
-    print("13. Check http://localhost:3000/health")
-    print("14. Run direct local HTTP security probes")
-    print("15. Run local concurrent performance test")
-    print("16. Run complete automated evidence suite")
-    print("17. Stop server started by this menu")
-    print("18. Open local app and print manual recommendation steps")
-    print("19. Take terminal screenshot now")
-    print("20. Show latest raw logs and curated evidence")
+    print("9. Run npm dependency security audit")
+    print("10. Validate the complete npm dependency tree")
+    print("11. Start local evidence server and check health")
+    print("12. Check http://localhost:3000/health")
+    print("13. Run direct local HTTP security probes")
+    print("14. Run local concurrent performance test")
+    print("15. Run complete automated evidence suite")
+    print("16. Stop server started by this menu")
+    print("17. Open local app and print manual rota steps")
+    print("18. Take terminal screenshot now")
+    print("19. Show latest raw logs and curated evidence")
     print("0. Exit")
 
 
@@ -1766,18 +1748,17 @@ def main() -> int:
         "6": ("full-jest-suite", run_full_backend_tests),
         "7": ("security-jest-suite", run_security_tests),
         "8": ("workflow-jest-suite", run_workflow_tests),
-        "9": ("recommendation-jest-suite", run_recommendation_tests),
-        "10": ("dependency-audit", run_dependency_audit),
-        "11": ("dependency-tree", run_dependency_tree_check),
-        "12": ("start-local-server", start_local_server),
-        "13": ("health-check", check_health),
-        "14": ("direct-security-probes", run_direct_security_probes),
-        "15": ("performance-test", run_performance_test),
-        "16": ("complete-evidence-suite", run_complete_evidence_suite),
-        "17": ("stop-local-server", stop_local_server),
-        "18": ("open-local-app", open_local_app),
-        "19": ("terminal-screenshot", capture_terminal_screenshot),
-        "20": ("show-evidence", show_latest_logs),
+        "9": ("dependency-audit", run_dependency_audit),
+        "10": ("dependency-tree", run_dependency_tree_check),
+        "11": ("start-local-server", start_local_server),
+        "12": ("health-check", check_health),
+        "13": ("direct-security-probes", run_direct_security_probes),
+        "14": ("performance-test", run_performance_test),
+        "15": ("complete-evidence-suite", run_complete_evidence_suite),
+        "16": ("stop-local-server", stop_local_server),
+        "17": ("open-local-app", open_local_app),
+        "18": ("terminal-screenshot", capture_terminal_screenshot),
+        "19": ("show-evidence", show_latest_logs),
     }
 
     while True:

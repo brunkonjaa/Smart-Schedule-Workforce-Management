@@ -31,7 +31,6 @@ const {
   withTransaction
 } = require('../config/db');
 const { getMigrationStatus, runPendingMigrations } = require('../database/migrations');
-const { getShiftRecommendations } = require('../services/shift-recommendation-service');
 
 const evidenceDomain = 'evidence.smart-schedule.test';
 const evidenceManagerEmail = `evidence.manager@${evidenceDomain}`;
@@ -297,7 +296,7 @@ const deleteExistingEvidenceData = async (client) => {
   const staffIds = staffResult.rows.map((row) => row.id);
 
   const shiftResult = await client.query(
-    "SELECT id FROM shifts WHERE notes LIKE 'Evidence recommendation%'"
+    "SELECT id FROM shifts WHERE notes LIKE 'Evidence rota%' OR notes LIKE 'Evidence recommendation%'"
   );
   const shiftIds = shiftResult.rows.map((row) => row.id);
 
@@ -313,14 +312,20 @@ const deleteExistingEvidenceData = async (client) => {
     );
   }
 
-  if (staffIds.length > 0) {
+  if (staffIds.length > 0 || userIds.length > 0) {
     await client.query(
-      'DELETE FROM leave_requests WHERE staff_profile_id = ANY($1::uuid[])',
-      [staffIds]
+      `
+        DELETE FROM leave_requests
+        WHERE staff_profile_id = ANY($1::uuid[])
+           OR decided_by_user_id = ANY($2::uuid[])
+      `,
+      [staffIds, userIds]
     );
   }
 
-  await client.query("DELETE FROM shifts WHERE notes LIKE 'Evidence recommendation%'");
+  await client.query(
+    "DELETE FROM shifts WHERE notes LIKE 'Evidence rota%' OR notes LIKE 'Evidence recommendation%'"
+  );
 
   if (userIds.length > 0) {
     await client.query('DELETE FROM staff_profiles WHERE user_id = ANY($1::uuid[])', [
@@ -330,7 +335,7 @@ const deleteExistingEvidenceData = async (client) => {
   }
 };
 
-const seedRecommendationEvidence = async () => {
+const seedRotaEvidence = async () => {
   await assertMigrationsApplied();
 
   const managerUserId = crypto.randomUUID();
@@ -453,7 +458,7 @@ const seedRecommendationEvidence = async () => {
           created_at: new Date(),
           end_time: evidenceTargetShiftTime.endTime,
           id: shiftIds.target,
-          notes: 'Evidence recommendation target shift',
+          notes: 'Evidence rota target shift',
           required_role: 'BAR',
           shift_date: evidenceTargetShiftDate,
           start_time: evidenceTargetShiftTime.startTime,
@@ -464,7 +469,7 @@ const seedRecommendationEvidence = async () => {
           created_at: new Date(),
           end_time: '17:00',
           id: shiftIds.aaronHours,
-          notes: 'Evidence recommendation Aaron current hours',
+          notes: 'Evidence rota Aaron current hours',
           required_role: 'BAR',
           shift_date: '2026-07-13',
           start_time: '09:00',
@@ -475,7 +480,7 @@ const seedRecommendationEvidence = async () => {
           created_at: new Date(),
           end_time: '18:00',
           id: shiftIds.heavyHoursOne,
-          notes: 'Evidence recommendation heavy current hours one',
+          notes: 'Evidence rota heavy current hours one',
           required_role: 'BAR',
           shift_date: '2026-07-13',
           start_time: '08:00',
@@ -486,7 +491,7 @@ const seedRecommendationEvidence = async () => {
           created_at: new Date(),
           end_time: '16:00',
           id: shiftIds.heavyHoursTwo,
-          notes: 'Evidence recommendation heavy current hours two',
+          notes: 'Evidence rota heavy current hours two',
           required_role: 'BAR',
           shift_date: '2026-07-16',
           start_time: '08:00',
@@ -497,7 +502,7 @@ const seedRecommendationEvidence = async () => {
           created_at: new Date(),
           end_time: '16:00',
           id: shiftIds.overContractHours,
-          notes: 'Evidence recommendation over contract hours',
+          notes: 'Evidence rota over contract hours',
           required_role: 'BAR',
           shift_date: '2026-07-17',
           start_time: '08:00',
@@ -508,7 +513,7 @@ const seedRecommendationEvidence = async () => {
           created_at: new Date(),
           end_time: '23:00',
           id: shiftIds.overlapExisting,
-          notes: 'Evidence recommendation overlap existing shift',
+          notes: 'Evidence rota overlap existing shift',
           required_role: 'BAR',
           shift_date: evidenceTargetShiftDate,
           start_time: '18:00',
@@ -519,7 +524,7 @@ const seedRecommendationEvidence = async () => {
           created_at: new Date(),
           end_time: '15:00',
           id: shiftIds.touchingExisting,
-          notes: 'Evidence recommendation touching existing shift',
+          notes: 'Evidence rota touching existing shift',
           required_role: 'BAR',
           shift_date: evidenceTargetShiftDate,
           start_time: '09:00',
@@ -530,7 +535,7 @@ const seedRecommendationEvidence = async () => {
           created_at: new Date(),
           end_time: '17:00',
           id: shiftIds.zoeHours,
-          notes: 'Evidence recommendation Zoe current hours',
+          notes: 'Evidence rota Zoe current hours',
           required_role: 'BAR',
           shift_date: '2026-07-14',
           start_time: '09:00',
@@ -561,8 +566,8 @@ const seedRecommendationEvidence = async () => {
           decided_at: new Date(),
           decided_by_user_id: managerUserId,
           end_date: evidenceTargetShiftDate,
-          manager_comment: 'Approved for local recommendation evidence',
-          reason: 'Local recommendation evidence leave',
+          manager_comment: 'Approved for local rota evidence',
+          reason: 'Local rota evidence leave',
           staff_profile_id: staffByKey.get('leave').id,
           start_date: evidenceTargetShiftDate,
           status: 'APPROVED',
@@ -643,9 +648,7 @@ const seedRecommendationEvidence = async () => {
     );
   });
 
-  const recommendation = await getShiftRecommendations(shiftIds.target);
-
-  console.log('Local recommendation evidence data seeded.');
+  console.log('Local rota evidence data seeded.');
   console.log(`Manager login: ${evidenceManagerEmail}`);
   console.log(`Manager password: ${evidenceManagerPassword}`);
   console.log(`Week start: ${evidenceWeekStart}`);
@@ -653,12 +656,7 @@ const seedRecommendationEvidence = async () => {
     `Target shift: ${evidenceTargetShiftDate} ${evidenceTargetShiftTime.startTime}-${evidenceTargetShiftTime.endTime} BAR`
   );
   console.log(`Target shift id: ${shiftIds.target}`);
-  console.log(
-    `Recommendations: ${recommendation.recommendations.map((item) => item.name).join(', ')}`
-  );
-  console.log(
-    `Excluded: ${recommendation.excluded.map((item) => `${item.name} (${item.reason.code})`).join(', ')}`
-  );
+  console.log(`Evidence staff records: ${staffSeeds.length}`);
 };
 
 const run = async () => {
@@ -678,21 +676,21 @@ const run = async () => {
     return;
   }
 
-  if (command === 'seed-recommendation') {
+  if (command === 'seed-rota') {
     await checkConnection();
-    await seedRecommendationEvidence();
+    await seedRotaEvidence();
     return;
   }
 
   if (command === 'all') {
     await checkConnection();
     await runMigrations();
-    await seedRecommendationEvidence();
+    await seedRotaEvidence();
     return;
   }
 
   throw new Error(
-    `Unknown local evidence command "${command}". Use check, migrate, seed-recommendation, or all.`
+    `Unknown local evidence command "${command}". Use check, migrate, seed-rota, or all.`
   );
 };
 

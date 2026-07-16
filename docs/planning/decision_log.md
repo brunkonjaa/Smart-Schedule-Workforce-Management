@@ -412,3 +412,20 @@ The seed data is for local demonstration and still needs to be kept separate fro
 
 Status:
 Active
+
+### D-19 Keep The Weekly Draft And Remove One-Shift Recommendations
+
+Problem:
+The project had two different ideas beside the normal manual rota. One recommended staff for one open shift, while `Populate next week` prepared a full draft for manager review. Keeping both made the final workflow harder to explain and test.
+
+Selected option:
+Keep `Populate next week` and remove the separate recommendation route, service, modal and tests.
+
+Reason for selection:
+The weekly draft fits how the manager uses Smart Schedule. The manager starts from the current rota, prepares the next week, checks the result and approves it. It does not pretend the rota is published automatically.
+
+Drawback accepted:
+There is no separate ranked list for one open shift now. The manager uses the rota actions and the normal assignment checks instead.
+
+Status:
+Active

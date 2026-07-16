@@ -102,4 +102,4 @@ These are the current MVP requirements. They describe the workflows now in the r
 
 ## Deferred work
 
-The following are not acceptance criteria for this MVP: full automatic scheduling, payroll, POS integration, native mobile app, multi-branch support, reports, and an audit viewing page. Audit writes already exist for shift and assignment changes, but the screen is still outside the current build.
+The following are not acceptance criteria for this MVP: full automatic scheduling, payroll, POS integration, native mobile app, multi-branch support, and wider reports. The current manager audit page is limited to the shift and assignment records already written by the backend.

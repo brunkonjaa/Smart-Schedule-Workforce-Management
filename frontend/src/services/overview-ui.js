@@ -163,7 +163,7 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
     return section;
   };
 
-  const createManagerSummarySection = (weekStart, openShifts) => {
+  const createManagerSummarySection = (weekStart) => {
     const section = uiHelpers.createElement('section', {
       className: 'content-panel overview-manager-summary-card'
     });
@@ -171,14 +171,14 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
     section.appendChild(uiHelpers.createElement('h2', { text: 'Weekly rota overview' }));
     section.appendChild(uiHelpers.createElement('p', {
       className: 'intro-summary',
-      text: `Week starting ${formatDate(weekStart)}. Check requests first, then open the rota to fill any gaps.`
+      text: `Week starting ${formatDate(weekStart)}. Check requests first, then review this week or prepare the next rota.`
     }));
 
     const summaryGrid = uiHelpers.createElement('div', { className: 'overview-manager-summary-grid' });
     const startBlock = uiHelpers.createElement('div', { className: 'overview-manager-summary-block' });
     startBlock.appendChild(uiHelpers.createElement('h3', { text: 'Start here' }));
     const steps = uiHelpers.createElement('ol', { className: 'step-list' });
-    ['Check time off, password, and swap requests.', 'Open the rota to change the week or fill open shifts.'].forEach((text, index) => {
+    ['Check time off, password, and swap requests.', 'Open the rota to review this week or use Populate next week.'].forEach((text, index) => {
       const item = uiHelpers.createElement('li', { className: 'step-item' });
       item.appendChild(uiHelpers.createElement('span', { className: 'step-marker', text: String(index + 1) }));
       item.appendChild(uiHelpers.createElement('span', { text }));
@@ -188,21 +188,11 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
     summaryGrid.appendChild(startBlock);
 
     const openBlock = uiHelpers.createElement('div', { className: 'overview-manager-summary-block' });
-    openBlock.appendChild(uiHelpers.createElement('h3', { text: 'Open shifts this week' }));
-    if (openShifts.length === 0) {
-      openBlock.appendChild(uiHelpers.createElement('p', {
-        className: 'panel-copy',
-        text: 'No open shifts found for this week.'
-      }));
-    } else {
-      const list = uiHelpers.createElement('ul', { className: 'detail-list' });
-      openShifts.slice(0, 4).forEach((shift) => {
-        list.appendChild(uiHelpers.createElement('li', {
-          text: `${formatDate(shift.shiftDate)} ${shift.startTime.slice(0, 5)}-${shift.endTime.slice(0, 5)} needs ${uiHelpers.formatRole(shift.requiredRole)}`
-        }));
-      });
-      openBlock.appendChild(list);
-    }
+    openBlock.appendChild(uiHelpers.createElement('h3', { text: 'Weekly rota' }));
+    openBlock.appendChild(uiHelpers.createElement('p', {
+      className: 'panel-copy',
+      text: 'The rota keeps the full team week together. Populate next week creates a draft for review before anything is saved.'
+    }));
     const actions = uiHelpers.createElement('div', { className: 'actions-row' });
     actions.appendChild(createButton('Open rota', 'rota', 'ghost'));
     openBlock.appendChild(actions);
@@ -238,25 +228,20 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
   };
 
   const loadManagerDashboard = async (weekStart) => {
-    const [staffResult, leaveResult, shiftResult, passwordResult, swapResult] = await Promise.all([
+    const [staffResult, leaveResult, passwordResult, swapResult] = await Promise.all([
       apiClient.get('/api/v1/staff?status=ALL'),
       apiClient.get('/api/v1/leave-requests?status=ALL'),
-      apiClient.get(`/api/v1/shifts?weekStart=${weekStart}`),
       apiClient.get('/api/v1/auth/password-reset/requests'),
       apiClient.get('/api/v1/shift-swaps')
     ]);
 
     const activeStaff = staffResult.staff.filter((staff) => staff.isActive);
     const pendingLeave = leaveResult.leaveRequests.filter((request) => request.status === 'PENDING');
-    const openShifts = shiftResult.shifts.filter((shift) => shift.status === 'OPEN');
-
     return {
       activeStaff,
-      openShifts,
       pendingLeave,
       passwordResetRequests: passwordResult.requests,
       recentLeave: pendingLeave.slice(0, 4),
-      shifts: shiftResult.shifts,
       swapRequests: swapResult.requests
     };
   };
@@ -282,12 +267,12 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
 
     uiHelpers.renderIntroMetrics([
       { label: 'Time off waiting', value: String(dashboard.pendingLeave.length), tone: 'accent' },
-      { label: 'Open shifts', value: String(dashboard.openShifts.length), tone: 'neutral' },
+      { label: 'Active staff', value: String(dashboard.activeStaff.length), tone: 'neutral' },
       { label: 'Password requests', value: String(dashboard.passwordResetRequests.length), tone: 'neutral' }
     ]);
 
     const grid = uiHelpers.createElement('div', { className: 'workspace-grid workspace-grid--manager-overview' });
-    grid.appendChild(createManagerSummarySection(weekStart, dashboard.openShifts));
+    grid.appendChild(createManagerSummarySection(weekStart));
     const sideColumn = uiHelpers.createElement('div', { className: 'manager-overview-side-column' });
     sideColumn.appendChild(createDashboardPanel(
         'Password Requests',

@@ -19,9 +19,11 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       draft: null,
       draftLoading: false,
       draftSaving: false,
+      draftSourceWeekStart: null,
       flash: null,
       loading: true,
       modal: null,
+      pendingFocusKey: null,
       rota: null,
       selectedDay: null,
       sessionUser: null,
@@ -47,6 +49,23 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
 
   const clearModalHost = () => {
     document.getElementById(modalHostId)?.remove();
+  };
+
+  const getFocusableElements = (container) => {
+    return Array.from(
+      container.querySelectorAll(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )
+    ).filter((element) => !element.hidden && element.getAttribute('aria-hidden') !== 'true');
+  };
+
+  const getEntryFocusKey = (row, day, item) => {
+    return [
+      day.date,
+      row.staffProfileId || row.staffName,
+      item.kind,
+      item.cell?.assignmentId || item.cell?.shiftId || item.label
+    ].join('|');
   };
 
   const addDays = (dateValue, offsetDays) => {
@@ -728,49 +747,6 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     return tabs;
   };
 
-  const renderOpenShiftStrip = (state, actions, selectedDayOnly = false) => {
-    if (state.sessionUser?.role !== 'MANAGER') {
-      return null;
-    }
-
-    const items = getOpenShiftItems(state).filter((item) => {
-      return !selectedDayOnly || item.day.date === selectedDayOnly;
-    });
-
-    if (items.length === 0) {
-      return null;
-    }
-
-    const section = uiHelpers.createElement('section', {
-      className: 'rota-open-strip'
-    });
-    const heading = uiHelpers.createElement('div', { className: 'rota-open-heading' });
-    heading.appendChild(uiHelpers.createElement('strong', { text: 'Open shifts' }));
-    section.appendChild(heading);
-
-    const list = uiHelpers.createElement('div', { className: 'rota-open-list' });
-    items.forEach((item) => {
-      const row = uiHelpers.createElement('div', { className: 'rota-open-item' });
-      const copy = uiHelpers.createElement('div', { className: 'rota-open-copy' });
-      copy.appendChild(
-        uiHelpers.createElement('strong', {
-          text: `${item.day.label} ${formatDate(item.day.date)}`
-        })
-      );
-      copy.appendChild(uiHelpers.createElement('span', { text: item.label }));
-      row.appendChild(copy);
-      row.appendChild(
-        createMenuButton('Open shift options', () => {
-          actions.openEntryContext(item);
-        })
-      );
-      list.appendChild(row);
-    });
-    section.appendChild(list);
-
-    return section;
-  };
-
   const renderCellEntry = (state, row, day, item, actions) => {
     const entry = uiHelpers.createElement('div', {
       className: `rota-entry rota-entry--${item.kind}`
@@ -786,11 +762,13 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
 
     if (shouldShowMarker) {
       if (canOpenMenu) {
+        const focusKey = getEntryFocusKey(row, day, item);
         const markerButton = uiHelpers.createElement('button', {
           className: 'rota-required-marker rota-required-marker--button',
           text: '*',
           attributes: {
             'aria-label': 'Open rota options',
+            'data-rota-focus-key': focusKey,
             type: 'button'
           }
         });
@@ -801,6 +779,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
             day,
             kind: item.kind,
             label: item.label,
+            returnFocusKey: focusKey,
             row
           });
         });
@@ -1023,20 +1002,34 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
   };
 
   const createModalShell = (title, state, actions) => {
+    const titleId = `rota-modal-title-${state.modal.type}`;
+    const closeModal = () => {
+      state.pendingFocusKey = state.modal?.returnFocusKey || null;
+      state.modal = null;
+      actions.render();
+    };
     const backdrop = uiHelpers.createElement('div', { className: 'rota-sheet-backdrop' });
-    const panel = uiHelpers.createElement('section', { className: 'rota-modal-panel' });
+    const panel = uiHelpers.createElement('section', {
+      className: 'rota-modal-panel',
+      attributes: {
+        'aria-labelledby': titleId,
+        'aria-modal': 'true',
+        role: 'dialog',
+        tabindex: '-1'
+      }
+    });
     const header = uiHelpers.createElement('div', { className: 'rota-sheet-header' });
-    header.appendChild(uiHelpers.createElement('strong', { text: title }));
+    header.appendChild(uiHelpers.createElement('h2', {
+      text: title,
+      attributes: { id: titleId }
+    }));
 
     const cancelButton = uiHelpers.createElement('button', {
       className: 'rota-sheet-close',
       text: 'Cancel',
       attributes: { type: 'button' }
     });
-    cancelButton.addEventListener('click', () => {
-      state.modal = null;
-      actions.render();
-    });
+    cancelButton.addEventListener('click', closeModal);
     header.appendChild(cancelButton);
 
     panel.appendChild(header);
@@ -1048,11 +1041,39 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
         return;
       }
 
-      state.modal = null;
-      actions.render();
+      closeModal();
     });
 
-    return { backdrop, body };
+    panel.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeModal();
+        return;
+      }
+
+      if (event.key !== 'Tab') {
+        return;
+      }
+
+      const focusableElements = getFocusableElements(panel);
+      if (focusableElements.length === 0) {
+        event.preventDefault();
+        panel.focus();
+        return;
+      }
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+      }
+    });
+
+    return { backdrop, body, panel };
   };
 
   const renderModalError = (body, error) => {
@@ -1234,6 +1255,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       attributes: { type: 'button' }
     });
     cancelButton.addEventListener('click', () => {
+      state.pendingFocusKey = state.modal?.returnFocusKey || null;
       state.modal = null;
       actions.render();
     });
@@ -1307,6 +1329,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       attributes: { type: 'button' }
     });
     cancelButton.addEventListener('click', () => {
+      state.pendingFocusKey = state.modal?.returnFocusKey || null;
       state.modal = null;
       actions.render();
     });
@@ -1485,6 +1508,21 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       if (modal) {
         modal.id = modalHostId;
         document.body.appendChild(modal);
+        window.requestAnimationFrame(() => {
+          const panel = modal.querySelector('[role="dialog"]');
+          const body = panel?.querySelector('.rota-modal-body');
+          const firstBodyControl = body ? getFocusableElements(body)[0] : null;
+          (firstBodyControl || panel)?.focus();
+        });
+      } else if (state.pendingFocusKey) {
+        const focusKey = state.pendingFocusKey;
+        state.pendingFocusKey = null;
+        window.requestAnimationFrame(() => {
+          const trigger = Array.from(
+            document.querySelectorAll('[data-rota-focus-key]')
+          ).find((element) => element.dataset.rotaFocusKey === focusKey);
+          trigger?.focus();
+        });
       }
     };
 
@@ -1577,15 +1615,17 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     const dismissDraft = () => {
       state.draft = null;
       state.draftSaving = false;
+      state.draftSourceWeekStart = null;
       state.weekStart = uiHelpers.getCurrentWeekStart();
       loadRota();
     };
 
     const generateDraft = async () => {
+      const sourceWeekStart = state.draftSourceWeekStart || state.weekStart;
+      state.draftSourceWeekStart = sourceWeekStart;
       state.draftLoading = true;
       state.draft = null;
       state.draftSaving = false;
-      const sourceWeekStart = state.weekStart;
       state.weekStart = sourceWeekStart;
       state.selectedDay = null;
       render();
@@ -1598,6 +1638,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
         await loadStaff();
         state.draft = buildDraftRota(state, shiftTemplates);
       } catch (error) {
+        state.weekStart = sourceWeekStart;
         const feedback = uiHelpers.getErrorFeedback(error, 'Could not prepare next week.');
         setFlash(state, 'error', feedback.text, feedback.details);
       }
@@ -1635,6 +1676,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
         }
         state.draft = null;
         state.draftSaving = false;
+        state.draftSourceWeekStart = null;
         await loadRota({
           details: [],
           text: `${savedCount} next-week assignment${savedCount === 1 ? '' : 's'} approved and saved.`,
@@ -1656,6 +1698,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
         state.modal = {
           context,
           error: null,
+          returnFocusKey: context.returnFocusKey,
           type: 'manager-menu'
         };
         render();
@@ -1670,6 +1713,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
 
       state.modal = {
         context,
+        returnFocusKey: context.returnFocusKey,
         type: 'staff-menu'
       };
       render();
@@ -1678,6 +1722,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     const openStaffSwapModal = (context) => {
       state.modal = {
         context,
+        returnFocusKey: state.modal?.returnFocusKey || context.returnFocusKey,
         type: 'staff-swap'
       };
       render();
@@ -1689,6 +1734,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
         context,
         endTime: defaultTimes.endTime,
         error: null,
+        returnFocusKey: state.modal?.returnFocusKey || context.returnFocusKey,
         staffName: staffMember.fullName,
         staffProfileId: staffMember.id,
         startTime: defaultTimes.startTime,
@@ -1702,6 +1748,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
         context,
         endTime: context.cell?.endTime || '17:00',
         error: null,
+        returnFocusKey: state.modal?.returnFocusKey || context.returnFocusKey,
         startTime: context.cell?.startTime || '09:00',
         type: 'manager-edit'
       };
