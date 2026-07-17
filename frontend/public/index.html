@@ -32,6 +32,10 @@
 
         <div class="header-actions">
           <span class="user-greeting" id="user-greeting" hidden></span>
+          <button class="chat-launcher" id="chat-launcher" type="button" hidden aria-label="Open NodyChat" aria-expanded="false">
+            <span class="chat-launcher-label">NodyChat</span>
+            <span class="chat-launcher-badge" id="chat-launcher-badge" hidden></span>
+          </button>
           <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle theme">
             <span class="theme-toggle-label">Dark mode</span>
           </button>
@@ -57,6 +61,7 @@
     <script src="../src/pages/page-config.js"></script>
     <script src="../src/services/preview-state.js"></script>
     <script src="../src/services/api-client.js"></script>
+    <script src="../src/services/chat-ui.js"></script>
     <script src="../src/services/live-ui-helpers.js"></script>
     <script src="../src/services/overview-ui.js"></script>
     <script src="../src/services/audit-logs-ui.js"></script>

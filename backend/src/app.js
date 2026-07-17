@@ -16,6 +16,7 @@ const assignmentRoutes = require('./routes/assignments');
 const rotaRoutes = require('./routes/rota');
 const shiftSwapRoutes = require('./routes/shift-swaps');
 const auditLogRoutes = require('./routes/audit-logs');
+const chatRoutes = require('./routes/chat');
 
 const frontendPublicDirectory = path.resolve(__dirname, '../../frontend/public');
 const frontendSourceDirectory = path.resolve(__dirname, '../../frontend/src');
@@ -59,6 +60,7 @@ app.use('/api/v1/assignments', assignmentRoutes);
 app.use('/api/v1/rota', rotaRoutes);
 app.use('/api/v1/shift-swaps', shiftSwapRoutes);
 app.use('/api/v1/audit-logs', auditLogRoutes);
+app.use('/api/v1/chat', chatRoutes);
 app.use(express.static(frontendPublicDirectory));
 
 app.get('/health', healthRateLimiter, async (request, response) => {

@@ -12,6 +12,7 @@
   const shiftsUi = shell.shiftsUi;
   const assignmentsUi = shell.assignmentsUi;
   const rotaUi = shell.rotaUi;
+  const chatUi = shell.chatUi;
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
   if ('scrollRestoration' in window.history) {
@@ -242,6 +243,10 @@
         renderToken,
         workspaceElement
       });
+    }
+
+    if (chatUi) {
+      await chatUi.sync();
     }
   }
 

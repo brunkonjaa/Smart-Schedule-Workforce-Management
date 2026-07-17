@@ -29,7 +29,8 @@
     "express-rate-limit": "^8.5.2",
     "express-session": "^1.18.1",
     "helmet": "^8.2.0",
-    "pg": "^8.13.1"
+    "pg": "^8.13.1",
+    "ws": "^8.21.1"
   },
   "devDependencies": {
     "jest": "^29.7.0",
