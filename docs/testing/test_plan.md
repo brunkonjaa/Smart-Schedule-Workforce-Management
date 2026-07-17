@@ -8,7 +8,7 @@ The current local migrated database run passes:
 
 ```text
 12 test suites passed
-82 tests passed
+87 tests passed across 13 suites in 43.998 seconds on 17 July 2026. This current working-tree result includes five NodyChat route/read-state tests added after the frozen `a12490f885146d77475faf6f7308b3133305e1b7` checkpoint.
 ```
 
 The suites cover authentication, staff, leave, shifts, assignments, rota, password reset, shift swaps, rate limiting, middleware, and database configuration. The test database needs all current migrations before the full suite runs.

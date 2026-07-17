@@ -157,6 +157,24 @@ Examples:
 - `109` hosted staff swap requests desktop
 - `110` hosted manager overview desktop
 - `111` hosted manager rota desktop
+- `112` NodyChat workplace room opened
+- `113` NodyChat unread count and jump-to-latest control
+- `114` NodyChat latest messages opened
+- `115` NodyChat new-message notification
+- `116` local chat migration applied
+- `117` Render shell access free-tier limit
+- `118` Render backend root directory
+- `119` Render build command including migration
+- `120` current local weekly rota
+- `121` current local manager overview
+- `122` current local staff-management layout
+- `123` current local manager Time Off layout
+- `124` current local manager Swap Requests layout
+- `125` staff schedule history
+- `126` staff Time Off request
+- `127` swap request awaiting manager decision
+- `128` swap approval blocked by role conflict
+- `129` rejected swap result
 
 ## Practical Reminder
 

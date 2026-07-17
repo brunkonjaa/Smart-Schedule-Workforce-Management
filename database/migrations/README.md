@@ -23,6 +23,9 @@ The migrations in this folder are ordered PostgreSQL changes. Do not renumber an
 17. `017_add_bruno_demo_profile.sql`
 18. `018_create_user_passkeys_schema.sql`
 19. `019_remove_placeholder_staff.sql`
+20. `020_create_chat_messages_schema.sql`
+21. `021_create_chat_read_states_schema.sql`
+22. `022_create_private_chat_conversations.sql` - adds `WORKPLACE` and `DIRECT` conversations, participants, conversation links on messages, and per-user/per-conversation read state
 
 ## Running them
 

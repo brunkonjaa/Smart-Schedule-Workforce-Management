@@ -46,6 +46,13 @@ router.post('/messages', requireAuth, requireMutationProtection, asyncHandler(as
   }
 
   const result = await createChatMessage(request.authUser.id, request.body);
+  if (!result.message) {
+    return response.status(403).json({
+      details: result.details,
+      error: 'Forbidden',
+      message: result.details[0] || 'You cannot send messages to this conversation.'
+    });
+  }
   return response.status(201).json({ message: result.message });
 }));
 

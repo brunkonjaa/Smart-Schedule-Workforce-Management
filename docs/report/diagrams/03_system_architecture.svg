@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="1050" viewBox="0 0 1700 1050">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#16343B"/></marker></defs>
+<rect width="1700" height="1050" fill="#FFFFFF"/>
+<text x="60" y="66" font-family="Arial" font-size="34" font-weight="700" fill="#16343B">Smart Schedule deployed system architecture</text>
+<line x1="60" y1="82" x2="1640" y2="82" stroke="#2F8792" stroke-width="4"/>
+<rect x="70" y="150" width="360" height="245" rx="12" fill="#E7F0DC" stroke="#3C7A57" stroke-width="3"/>
+<path d="M 70 192 H 430" stroke="#3C7A57" stroke-width="2"/>
+<text x="84" y="179" text-anchor="start" font-family="Arial" font-size="22" font-weight="700" fill="#16343B"><tspan x="84" dy="0">Client / installable web shell</tspan></text>
+<text x="84" y="220" text-anchor="start" font-family="Arial" font-size="21" font-weight="400" fill="#16343B"><tspan x="84" dy="0">HTML, CSS and plain JavaScript</tspan><tspan x="84" dy="27">Responsive rota and workflow pages</tspan><tspan x="84" dy="27">Web manifest + service worker</tspan><tspan x="84" dy="27">Fetch for REST; WebSocket for NodyChat</tspan></text>
+<rect x="670" y="130" width="420" height="170" rx="12" fill="#DCEFF0" stroke="#0F6070" stroke-width="3"/>
+<path d="M 670 172 H 1090" stroke="#0F6070" stroke-width="2"/>
+<text x="684" y="159" text-anchor="start" font-family="Arial" font-size="23" font-weight="700" fill="#16343B"><tspan x="684" dy="0">Render Node.js process</tspan></text>
+<text x="684" y="201" text-anchor="start" font-family="Arial" font-size="22" font-weight="400" fill="#16343B"><tspan x="684" dy="0">Express 4 application</tspan><tspan x="684" dy="28">ws WebSocket server</tspan><tspan x="684" dy="28">Same process and session middleware</tspan></text>
+<rect x="565" y="390" width="630" height="360" rx="12" fill="#FFFFFF" stroke="#0F6070" stroke-width="3"/>
+<path d="M 565 432 H 1195" stroke="#0F6070" stroke-width="2"/>
+<text x="579" y="419" text-anchor="start" font-family="Arial" font-size="22" font-weight="700" fill="#16343B"><tspan x="579" dy="0">Application layers</tspan></text>
+<text x="579" y="460" text-anchor="start" font-family="Arial" font-size="21" font-weight="400" fill="#16343B"><tspan x="579" dy="0">Helmet CSP and secure headers</tspan><tspan x="579" dy="27">Rate limits + 32 KB JSON limit</tspan><tspan x="579" dy="27">Server-side sessions and mutation header</tspan><tspan x="579" dy="27">Authentication, RBAC and ownership middleware</tspan><tspan x="579" dy="27">Routes -&gt; validation -&gt; services</tspan><tspan x="579" dy="27">Transactions for assignment/swap decisions</tspan><tspan x="579" dy="27">Consistent JSON errors and audit/security records</tspan></text>
+<rect x="1320" y="175" width="310" height="220" rx="12" fill="#F4E4C1" stroke="#B9862E" stroke-width="3"/>
+<path d="M 1320 217 H 1630" stroke="#B9862E" stroke-width="2"/>
+<text x="1334" y="204" text-anchor="start" font-family="Arial" font-size="22" font-weight="700" fill="#16343B"><tspan x="1334" dy="0">Neon PostgreSQL</tspan></text>
+<text x="1334" y="245" text-anchor="start" font-family="Arial" font-size="21" font-weight="400" fill="#16343B"><tspan x="1334" dy="0">Migrations 001-022</tspan><tspan x="1334" dy="27">Business and chat records</tspan><tspan x="1334" dy="27">connect-pg-simple sessions</tspan><tspan x="1334" dy="27">TLS with certificate checks</tspan></text>
+<rect x="1320" y="560" width="310" height="170" rx="12" fill="#F7E6E4" stroke="#A7443E" stroke-width="3"/>
+<path d="M 1320 602 H 1630" stroke="#A7443E" stroke-width="2"/>
+<text x="1334" y="589" text-anchor="start" font-family="Arial" font-size="21" font-weight="700" fill="#16343B"><tspan x="1334" dy="0">Brevo email</tspan></text>
+<text x="1334" y="629" text-anchor="start" font-family="Arial" font-size="20" font-weight="400" fill="#16343B"><tspan x="1334" dy="0">Password-reset delivery only</tspan><tspan x="1334" dy="26">Token hash remains in PostgreSQL</tspan><tspan x="1334" dy="26">Generic response avoids account lookup</tspan></text>
+<rect x="70" y="620" width="360" height="195" rx="12" fill="#F7E6E4" stroke="#A7443E" stroke-width="3"/>
+<path d="M 70 662 H 430" stroke="#A7443E" stroke-width="2"/>
+<text x="84" y="649" text-anchor="start" font-family="Arial" font-size="21" font-weight="700" fill="#16343B"><tspan x="84" dy="0">Browser security boundary</tspan></text>
+<text x="84" y="689" text-anchor="start" font-family="Arial" font-size="20" font-weight="400" fill="#16343B"><tspan x="84" dy="0">HTTPS in production</tspan><tspan x="84" dy="26">HttpOnly + SameSite session cookie</tspan><tspan x="84" dy="26">No credentials in localStorage</tspan><tspan x="84" dy="26">Cross-origin WebSocket rejected</tspan></text>
+<line x1="430" y1="245" x2="670" y2="220" stroke="#16343B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="550.0" y="224.5" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#16343B"><tspan x="550.0" dy="0">HTTPS REST</tspan></text>
+<line x1="430" y1="310" x2="670" y2="275" stroke="#16343B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="550.0" y="284.5" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#16343B"><tspan x="550.0" dy="0">WSS NodyChat</tspan></text>
+<line x1="880" y1="300" x2="880" y2="390" stroke="#16343B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="880.0" y="337.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#16343B"><tspan x="880.0" dy="0">middleware</tspan></text>
+<line x1="1195" y1="520" x2="1320" y2="305" stroke="#16343B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="1257.5" y="404.5" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#16343B"><tspan x="1257.5" dy="0">parameterised SQL</tspan></text>
+<line x1="1195" y1="620" x2="1320" y2="645" stroke="#16343B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="1257.5" y="624.5" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#16343B"><tspan x="1257.5" dy="0">reset email</tspan></text>
+<line x1="250" y1="620" x2="670" y2="520" stroke="#16343B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="460.0" y="562.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#16343B"><tspan x="460.0" dy="0">session cookie</tspan></text>
+<text x="1220" y="120" text-anchor="start" font-family="Arial" font-size="19" font-weight="700" fill="#62777C"><tspan x="1220" dy="0">Hosting boundary</tspan></text>
+<line x1="1220" y1="130" x2="1660" y2="130" stroke="#62777C" stroke-width="2" stroke-dasharray="8 7"/>
+<text x="850" y="950" text-anchor="middle" font-family="Arial" font-size="20" font-weight="400" fill="#62777C"><tspan x="850" dy="0">No separate scheduling engine or message broker is claimed. Rota population is a manager-reviewed browser preview and saves through the existing shift/assignment APIs.</tspan></text>
+</svg>

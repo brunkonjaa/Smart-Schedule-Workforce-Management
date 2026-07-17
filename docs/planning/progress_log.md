@@ -29,6 +29,29 @@ Each entry should answer four practical things:
 
 ## 2026-07-17
 
+### NodyChat and evidence checkpoint
+
+- Checked commit: `a12490f885146d77475faf6f7308b3133305e1b7`
+- Commit date: 17 July 2026, 02:59:56 +01:00
+- Frozen-checkpoint regression result: 12 suites and 82 tests passed in 46.573 seconds
+- Current report-audit working tree: 13 suites and 87 tests passed in 43.998 seconds
+
+### What Changed
+
+1. Migrations `020` and `021` added stored chat messages and per-user read state. Migration `022` then added `WORKPLACE` and `DIRECT` conversations, participant rows and per-conversation read state.
+2. The chat service now creates one direct conversation per pair of active users, lists only conversations the signed-in user participates in and sends live messages only to connected participants.
+3. Screenshot evidence `112` to `116` records the workplace room, unread/jump behaviour, new-message notice and local chat migration. Evidence `117` to `129` records the Render free-tier limit and the current rota, manager, staff, Time Off and swap layouts.
+
+### Limit Accepted
+
+The report-audit pass added `chat-routes.test.js`. It covers workplace membership for later-created users, direct conversation reuse, per-conversation unread clearing, outsider send/read denial and self-conversation rejection. A dedicated WebSocket harness is still missing, especially for re-authorising a socket after a session expires or an account is deactivated.
+
+### Next Step
+
+Align the report, README, requirements, API contract, RBAC matrix, migration list and screenshot log with this checkpoint before any final documentation commit.
+
+## 2026-07-17 - Earlier final workflow cleanup
+
 ### Snapshot
 
 - Phase: Final workflow cleanup and regression fixes
@@ -55,7 +78,7 @@ The smaller fixes came from the final button and workflow checks. They were not 
 ### Drawback Accepted
 
 1. The demo location is not a real premises. The card says this directly and the name and address can be replaced later.
-2. Removing the recommendation service reduces the backend test count from the earlier checkpoint. The remaining `82` tests cover the final workflow that is still in the app.
+2. Removing the recommendation service reduced the backend test count at the frozen checkpoint. The current report-audit tree has `87` tests because five focused NodyChat route/read-state tests were added.
 3. The hosted app still needs one check after this commit is deployed.
 
 ### Evidence
@@ -67,7 +90,7 @@ The smaller fixes came from the final button and workflow checks. They were not 
 5. `frontend/src/services/swap-requests-ui.js`
 6. `frontend/src/scripts/app.js`
 7. `frontend/public/index.html`
-8. `npm test` - `12` suites and `82` tests passed
+8. `npm test` - `13` suites and `87` tests passed in 43.998 seconds on 17 July 2026
 
 ### Next Steps
 

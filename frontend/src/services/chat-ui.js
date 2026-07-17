@@ -246,6 +246,7 @@ window.SmartSchedule.chatUi = (function createChatUi() {
     panel.hidden = true;
     panel.classList.add('is-collapsed');
     updateLauncher();
+    launcher?.focus();
   };
 
   const openPanel = () => {
@@ -264,6 +265,12 @@ window.SmartSchedule.chatUi = (function createChatUi() {
     panel.hidden = true;
     panel.classList.add('is-collapsed');
     panel.setAttribute('aria-label', 'NodyChat workplace chat');
+    panel.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closePanel();
+      }
+    });
     const header = document.createElement('div');
     header.className = 'chat-panel-header';
     const heading = document.createElement('div');
@@ -311,6 +318,9 @@ window.SmartSchedule.chatUi = (function createChatUi() {
 
     messageList = document.createElement('div');
     messageList.className = 'chat-message-list';
+    messageList.setAttribute('aria-live', 'polite');
+    messageList.setAttribute('aria-relevant', 'additions');
+    messageList.setAttribute('role', 'log');
     messageList.addEventListener('scroll', updateLatestButton, { passive: true });
     panel.appendChild(messageList);
 
@@ -327,6 +337,8 @@ window.SmartSchedule.chatUi = (function createChatUi() {
 
     status = document.createElement('p');
     status.className = 'chat-status';
+    status.setAttribute('aria-live', 'polite');
+    status.setAttribute('role', 'status');
     panel.appendChild(status);
 
     form = document.createElement('form');

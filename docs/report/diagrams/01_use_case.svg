@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1080" viewBox="0 0 1600 1080">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#16343B"/></marker></defs>
+<rect width="1600" height="1080" fill="#FFFFFF"/>
+<text x="60" y="66" font-family="Arial" font-size="34" font-weight="700" fill="#16343B">Smart Schedule final use-case diagram</text>
+<line x1="60" y1="82" x2="1540" y2="82" stroke="#2F8792" stroke-width="4"/>
+<rect x="360" y="115" width="1160" height="875" rx="20" fill="#F8FBFB" stroke="#2F8792" stroke-width="4"/>
+<text x="940" y="152" text-anchor="middle" font-family="Arial" font-size="24" font-weight="700" fill="#16343B"><tspan x="940" dy="0">Smart Schedule</tspan></text>
+<circle cx="150" cy="280" r="26" fill="#DCEFF0" stroke="#0F6070" stroke-width="4"/>
+<line x1="150" y1="306" x2="150" y2="385" stroke="#0F6070" stroke-width="4"/>
+<line x1="102" y1="335" x2="198" y2="335" stroke="#0F6070" stroke-width="4"/>
+<line x1="150" y1="385" x2="108" y2="440" stroke="#0F6070" stroke-width="4"/>
+<line x1="150" y1="385" x2="192" y2="440" stroke="#0F6070" stroke-width="4"/>
+<text x="150" y="480" text-anchor="middle" font-family="Arial" font-size="23" font-weight="700" fill="#16343B"><tspan x="150" dy="0">Manager</tspan></text>
+<circle cx="150" cy="705" r="26" fill="#DCEFF0" stroke="#0F6070" stroke-width="4"/>
+<line x1="150" y1="731" x2="150" y2="810" stroke="#0F6070" stroke-width="4"/>
+<line x1="102" y1="760" x2="198" y2="760" stroke="#0F6070" stroke-width="4"/>
+<line x1="150" y1="810" x2="108" y2="865" stroke="#0F6070" stroke-width="4"/>
+<line x1="150" y1="810" x2="192" y2="865" stroke="#0F6070" stroke-width="4"/>
+<text x="150" y="905" text-anchor="middle" font-family="Arial" font-size="23" font-weight="700" fill="#16343B"><tspan x="150" dy="0">Staff</tspan></text>
+<rect x="420" y="210" width="290" height="105" rx="52.5" fill="#FFFFFF" stroke="#0F6070" stroke-width="3"/>
+<text x="565.0" y="258.5" text-anchor="middle" font-family="Arial" font-size="19" font-weight="600" fill="#16343B"><tspan x="565.0" dy="0">Manage staff and</tspan><tspan x="565.0" dy="22">account state</tspan></text>
+<line x1="245" y1="355" x2="420" y2="262" stroke="#62777C" stroke-width="2.5" stroke-dasharray="9 7" marker-end="url(#arrow)"/>
+<rect x="760" y="210" width="290" height="105" rx="52.5" fill="#FFFFFF" stroke="#0F6070" stroke-width="3"/>
+<text x="905.0" y="258.5" text-anchor="middle" font-family="Arial" font-size="19" font-weight="600" fill="#16343B"><tspan x="905.0" dy="0">Create and edit</tspan><tspan x="905.0" dy="22">weekly shifts</tspan></text>
+<line x1="245" y1="355" x2="760" y2="262" stroke="#62777C" stroke-width="2.5" stroke-dasharray="9 7" marker-end="url(#arrow)"/>
+<rect x="1100" y="210" width="290" height="105" rx="52.5" fill="#FFFFFF" stroke="#0F6070" stroke-width="3"/>
+<text x="1245.0" y="258.5" text-anchor="middle" font-family="Arial" font-size="19" font-weight="600" fill="#16343B"><tspan x="1245.0" dy="0">Assign staff and</tspan><tspan x="1245.0" dy="22">review warnings</tspan></text>
+<line x1="245" y1="355" x2="1100" y2="262" stroke="#62777C" stroke-width="2.5" stroke-dasharray="9 7" marker-end="url(#arrow)"/>
+<rect x="420" y="385" width="290" height="105" rx="52.5" fill="#FFFFFF" stroke="#0F6070" stroke-width="3"/>
+<text x="565.0" y="433.5" text-anchor="middle" font-family="Arial" font-size="19" font-weight="600" fill="#16343B"><tspan x="565.0" dy="0">Decide leave and</tspan><tspan x="565.0" dy="22">password requests</tspan></text>
+<line x1="245" y1="355" x2="420" y2="437" stroke="#62777C" stroke-width="2.5" stroke-dasharray="9 7" marker-end="url(#arrow)"/>
+<rect x="760" y="385" width="290" height="105" rx="52.5" fill="#FFFFFF" stroke="#0F6070" stroke-width="3"/>
+<text x="905.0" y="433.5" text-anchor="middle" font-family="Arial" font-size="19" font-weight="600" fill="#16343B"><tspan x="905.0" dy="0">Preview and approve</tspan><tspan x="905.0" dy="22">next-week rota</tspan></text>
+<line x1="245" y1="355" x2="760" y2="437" stroke="#62777C" stroke-width="2.5" stroke-dasharray="9 7" marker-end="url(#arrow)"/>
+<rect x="1100" y="385" width="290" height="105" rx="52.5" fill="#FFFFFF" stroke="#0F6070" stroke-width="3"/>
+<text x="1245.0" y="433.5" text-anchor="middle" font-family="Arial" font-size="19" font-weight="600" fill="#16343B"><tspan x="1245.0" dy="0">Approve or reject</tspan><tspan x="1245.0" dy="22">accepted swaps</tspan></text>
+<line x1="245" y1="355" x2="1100" y2="437" stroke="#62777C" stroke-width="2.5" stroke-dasharray="9 7" marker-end="url(#arrow)"/>
+<rect x="760" y="560" width="290" height="105" rx="52.5" fill="#FFFFFF" stroke="#0F6070" stroke-width="3"/>
+<text x="905.0" y="619.5" text-anchor="middle" font-family="Arial" font-size="19" font-weight="600" fill="#16343B"><tspan x="905.0" dy="0">Review audit records</tspan></text>
+<line x1="245" y1="355" x2="760" y2="612" stroke="#62777C" stroke-width="2.5" stroke-dasharray="9 7" marker-end="url(#arrow)"/>
+<rect x="420" y="700" width="290" height="105" rx="52.5" fill="#F4E4C1" stroke="#0F6070" stroke-width="3"/>
+<text x="565.0" y="748.5" text-anchor="middle" font-family="Arial" font-size="19" font-weight="600" fill="#16343B"><tspan x="565.0" dy="0">Request and track</tspan><tspan x="565.0" dy="22">time off</tspan></text>
+<line x1="245" y1="780" x2="420" y2="752" stroke="#62777C" stroke-width="2.5" stroke-dasharray="9 7" marker-end="url(#arrow)"/>
+<rect x="760" y="700" width="290" height="105" rx="52.5" fill="#F4E4C1" stroke="#0F6070" stroke-width="3"/>
+<text x="905.0" y="748.5" text-anchor="middle" font-family="Arial" font-size="19" font-weight="600" fill="#16343B"><tspan x="905.0" dy="0">Request or accept</tspan><tspan x="905.0" dy="22">shift swaps</tspan></text>
+<line x1="245" y1="780" x2="760" y2="752" stroke="#62777C" stroke-width="2.5" stroke-dasharray="9 7" marker-end="url(#arrow)"/>
+<rect x="1100" y="700" width="290" height="105" rx="52.5" fill="#F4E4C1" stroke="#0F6070" stroke-width="3"/>
+<text x="1245.0" y="748.5" text-anchor="middle" font-family="Arial" font-size="19" font-weight="600" fill="#16343B"><tspan x="1245.0" dy="0">View previous-week</tspan><tspan x="1245.0" dy="22">work history</tspan></text>
+<line x1="245" y1="780" x2="1100" y2="752" stroke="#62777C" stroke-width="2.5" stroke-dasharray="9 7" marker-end="url(#arrow)"/>
+<rect x="420" y="860" width="290" height="105" rx="52.5" fill="#E7F0DC" stroke="#3C7A57" stroke-width="3"/>
+<text x="565.0" y="908.5" text-anchor="middle" font-family="Arial" font-size="19" font-weight="600" fill="#16343B"><tspan x="565.0" dy="0">Login, logout and</tspan><tspan x="565.0" dy="22">recover access</tspan></text>
+<line x1="245" y1="355" x2="420" y2="912" stroke="#62777C" stroke-width="2.5" stroke-dasharray="9 7" marker-end="url(#arrow)"/>
+<line x1="245" y1="780" x2="420" y2="912" stroke="#62777C" stroke-width="2.5" stroke-dasharray="9 7" marker-end="url(#arrow)"/>
+<rect x="760" y="860" width="290" height="105" rx="52.5" fill="#E7F0DC" stroke="#3C7A57" stroke-width="3"/>
+<text x="905.0" y="908.5" text-anchor="middle" font-family="Arial" font-size="19" font-weight="600" fill="#16343B"><tspan x="905.0" dy="0">View full weekly rota</tspan><tspan x="905.0" dy="22">and own assignments</tspan></text>
+<line x1="245" y1="355" x2="760" y2="912" stroke="#62777C" stroke-width="2.5" stroke-dasharray="9 7" marker-end="url(#arrow)"/>
+<line x1="245" y1="780" x2="760" y2="912" stroke="#62777C" stroke-width="2.5" stroke-dasharray="9 7" marker-end="url(#arrow)"/>
+<rect x="1100" y="860" width="290" height="105" rx="52.5" fill="#E7F0DC" stroke="#3C7A57" stroke-width="3"/>
+<text x="1245.0" y="908.5" text-anchor="middle" font-family="Arial" font-size="19" font-weight="600" fill="#16343B"><tspan x="1245.0" dy="0">Use NodyChat workplace</tspan><tspan x="1245.0" dy="22">and direct messages</tspan></text>
+<line x1="245" y1="355" x2="1100" y2="912" stroke="#62777C" stroke-width="2.5" stroke-dasharray="9 7" marker-end="url(#arrow)"/>
+<line x1="245" y1="780" x2="1100" y2="912" stroke="#62777C" stroke-width="2.5" stroke-dasharray="9 7" marker-end="url(#arrow)"/>
+<text x="800" y="1035" text-anchor="middle" font-family="Arial" font-size="18" font-weight="400" fill="#62777C"><tspan x="800" dy="0">Product scope is frozen: payroll, SMS/push, POS integration and automatic rota publication are outside this diagram.</tspan></text>
+</svg>

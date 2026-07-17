@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="1750" viewBox="0 0 2400 1750">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#16343B"/></marker></defs>
+<rect width="2400" height="1750" fill="#FFFFFF"/>
+<text x="60" y="66" font-family="Arial" font-size="34" font-weight="700" fill="#16343B">Smart Schedule live database ERD after migration 022</text>
+<line x1="60" y1="82" x2="2340" y2="82" stroke="#2F8792" stroke-width="4"/>
+<text x="60" y="115" text-anchor="start" font-family="Arial" font-size="20" font-weight="400" fill="#62777C"><tspan x="60" dy="0">PK = primary key, FK = foreign key, UQ = unique. user_sessions is created by the PostgreSQL session store.</tspan></text>
+<rect x="60" y="150" width="350" height="266" rx="12" fill="#FFFFFF" stroke="#0F6070" stroke-width="3"/>
+<path d="M 60 194 H 410" stroke="#0F6070" stroke-width="2"/>
+<text x="74" y="179" text-anchor="start" font-family="Arial" font-size="18" font-weight="700" fill="#16343B"><tspan x="74" dy="0">users</tspan></text>
+<text x="74" y="218" text-anchor="start" font-family="Arial" font-size="17" font-weight="400" fill="#16343B"><tspan x="74" dy="0">PK id UUID</tspan><tspan x="74" dy="23">UQ email varchar</tspan><tspan x="74" dy="23">password_hash varchar</tspan><tspan x="74" dy="23">role MANAGER|STAFF</tspan><tspan x="74" dy="23">is_active boolean</tspan><tspan x="74" dy="23">must_change_password boolean</tspan><tspan x="74" dy="23">password_changed_at timestamptz?</tspan><tspan x="74" dy="23">created_at, updated_at</tspan></text>
+<rect x="440" y="150" width="350" height="266" rx="12" fill="#FFFFFF" stroke="#0F6070" stroke-width="3"/>
+<path d="M 440 194 H 790" stroke="#0F6070" stroke-width="2"/>
+<text x="454" y="179" text-anchor="start" font-family="Arial" font-size="18" font-weight="700" fill="#16343B"><tspan x="454" dy="0">staff_profiles</tspan></text>
+<text x="454" y="218" text-anchor="start" font-family="Arial" font-size="17" font-weight="400" fill="#16343B"><tspan x="454" dy="0">PK id UUID</tspan><tspan x="454" dy="23">FK/UQ user_id -&gt; users</tspan><tspan x="454" dy="23">full_name varchar</tspan><tspan x="454" dy="23">primary_role varchar</tspan><tspan x="454" dy="23">contract_hours numeric</tspan><tspan x="454" dy="23">phone_number varchar?</tspan><tspan x="454" dy="23">is_active boolean</tspan><tspan x="454" dy="23">created_at, updated_at</tspan></text>
+<rect x="820" y="150" width="350" height="241" rx="12" fill="#FFFFFF" stroke="#0F6070" stroke-width="3"/>
+<path d="M 820 194 H 1170" stroke="#0F6070" stroke-width="2"/>
+<text x="834" y="179" text-anchor="start" font-family="Arial" font-size="18" font-weight="700" fill="#16343B"><tspan x="834" dy="0">shifts</tspan></text>
+<text x="834" y="218" text-anchor="start" font-family="Arial" font-size="17" font-weight="400" fill="#16343B"><tspan x="834" dy="0">PK id UUID</tspan><tspan x="834" dy="23">shift_date date</tspan><tspan x="834" dy="23">start_time, end_time</tspan><tspan x="834" dy="23">required_role varchar</tspan><tspan x="834" dy="23">status DRAFT|OPEN|CANCELLED</tspan><tspan x="834" dy="23">notes varchar?</tspan><tspan x="834" dy="23">created_at, updated_at</tspan></text>
+<rect x="1200" y="150" width="350" height="216" rx="12" fill="#FFFFFF" stroke="#0F6070" stroke-width="3"/>
+<path d="M 1200 194 H 1550" stroke="#0F6070" stroke-width="2"/>
+<text x="1214" y="179" text-anchor="start" font-family="Arial" font-size="18" font-weight="700" fill="#16343B"><tspan x="1214" dy="0">shift_assignments</tspan></text>
+<text x="1214" y="218" text-anchor="start" font-family="Arial" font-size="17" font-weight="400" fill="#16343B"><tspan x="1214" dy="0">PK id UUID</tspan><tspan x="1214" dy="23">FK/UQ shift_id -&gt; shifts</tspan><tspan x="1214" dy="23">FK staff_profile_id -&gt; staff_profiles</tspan><tspan x="1214" dy="23">FK assigned_by_user_id -&gt; users</tspan><tspan x="1214" dy="23">assigned_at</tspan><tspan x="1214" dy="23">created_at, updated_at</tspan></text>
+<rect x="1580" y="150" width="350" height="291" rx="12" fill="#FFFFFF" stroke="#0F6070" stroke-width="3"/>
+<path d="M 1580 194 H 1930" stroke="#0F6070" stroke-width="2"/>
+<text x="1594" y="179" text-anchor="start" font-family="Arial" font-size="18" font-weight="700" fill="#16343B"><tspan x="1594" dy="0">leave_requests</tspan></text>
+<text x="1594" y="218" text-anchor="start" font-family="Arial" font-size="17" font-weight="400" fill="#16343B"><tspan x="1594" dy="0">PK id UUID</tspan><tspan x="1594" dy="23">FK staff_profile_id -&gt; staff_profiles</tspan><tspan x="1594" dy="23">start_date, end_date</tspan><tspan x="1594" dy="23">reason varchar</tspan><tspan x="1594" dy="23">status PENDING|APPROVED|REJECTED</tspan><tspan x="1594" dy="23">manager_comment?</tspan><tspan x="1594" dy="23">FK decided_by_user_id -&gt; users?</tspan><tspan x="1594" dy="23">decided_at?</tspan><tspan x="1594" dy="23">created_at, updated_at</tspan></text>
+<rect x="1960" y="150" width="350" height="316" rx="12" fill="#FFFFFF" stroke="#0F6070" stroke-width="3"/>
+<path d="M 1960 194 H 2310" stroke="#0F6070" stroke-width="2"/>
+<text x="1974" y="179" text-anchor="start" font-family="Arial" font-size="18" font-weight="700" fill="#16343B"><tspan x="1974" dy="0">shift_swap_requests</tspan></text>
+<text x="1974" y="218" text-anchor="start" font-family="Arial" font-size="17" font-weight="400" fill="#16343B"><tspan x="1974" dy="0">PK id UUID</tspan><tspan x="1974" dy="23">FK assignment_id -&gt; shift_assignments</tspan><tspan x="1974" dy="23">FK requester_profile_id -&gt; staff_profiles</tspan><tspan x="1974" dy="23">FK target_profile_id -&gt; staff_profiles?</tspan><tspan x="1974" dy="23">FK accepted_by_profile_id -&gt; staff_profiles?</tspan><tspan x="1974" dy="23">status PENDING|ACCEPTED|...</tspan><tspan x="1974" dy="23">reason?, manager_note?</tspan><tspan x="1974" dy="23">accepted_at?, decided_at?</tspan><tspan x="1974" dy="23">FK decided_by_user_id -&gt; users?</tspan><tspan x="1974" dy="23">created_at</tspan></text>
+<rect x="60" y="565" width="350" height="291" rx="12" fill="#FFFFFF" stroke="#0F6070" stroke-width="3"/>
+<path d="M 60 609 H 410" stroke="#0F6070" stroke-width="2"/>
+<text x="74" y="594" text-anchor="start" font-family="Arial" font-size="18" font-weight="700" fill="#16343B"><tspan x="74" dy="0">user_passkeys</tspan></text>
+<text x="74" y="633" text-anchor="start" font-family="Arial" font-size="17" font-weight="400" fill="#16343B"><tspan x="74" dy="0">PK id UUID</tspan><tspan x="74" dy="23">FK user_id -&gt; users</tspan><tspan x="74" dy="23">UQ credential_id bytea</tspan><tspan x="74" dy="23">public_key bytea</tspan><tspan x="74" dy="23">counter bigint</tspan><tspan x="74" dy="23">device_name varchar</tspan><tspan x="74" dy="23">transports array</tspan><tspan x="74" dy="23">created_at</tspan><tspan x="74" dy="23">last_used_at?, revoked_at?</tspan></text>
+<rect x="440" y="565" width="350" height="241" rx="12" fill="#FFFFFF" stroke="#0F6070" stroke-width="3"/>
+<path d="M 440 609 H 790" stroke="#0F6070" stroke-width="2"/>
+<text x="454" y="594" text-anchor="start" font-family="Arial" font-size="18" font-weight="700" fill="#16343B"><tspan x="454" dy="0">password_reset_requests</tspan></text>
+<text x="454" y="633" text-anchor="start" font-family="Arial" font-size="17" font-weight="400" fill="#16343B"><tspan x="454" dy="0">PK id UUID</tspan><tspan x="454" dy="23">FK user_id -&gt; users</tspan><tspan x="454" dy="23">UQ token_hash char(64)</tspan><tspan x="454" dy="23">requested_ip inet?</tspan><tspan x="454" dy="23">expires_at</tspan><tspan x="454" dy="23">used_at?</tspan><tspan x="454" dy="23">created_at</tspan></text>
+<rect x="820" y="565" width="350" height="291" rx="12" fill="#FFFFFF" stroke="#0F6070" stroke-width="3"/>
+<path d="M 820 609 H 1170" stroke="#0F6070" stroke-width="2"/>
+<text x="834" y="594" text-anchor="start" font-family="Arial" font-size="18" font-weight="700" fill="#16343B"><tspan x="834" dy="0">security_events</tspan></text>
+<text x="834" y="633" text-anchor="start" font-family="Arial" font-size="17" font-weight="400" fill="#16343B"><tspan x="834" dy="0">PK id UUID</tspan><tspan x="834" dy="23">FK actor_user_id -&gt; users?</tspan><tspan x="834" dy="23">FK target_user_id -&gt; users?</tspan><tspan x="834" dy="23">FK staff_profile_id -&gt; staff_profiles?</tspan><tspan x="834" dy="23">event_type text</tspan><tspan x="834" dy="23">outcome SUCCESS|FAILURE</tspan><tspan x="834" dy="23">ip_address?</tspan><tspan x="834" dy="23">metadata jsonb?</tspan><tspan x="834" dy="23">created_at</tspan></text>
+<rect x="1200" y="565" width="350" height="291" rx="12" fill="#FFFFFF" stroke="#0F6070" stroke-width="3"/>
+<path d="M 1200 609 H 1550" stroke="#0F6070" stroke-width="2"/>
+<text x="1214" y="594" text-anchor="start" font-family="Arial" font-size="18" font-weight="700" fill="#16343B"><tspan x="1214" dy="0">audit_logs</tspan></text>
+<text x="1214" y="633" text-anchor="start" font-family="Arial" font-size="17" font-weight="400" fill="#16343B"><tspan x="1214" dy="0">PK id UUID</tspan><tspan x="1214" dy="23">FK actor_user_id -&gt; users?</tspan><tspan x="1214" dy="23">action varchar</tspan><tspan x="1214" dy="23">entity_type ASSIGNMENT|SHIFT</tspan><tspan x="1214" dy="23">entity_id UUID</tspan><tspan x="1214" dy="23">summary varchar</tspan><tspan x="1214" dy="23">before_state jsonb?</tspan><tspan x="1214" dy="23">after_state jsonb?</tspan><tspan x="1214" dy="23">created_at</tspan></text>
+<rect x="1580" y="565" width="350" height="141" rx="12" fill="#FFFFFF" stroke="#0F6070" stroke-width="3"/>
+<path d="M 1580 609 H 1930" stroke="#0F6070" stroke-width="2"/>
+<text x="1594" y="594" text-anchor="start" font-family="Arial" font-size="18" font-weight="700" fill="#16343B"><tspan x="1594" dy="0">user_sessions</tspan></text>
+<text x="1594" y="633" text-anchor="start" font-family="Arial" font-size="17" font-weight="400" fill="#16343B"><tspan x="1594" dy="0">PK sid varchar</tspan><tspan x="1594" dy="23">sess json</tspan><tspan x="1594" dy="23">expire timestamp</tspan></text>
+<rect x="1960" y="565" width="350" height="116" rx="12" fill="#FFFFFF" stroke="#0F6070" stroke-width="3"/>
+<path d="M 1960 609 H 2310" stroke="#0F6070" stroke-width="2"/>
+<text x="1974" y="594" text-anchor="start" font-family="Arial" font-size="18" font-weight="700" fill="#16343B"><tspan x="1974" dy="0">schema_migrations</tspan></text>
+<text x="1974" y="633" text-anchor="start" font-family="Arial" font-size="17" font-weight="400" fill="#16343B"><tspan x="1974" dy="0">PK filename varchar</tspan><tspan x="1974" dy="23">applied_at timestamptz</tspan></text>
+<rect x="60" y="1060" width="350" height="166" rx="12" fill="#FFFFFF" stroke="#3C7A57" stroke-width="3"/>
+<path d="M 60 1104 H 410" stroke="#3C7A57" stroke-width="2"/>
+<text x="74" y="1089" text-anchor="start" font-family="Arial" font-size="18" font-weight="700" fill="#16343B"><tspan x="74" dy="0">chat_conversations</tspan></text>
+<text x="74" y="1128" text-anchor="start" font-family="Arial" font-size="17" font-weight="400" fill="#16343B"><tspan x="74" dy="0">PK id UUID</tspan><tspan x="74" dy="23">kind WORKPLACE|DIRECT</tspan><tspan x="74" dy="23">UQ direct_key varchar?</tspan><tspan x="74" dy="23">created_at</tspan></text>
+<rect x="500" y="1060" width="460" height="141" rx="12" fill="#FFFFFF" stroke="#3C7A57" stroke-width="3"/>
+<path d="M 500 1104 H 960" stroke="#3C7A57" stroke-width="2"/>
+<text x="514" y="1089" text-anchor="start" font-family="Arial" font-size="18" font-weight="700" fill="#16343B"><tspan x="514" dy="0">chat_conversation_participants</tspan></text>
+<text x="514" y="1128" text-anchor="start" font-family="Arial" font-size="17" font-weight="400" fill="#16343B"><tspan x="514" dy="0">PK/FK conversation_id -&gt; conversations</tspan><tspan x="514" dy="23">PK/FK user_id -&gt; users</tspan><tspan x="514" dy="23">joined_at</tspan></text>
+<rect x="1040" y="1060" width="350" height="191" rx="12" fill="#FFFFFF" stroke="#3C7A57" stroke-width="3"/>
+<path d="M 1040 1104 H 1390" stroke="#3C7A57" stroke-width="2"/>
+<text x="1054" y="1089" text-anchor="start" font-family="Arial" font-size="18" font-weight="700" fill="#16343B"><tspan x="1054" dy="0">chat_messages</tspan></text>
+<text x="1054" y="1128" text-anchor="start" font-family="Arial" font-size="17" font-weight="400" fill="#16343B"><tspan x="1054" dy="0">PK id UUID</tspan><tspan x="1054" dy="23">FK conversation_id -&gt; conversations</tspan><tspan x="1054" dy="23">FK sender_user_id -&gt; users</tspan><tspan x="1054" dy="23">message text (1..1000)</tspan><tspan x="1054" dy="23">created_at</tspan></text>
+<rect x="1520" y="1060" width="350" height="166" rx="12" fill="#FFFFFF" stroke="#3C7A57" stroke-width="3"/>
+<path d="M 1520 1104 H 1870" stroke="#3C7A57" stroke-width="2"/>
+<text x="1534" y="1089" text-anchor="start" font-family="Arial" font-size="18" font-weight="700" fill="#16343B"><tspan x="1534" dy="0">chat_read_states</tspan></text>
+<text x="1534" y="1128" text-anchor="start" font-family="Arial" font-size="17" font-weight="400" fill="#16343B"><tspan x="1534" dy="0">PK/FK user_id -&gt; users</tspan><tspan x="1534" dy="23">PK/FK conversation_id -&gt; conversations</tspan><tspan x="1534" dy="23">FK last_read_message_id -&gt; messages?</tspan><tspan x="1534" dy="23">updated_at</tspan></text>
+<line x1="410" y1="220" x2="440" y2="220" stroke="#62777C" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="425.0" y="212.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#62777C"><tspan x="425.0" dy="0">1 : 0..1</tspan></text>
+<line x1="790" y1="255" x2="1200" y2="255" stroke="#62777C" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="995.0" y="247.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#62777C"><tspan x="995.0" dy="0">1 : 0..1</tspan></text>
+<line x1="1170" y1="330" x2="1200" y2="330" stroke="#62777C" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="1185.0" y="322.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#62777C"><tspan x="1185.0" dy="0">1 : many</tspan></text>
+<line x1="790" y1="350" x2="1580" y2="350" stroke="#62777C" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="1185.0" y="342.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#62777C"><tspan x="1185.0" dy="0">1 : many</tspan></text>
+<line x1="1550" y1="300" x2="1960" y2="300" stroke="#62777C" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="1755.0" y="292.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#62777C"><tspan x="1755.0" dy="0">1 : many</tspan></text>
+<line x1="235" y1="420" x2="235" y2="565" stroke="#62777C" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="235.0" y="484.5" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#62777C"><tspan x="235.0" dy="0">1 : many</tspan></text>
+<line x1="410" y1="330" x2="440" y2="660" stroke="#62777C" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="425.0" y="487.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#62777C"><tspan x="425.0" dy="0">1 : many</tspan></text>
+<line x1="410" y1="360" x2="820" y2="670" stroke="#62777C" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="615.0" y="507.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#62777C"><tspan x="615.0" dy="0">1 : many</tspan></text>
+<line x1="410" y1="390" x2="1200" y2="670" stroke="#62777C" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="805.0" y="522.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#62777C"><tspan x="805.0" dy="0">1 : many</tspan></text>
+<line x1="410" y1="410" x2="1580" y2="660" stroke="#62777C" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="995.0" y="527.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#62777C"><tspan x="995.0" dy="0">1 : many</tspan></text>
+<line x1="410" y1="1160" x2="500" y2="1160" stroke="#3C7A57" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="455.0" y="1152.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#3C7A57"><tspan x="455.0" dy="0">1 : many</tspan></text>
+<line x1="235" y1="460" x2="650" y2="1060" stroke="#3C7A57" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="442.5" y="752.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#3C7A57"><tspan x="442.5" dy="0">1 : many</tspan></text>
+<line x1="410" y1="1215" x2="1040" y2="1215" stroke="#3C7A57" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="725.0" y="1207.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#3C7A57"><tspan x="725.0" dy="0">1 : many</tspan></text>
+<line x1="235" y1="480" x2="1040" y2="1270" stroke="#3C7A57" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="637.5" y="867.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#3C7A57"><tspan x="637.5" dy="0">1 : many</tspan></text>
+<line x1="410" y1="1275" x2="1520" y2="1275" stroke="#3C7A57" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="965.0" y="1267.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#3C7A57"><tspan x="965.0" dy="0">1 : many</tspan></text>
+<line x1="1390" y1="1370" x2="1520" y2="1370" stroke="#3C7A57" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="1455.0" y="1362.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#3C7A57"><tspan x="1455.0" dy="0">1 : many reads</tspan></text>
+<line x1="235" y1="500" x2="1520" y2="1160" stroke="#3C7A57" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="877.5" y="822.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#3C7A57"><tspan x="877.5" dy="0">1 : many</tspan></text>
+<rect x="60" y="1540" width="2280" height="120" rx="12" fill="#F4E4C1" stroke="#B9862E" stroke-width="2"/>
+<text x="85" y="1583" text-anchor="start" font-family="Arial" font-size="21" font-weight="400" fill="#16343B"><tspan x="85" dy="0">Migration chain: 001 users -&gt; 002 staff profiles -&gt; 005 leave -&gt; 006 shifts -&gt; 007 assignments -&gt; 009 audit -&gt; 010-012 security -&gt; 013 swaps -&gt; 018 passkeys -&gt; 020-022 NodyChat.</tspan><tspan x="85" dy="34">availability_entries was created in 004 and removed by 014, so it is not a live entity. Payroll, notification and recommendation tables do not exist.</tspan></text>
+</svg>

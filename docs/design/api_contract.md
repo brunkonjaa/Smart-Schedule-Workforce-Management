@@ -2,7 +2,7 @@
 
 ## Read This File The Right Way
 
-This file records the route shapes in the current repo. Password recovery, shift swaps, rota reads, assignment changes, and internal audit writes are included. Weekly availability is historical and is not a live route.
+This file records the route shapes in the current repo. Password recovery, shift swaps, rota reads, assignment changes, audit reads, and NodyChat conversations are included. Weekly availability is historical and is not a live route.
 
 ## Current Live Backend Surface
 
@@ -390,7 +390,7 @@ Purpose:
 Remove a saved assignment from a current or future shift. Manager only. Live now.
 
 Audit note:
-Assignment create, update, and delete actions now write to `audit_logs`. There is no public audit route yet.
+Assignment create, update, and delete actions write to `audit_logs`. Managers can read the latest records through `GET /api/v1/audit-logs`.
 
 ## Shift Swap Routes
 
@@ -452,6 +452,55 @@ Current behavior:
 5. `Populate next week` builds a client-side draft from the current weekly pattern and saves only after manager approval
 6. state-changing rota actions still go through manager-only shift and assignment routes
 
+## NodyChat Routes And WebSocket
+
+### `GET /api/v1/chat/messages`
+
+Purpose:
+Return the selected conversation, up to 100 messages, the current user's conversation list, active people, unread count and first unread message. Authentication is required. With no `conversationId`, the route opens the shared `WORKPLACE` conversation. A requested conversation is only selected when the current user has a participant row; otherwise the HTTP bootstrap falls back to `WORKPLACE`.
+
+### `GET /api/v1/chat/people`
+
+Purpose:
+List other active users with active staff profiles where applicable. The current user is excluded.
+
+### `POST /api/v1/chat/conversations`
+
+Purpose:
+Create or reopen one two-person `DIRECT` conversation.
+
+Current request:
+
+```json
+{
+  "userId": "uuid"
+}
+```
+
+The target must be another active user. The sorted two-user `direct_key` prevents duplicate direct rooms for the same pair. The route requires authentication and the mutation-protection header.
+
+### `POST /api/v1/chat/messages`
+
+Purpose:
+Store a message against the selected conversation. The service checks that the sender participates in the supplied conversation before insert. Message text is trimmed and must contain 1 to 1000 characters.
+
+Current request:
+
+```json
+{
+  "conversationId": "uuid",
+  "message": "Can you check the Friday rota?"
+}
+```
+
+Current limitation:
+An outsider request for a direct conversation now returns `403 Forbidden` and does not insert a message. `backend/src/__tests__/chat-routes.test.js` covers that denial and also checks that an outsider bootstrap falls back to `WORKPLACE` without returning the private conversation.
+
+### `WS /ws/chat`
+
+Purpose:
+Provide the live history, open-conversation, message and read actions used by `chat-ui.js`. The upgrade loads the existing server session, rejects inactive accounts and rejects a different Origin. Opening and reading a conversation checks participant rows. A saved message is broadcast only to connected participants. The UI currently requires the WebSocket connection for send/read actions; the HTTP message route exists but is not used as an automatic frontend fallback.
+
 ## Security Rules For The Contract
 
 1. all state-changing routes require authentication
@@ -462,3 +511,4 @@ Current behavior:
 6. unauthenticated access returns `401`
 7. forbidden access returns `403`
 8. business-rule conflicts return `409`
+9. direct-conversation reads, writes and live broadcasts must be limited to conversation participants

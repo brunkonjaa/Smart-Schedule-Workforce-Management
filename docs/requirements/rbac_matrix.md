@@ -31,6 +31,11 @@ The backend uses three access states: unauthenticated, `STAFF`, and `MANAGER`. T
 | `POST /api/v1/shift-swaps/{id}/accept` | Deny | Eligible target only | Deny | Target acceptance |
 | `PUT /api/v1/shift-swaps/{id}/approve` | Deny | Deny | Allow | Manager final decision |
 | `PUT /api/v1/shift-swaps/{id}/reject` | Deny | Deny | Allow | Manager final decision |
+| `GET /api/v1/chat/messages` | Deny | Participant conversations | Participant conversations | Defaults to `WORKPLACE`; a requested direct conversation is only loaded for a participant |
+| `GET /api/v1/chat/people` | Deny | Allow | Allow | Lists other active accounts that can receive a direct message |
+| `POST /api/v1/chat/conversations` | Deny | Allow with mutation header | Allow with mutation header | Creates/reuses a two-person `DIRECT` conversation; self and inactive targets are rejected |
+| `POST /api/v1/chat/messages` | Deny | Participant conversations | Participant conversations | Service checks conversation membership before insert |
+| `WS /ws/chat` | Deny upgrade | Participant conversations | Participant conversations | Requires an active server session; open/read/send actions are checked against participant rows |
 
 ## Object-level rules
 
@@ -40,7 +45,9 @@ The backend uses three access states: unauthenticated, `STAFF`, and `MANAGER`. T
 4. a targeted swap can only be accepted by the named target
 5. accepting a swap still runs assignment eligibility checks
 6. manager-only shift and assignment actions are checked again on the backend
+7. direct chat messages are broadcast only to user IDs listed in `chat_conversation_participants`
+8. a read state can only be advanced with a message from a conversation the current user participates in
 
 ## Test expectation
 
-The route suites should include unauthenticated `401`, wrong-role `403`, ownership denial, and business-rule `409` cases where those rules apply.
+The route suites include unauthenticated `401`, wrong-role `403`, ownership denial, and business-rule `409` cases where those rules apply. The current 13-suite run also includes `chat-routes.test.js`. It proves the HTTP/service participant denials and per-conversation read-state rule. The WebSocket upgrade and long-lived connection policy still need a dedicated socket test harness.

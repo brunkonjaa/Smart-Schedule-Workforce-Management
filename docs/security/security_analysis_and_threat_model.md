@@ -1,0 +1,73 @@
+# Smart Schedule Security Analysis And Threat Model
+
+## Audit point
+
+This review uses repository checkpoint `a12490f885146d77475faf6f7308b3133305e1b7` as the frozen starting point and includes the narrow NodyChat corrections made during the report audit. It covers the Express backend, PostgreSQL/session boundary, browser frontend and NodyChat WebSocket. It does not claim a penetration test or an independent security assessment.
+
+`npm audit --omit=dev --json` was run on 17 July 2026. It reported zero known vulnerabilities across 118 production dependencies at that time. This result can change when package advisories change, so the package-lock still needs to stay part of future checks.
+
+## Assets and trust boundaries
+
+| Asset | Main risk | Boundary and current control |
+| --- | --- | --- |
+| Passwords and reset links | credential theft or reuse | bcrypt hashes; reset token stored as SHA-256 hash; expiry and one-use check; password values are not returned |
+| Manager authority | staff/rota changes by a staff account | server-side `requireRole('MANAGER')`; manager passkey option; mutation protection; audit/security records |
+| Staff, leave and rota records | another user reading or changing records | session lookup against current database state; staff ownership filters; parameterised SQL and foreign keys |
+| Session cookie | session theft or fixation | PostgreSQL session store; regenerated login session; `HttpOnly`, `SameSite=Lax`, production `Secure`; idle and absolute lifetime |
+| NodyChat direct messages | outsider read, write or broadcast | participant rows checked for load, send, open and read; WebSocket broadcast uses participant user IDs |
+| Application availability | oversized or repeated requests | 32 KB JSON limit; API/login/health rate limits; 16 KB WebSocket frame limit; 350 ms chat send delay |
+
+The browser-to-Render connection is the first boundary. HTTPS carries the session cookie and REST/WebSocket traffic. Express middleware is the second boundary because it converts that cookie into a current active user and role. The service-to-Neon connection is the third boundary; it uses TLS certificate checks and parameterised queries. Brevo is a separate outbound boundary used only for password-reset email.
+
+## Threat model
+
+| Threat | Smart Schedule path | Current control | Remaining limit |
+| --- | --- | --- | --- |
+| Account enumeration | password reset and login | generic reset response and generic login failure | timing and operational email behaviour were not independently measured |
+| Session fixation/theft | login cookie | session regeneration; server-side store; secure cookie settings; no password/token storage in localStorage | a stolen active cookie remains usable until expiry or server invalidation |
+| CSRF | state-changing REST calls | custom mutation header, same-origin `Origin`/`Referer` check when supplied, `SameSite=Lax` | the header is not a rotating token; this is accepted for the current same-origin browser client |
+| Broken role or object access | manager routes, leave ownership, swaps, direct chat | backend role middleware plus service ownership/participant queries | each new route needs its own negative test; hidden buttons alone are not treated as security |
+| Stored XSS through chat or names | NodyChat and staff data | strict CSP and DOM `textContent` for live chat content (`chat-ui.js:82-105`) | static page templates still use `innerHTML`; their data currently comes from local code, not API responses |
+| WebSocket hijacking | `/ws/chat` upgrade | active session lookup and exact same-origin requirement (`chat-ws.js:58-69`) | long-lived sockets are not re-authorised against the database after upgrade |
+| Oversized/flood traffic | JSON and WebSocket input | 32 KB JSON limit (`app.js:50`), 16 KB WebSocket maximum (`chat-ws.js:47-51`), rate limits and per-socket send delay | limits are process-local; a multi-instance deployment would need a shared limiter |
+| Direct-message data leak | conversation bootstrap/send/read/broadcast | participant join in `chat-service.js:52-60`, read join at lines 225-239, broadcast list at `chat-ws.js:159-163` | no user-facing delete, retention or moderation workflow exists |
+| SQL injection or invalid relationships | all workflow input | parameterised `pg` calls, exact field validation, foreign keys/checks and serializable assignment operations | database credentials and Neon access controls are deployment concerns outside the repo |
+| Secret/configuration failure | production startup | production session configuration fails closed and requires `SESSION_SECRET` (`session.js:20-45`) | Render/Neon/Brevo dashboard permissions are not proven by repository files |
+
+## Verified controls
+
+1. `backend/src/app.js:27-50` disables the Express signature, applies Helmet with a restrictive content security policy, and sets request body limits.
+2. `backend/src/config/session.js:8-12` sets the cookie to `HttpOnly`, `SameSite=Lax`, and production `Secure`. Lines 74-80 record the absolute and idle policy in the server-side session.
+3. `backend/src/middleware/auth.js:56-75` rejects an expired, missing, inactive-user or inactive-profile session after checking the database.
+4. `backend/src/middleware/request-security.js:17-35` requires the project mutation header and rejects a supplied cross-origin `Origin` or `Referer`.
+5. `backend/src/services/chat-ws.js:47-69` now caps frames at 16 KB, requires an `Origin` matching the request host, loads the server session and rejects inactive accounts.
+6. `backend/src/services/chat-service.js:52-60`, `225-239` and `242-252` enforce direct-conversation membership for load, read and send operations.
+7. `frontend/src/services/chat-ui.js:82-105` inserts message and sender data with `textContent`, not HTML parsing. The localStorage values in this frontend are shell page/theme and chat preference values, not passwords, session IDs or reset tokens.
+
+## Prioritised findings
+
+### SS-SEC-01 - Medium - WebSocket authorisation is only checked at upgrade
+
+Evidence: `backend/src/services/chat-ws.js:64-80` checks the account before `handleUpgrade`, but lines 82-185 keep the accepted user snapshot for the lifetime of the socket. The heartbeat checks whether the client is alive, not whether the account/session is still valid.
+
+Impact: if a manager account is deactivated or its server session expires while NodyChat is open, that already-connected socket can continue until it disconnects. New REST calls and new WebSocket connections are correctly rejected.
+
+Recommended fix: re-check the session absolute expiry and active account during heartbeat or before every message action, then close the socket on failure. This is not changed in the report pass because it alters live connection policy and needs a dedicated WebSocket test harness.
+
+### SS-SEC-02 - Low - Rate limits are local to one Node process
+
+Evidence: `backend/src/config/rate-limit.js` uses the default in-memory store. NodyChat also uses `socket.lastMessageAt` in `chat-ws.js:86,137-141`.
+
+Impact: the current single Render process is limited, but counters would not be shared if the deployment scaled to several Node processes. Reconnecting also resets the per-socket chat delay.
+
+Recommended fix: keep the current limits for the single-process submission. If the architecture changes to multiple instances, move API/login counters to a shared store and add a per-user chat limiter.
+
+### SS-SEC-03 - Low / privacy - NodyChat has no retention or deletion workflow
+
+Evidence: migrations `020` to `022` create messages, conversations and read state. There is no delete route or retention job.
+
+Impact: workplace and direct messages remain in PostgreSQL until an operator removes them. The UI warning tells users not to share passwords or customer information, but that is guidance rather than retention control.
+
+Recommended fix: document a retention period and deletion responsibility before using NodyChat with real employee data. This is outside the frozen student MVP and is recorded as a limitation, not silently presented as complete.
+
+No critical or high-severity issue was found in this repository review. That is not proof that none exists; it means none was demonstrated by the checked source, dependency audit and automated route evidence.

@@ -14,7 +14,7 @@ The current build includes:
 
 1. plain HTML, CSS and JavaScript frontend
 2. Node.js and Express backend
-3. PostgreSQL with ordered migrations `001` to `019`
+3. PostgreSQL with ordered migrations `001` to `022`
 4. Neon for the hosted database and Render for the live app
 5. server-side sessions using `express-session` and `connect-pg-simple`
 6. bcrypt password checking, login rate limiting and a passkey second step when a manager has registered one
@@ -34,6 +34,7 @@ The current build includes:
 20. serializable assignment transactions and a staff-week lock so two requests cannot quietly save conflicting assignment results at the same time
 21. installable PWA files for supported phone browsers
 22. demo seed data with 24 Irish-named staff, filled weekday shifts and twelve previous weeks of rota history
+23. NodyChat with one `WORKPLACE` room, two-person `DIRECT` conversations, per-conversation unread state and session-authenticated WebSocket updates
 
 Weekly availability submission was removed from the final workflow in migration `014_remove_weekly_availability.sql`. Staff should not have to fill in another weekly availability form just so the rota can be created. Approved leave, active status, role matching, shift overlap and weekly limits still stay in the assignment checks because those are the rules that stop an invalid rota being saved.
 
@@ -45,7 +46,7 @@ Nothing from this preview is saved straight away. The manager can check the sugg
 
 ## Current check
 
-The backend suite currently passes with `82` tests across `12` suites. The screenshot evidence log reaches `111`, including the hosted PWA prompt, staff swap page, manager overview and hosted manager rota.
+The frozen starting checkpoint is `a12490f885146d77475faf6f7308b3133305e1b7`, committed on 17 July 2026 at 02:59:56 +01:00. The current uncommitted report-audit working tree passes `87` tests across `13` suites in 43.998 seconds, including the new NodyChat route and read-state suite. Committed screenshot files reach `129`, including NodyChat workplace-room evidence, the local chat migration, Render configuration limits, current local layouts and the staff/manager swap sequence.
 
 The main code workflows are in place. Fresh hosted manager and staff UAT still needs a final pass, then the report and evidence references need to be checked against this version of the app. I have not described those as finished because the final UAT has not happened yet.
 
@@ -61,6 +62,7 @@ The backend is mounted under `/api/v1`:
 6. `/rota` for the weekly rota response
 7. `/shift-swaps` for staff swap requests and manager decisions
 8. `/audit-logs` for the manager audit-log page
+9. `/chat` for authenticated chat bootstrap, people, direct-conversation creation and message writes; live open/read/send updates use `/ws/chat`
 
 ## Local setup
 
@@ -108,7 +110,7 @@ Run from `backend/`:
 npm test
 ```
 
-The current result is `12` passed suites and `82` passed tests. The test database needs the migrations through `019_remove_placeholder_staff.sql`, not only the older password-reset and swap migrations.
+The current result is `13` passed suites and `87` passed tests in 43.998 seconds. The test database needs the migrations through `022_create_private_chat_conversations.sql`, not only the older password-reset and swap migrations. `chat-routes.test.js` now checks workplace enrolment, direct-room reuse, unread clearing, outsider denial/no insert and self-conversation rejection. WebSocket connection-lifetime re-authorisation remains a documented security limitation rather than a tested claim.
 
 ## Main project files
 

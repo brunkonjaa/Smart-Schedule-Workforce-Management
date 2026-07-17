@@ -2,6 +2,8 @@
 
 These are the current MVP requirements. They describe the workflows now in the repo, while the last section keeps the remaining proof and deferred work separate.
 
+The earlier SRS requirement `FR-004` for weekly availability is retired from this final baseline. Migration `014_remove_weekly_availability.sql` removed that table and the live rota no longer depends on a weekly form. It is not counted as an undelivered MUST. The current assignment rules use active state, required role, approved leave, existing shifts and the weekly five-shift/forty-hour limits instead.
+
 ## Roles
 
 ### Manager
@@ -90,6 +92,33 @@ These are the current MVP requirements. They describe the workflows now in the r
 | SWAP-04 | A manager approves or rejects an accepted swap. |
 | SWAP-05 | The assignment changes only after acceptance, manager approval, and a final eligibility check. |
 
+### FR-08 Manager-reviewed rota population
+
+| ID | Acceptance criterion |
+| --- | --- |
+| POP-01 | A manager can copy the current week's shift pattern into a next-week preview. |
+| POP-02 | The preview applies the current assignment eligibility rules before suggesting staff. |
+| POP-03 | Unfilled shifts remain visible to the manager instead of being silently omitted. |
+| POP-04 | No preview row is saved until the manager approves the draft. |
+
+### FR-09 NodyChat messaging
+
+| ID | Acceptance criterion |
+| --- | --- |
+| CHAT-01 | An active signed-in user can open the shared `WORKPLACE` conversation. |
+| CHAT-02 | An active signed-in user can create or reopen one `DIRECT` conversation with another active user, but not with themselves. |
+| CHAT-03 | Only a conversation participant can load, open, send to, or mark messages read in that conversation. |
+| CHAT-04 | Messages contain 1 to 1000 characters after trimming and are stored against the selected conversation and sender. |
+| CHAT-05 | Unread totals and the first unread message are calculated separately for each user and conversation. |
+| CHAT-06 | The WebSocket upgrade requires a valid active session and rejects a cross-origin upgrade. |
+
+### FR-10 Installable PWA shell
+
+| ID | Acceptance criterion |
+| --- | --- |
+| PWA-01 | The hosted frontend exposes a manifest and service worker so a supported browser can offer installation. |
+| PWA-02 | The installed shell still uses the same authenticated backend and does not claim offline rota editing. |
+
 ## Non-functional requirements
 
 1. all state-changing routes validate input on the backend
@@ -99,7 +128,8 @@ These are the current MVP requirements. They describe the workflows now in the r
 5. the frontend works at desktop and mobile widths
 6. errors use useful HTTP status codes and a consistent response shape
 7. requirement evidence can be tied to route tests, migration output, screenshots, or manual checks
+8. chat conversation access is enforced from server-side participant rows, not only from the conversation picker
 
 ## Deferred work
 
-The following are not acceptance criteria for this MVP: full automatic scheduling, payroll, POS integration, native mobile app, multi-branch support, and wider reports. The current manager audit page is limited to the shift and assignment records already written by the backend.
+The following are not acceptance criteria for this MVP: full automatic scheduling, payroll, POS integration, native mobile app, multi-branch support, and wider reports. Weekly availability is retired rather than pending. The current manager audit page is limited to the shift and assignment records already written by the backend. NodyChat HTTP/direct/read-state permission tests are now included. Measured performance timings, a dedicated WebSocket harness and independent participant testing remain evidence gaps rather than new product features.

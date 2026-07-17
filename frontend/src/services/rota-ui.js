@@ -724,7 +724,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
   const renderDepartmentTabs = (state, actions) => {
     const tabs = uiHelpers.createElement('div', {
       className: 'rota-tabs',
-      attributes: { role: 'tablist' }
+      attributes: { 'aria-label': 'Rota department filter' }
     });
 
     departments.forEach((department) => {
@@ -732,7 +732,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
         className: `rota-tab${state.department === department ? ' is-active' : ''}`,
         text: uiHelpers.formatRole(department),
         attributes: {
-          role: 'tab',
+          'aria-pressed': String(state.department === department),
           type: 'button'
         }
       });

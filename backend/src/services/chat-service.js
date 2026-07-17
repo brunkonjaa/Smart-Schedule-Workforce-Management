@@ -40,6 +40,15 @@ const getWorkplaceConversation = async () => {
   return result.rows[0] || null;
 };
 
+const ensureWorkplaceParticipant = async (userId, conversationId) => {
+  await query(
+    `INSERT INTO chat_conversation_participants (conversation_id, user_id)
+     VALUES ($1, $2)
+     ON CONFLICT DO NOTHING`,
+    [conversationId, userId]
+  );
+};
+
 const getConversationForUser = async (userId, conversationId) => {
   if (!uuidPattern.test(String(conversationId || ''))) return null;
   const result = await query(
@@ -83,7 +92,7 @@ const getDirectConversation = async (userId, otherUserId) => {
   await query(
     `INSERT INTO chat_conversations (kind, direct_key)
      VALUES ('DIRECT', $1)
-     ON CONFLICT (direct_key) DO NOTHING`,
+     ON CONFLICT (direct_key) WHERE kind = 'DIRECT' DO NOTHING`,
     [directKey]
   );
   const conversationResult = await query(
@@ -182,6 +191,7 @@ const listChatMessages = async ({ conversationId, limit = 100 } = {}) => {
 
 const getChatBootstrap = async (userId, requestedConversationId) => {
   const workplace = await getWorkplaceConversation();
+  await ensureWorkplaceParticipant(userId, workplace.id);
   const conversation = requestedConversationId
     ? await getConversationForUser(userId, requestedConversationId)
     : workplace;
@@ -233,6 +243,7 @@ const createChatMessage = async (senderUserId, payload) => {
   const { details, message } = validateChatMessage(payload);
   if (details.length > 0) return { details, message: null };
   const workplace = await getWorkplaceConversation();
+  await ensureWorkplaceParticipant(senderUserId, workplace.id);
   const conversation = payload?.conversationId
     ? await getConversationForUser(senderUserId, payload.conversationId)
     : workplace;

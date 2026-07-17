@@ -44,7 +44,10 @@ const sendJson = (socket, payload) => {
 };
 
 const setupChatWebSocket = (server) => {
-  const webSocketServer = new WebSocketServer({ noServer: true });
+  const webSocketServer = new WebSocketServer({
+    maxPayload: 16 * 1024,
+    noServer: true
+  });
 
   server.on('upgrade', async (request, socket, head) => {
     if (request.url?.split('?')[0] !== '/ws/chat') {
@@ -54,7 +57,7 @@ const setupChatWebSocket = (server) => {
 
     const origin = request.headers.origin;
     const host = request.headers.host;
-    if (origin && origin !== `https://${host}` && origin !== `http://${host}`) {
+    if (!origin || (origin !== `https://${host}` && origin !== `http://${host}`)) {
       socket.destroy();
       return;
     }

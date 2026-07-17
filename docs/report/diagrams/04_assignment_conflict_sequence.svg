@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1200" viewBox="0 0 1800 1200">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#16343B"/></marker></defs>
+<rect width="1800" height="1200" fill="#FFFFFF"/>
+<text x="60" y="66" font-family="Arial" font-size="34" font-weight="700" fill="#16343B">Assignment and conflict-check sequence</text>
+<line x1="60" y1="82" x2="1740" y2="82" stroke="#2F8792" stroke-width="4"/>
+<rect x="30" y="120" width="240" height="58" rx="29.0" fill="#DCEFF0" stroke="#0F6070" stroke-width="3"/>
+<text x="150.0" y="156.0" text-anchor="middle" font-family="Arial" font-size="18" font-weight="600" fill="#16343B"><tspan x="150.0" dy="0">Manager UI</tspan></text>
+<line x1="150" y1="178" x2="150" y2="1110" stroke="#62777C" stroke-width="2" stroke-dasharray="8 7"/>
+<rect x="400" y="120" width="240" height="58" rx="29.0" fill="#DCEFF0" stroke="#0F6070" stroke-width="3"/>
+<text x="520.0" y="156.0" text-anchor="middle" font-family="Arial" font-size="18" font-weight="600" fill="#16343B"><tspan x="520.0" dy="0">Assignments route</tspan></text>
+<line x1="520" y1="178" x2="520" y2="1110" stroke="#62777C" stroke-width="2" stroke-dasharray="8 7"/>
+<rect x="780" y="120" width="240" height="58" rx="29.0" fill="#DCEFF0" stroke="#0F6070" stroke-width="3"/>
+<text x="900.0" y="156.0" text-anchor="middle" font-family="Arial" font-size="18" font-weight="600" fill="#16343B"><tspan x="900.0" dy="0">Assignment service</tspan></text>
+<line x1="900" y1="178" x2="900" y2="1110" stroke="#62777C" stroke-width="2" stroke-dasharray="8 7"/>
+<rect x="1170" y="120" width="240" height="58" rx="29.0" fill="#DCEFF0" stroke="#0F6070" stroke-width="3"/>
+<text x="1290.0" y="156.0" text-anchor="middle" font-family="Arial" font-size="18" font-weight="600" fill="#16343B"><tspan x="1290.0" dy="0">PostgreSQL</tspan></text>
+<line x1="1290" y1="178" x2="1290" y2="1110" stroke="#62777C" stroke-width="2" stroke-dasharray="8 7"/>
+<rect x="1510" y="120" width="240" height="58" rx="29.0" fill="#DCEFF0" stroke="#0F6070" stroke-width="3"/>
+<text x="1630.0" y="156.0" text-anchor="middle" font-family="Arial" font-size="18" font-weight="600" fill="#16343B"><tspan x="1630.0" dy="0">Audit log</tspan></text>
+<line x1="1630" y1="178" x2="1630" y2="1110" stroke="#62777C" stroke-width="2" stroke-dasharray="8 7"/>
+<line x1="150" y1="235" x2="520" y2="235" stroke="#16343B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="335.0" y="227.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#16343B"><tspan x="335.0" dy="0">POST /assignments + mutation header</tspan></text>
+<line x1="520" y1="315" x2="900" y2="315" stroke="#16343B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="710.0" y="307.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#16343B"><tspan x="710.0" dy="0">validate UUIDs and exact fields</tspan></text>
+<line x1="900" y1="395" x2="1290" y2="395" stroke="#16343B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="1095.0" y="387.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#16343B"><tspan x="1095.0" dy="0">BEGIN SERIALIZABLE; lock shift</tspan></text>
+<line x1="1290" y1="475" x2="900" y2="475" stroke="#16343B" stroke-width="2.5" stroke-dasharray="9 7" marker-end="url(#arrow)"/>
+<text x="1095.0" y="467.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#16343B"><tspan x="1095.0" dy="0">shift + staff rows</tspan></text>
+<line x1="900" y1="555" x2="1290" y2="555" stroke="#16343B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="1095.0" y="547.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#16343B"><tspan x="1095.0" dy="0">check OPEN and active</tspan></text>
+<line x1="900" y1="625" x2="1290" y2="625" stroke="#16343B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="1095.0" y="617.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#16343B"><tspan x="1095.0" dy="0">check role, approved leave</tspan></text>
+<line x1="900" y1="695" x2="1290" y2="695" stroke="#16343B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="1095.0" y="687.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#16343B"><tspan x="1095.0" dy="0">check overlap or touching shift</tspan></text>
+<line x1="900" y1="765" x2="1290" y2="765" stroke="#16343B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="1095.0" y="757.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#16343B"><tspan x="1095.0" dy="0">calculate Monday-Sunday shifts/hours</tspan></text>
+<line x1="1290" y1="835" x2="900" y2="835" stroke="#16343B" stroke-width="2.5" stroke-dasharray="9 7" marker-end="url(#arrow)"/>
+<text x="1095.0" y="827.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#16343B"><tspan x="1095.0" dy="0">current count + projected hours</tspan></text>
+<line x1="900" y1="905" x2="1290" y2="905" stroke="#16343B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="1095.0" y="897.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#16343B"><tspan x="1095.0" dy="0">insert only if &lt;= 5 shifts and &lt;= 40 h</tspan></text>
+<line x1="900" y1="975" x2="1630" y2="975" stroke="#16343B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="1265.0" y="967.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#16343B"><tspan x="1265.0" dy="0">write before/after evidence</tspan></text>
+<line x1="900" y1="1045" x2="520" y2="1045" stroke="#16343B" stroke-width="2.5" stroke-dasharray="9 7" marker-end="url(#arrow)"/>
+<text x="710.0" y="1037.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#16343B"><tspan x="710.0" dy="0">saved assignment + contract warning(s)</tspan></text>
+<line x1="520" y1="1110" x2="150" y2="1110" stroke="#16343B" stroke-width="2.5" stroke-dasharray="9 7" marker-end="url(#arrow)"/>
+<text x="335.0" y="1102.0" text-anchor="middle" font-family="Arial" font-size="17" font-weight="600" fill="#16343B"><tspan x="335.0" dy="0">201 saved, or 409 conflict</tspan></text>
+<rect x="1030" y="525" width="570" height="335" rx="12" fill="#FFF7E8" stroke="#B9862E" stroke-width="2"/>
+<text x="1055" y="560" text-anchor="start" font-family="Arial" font-size="18" font-weight="700" fill="#16343B"><tspan x="1055" dy="0">Hard-stop order</tspan><tspan x="1055" dy="36">1. shift is OPEN</tspan><tspan x="1055" dy="36">2. staff and user are active</tspan><tspan x="1055" dy="36">3. required role matches</tspan><tspan x="1055" dy="36">4. no approved leave</tspan><tspan x="1055" dy="36">5. no overlapping or touching assignment</tspan><tspan x="1055" dy="36">6. projected week &lt;= 5 shifts</tspan><tspan x="1055" dy="36">7. projected week &lt;= 40 hours</tspan></text>
+<text x="900" y="1170" text-anchor="middle" font-family="Arial" font-size="19" font-weight="400" fill="#A7443E"><tspan x="900" dy="0">Contract hours are not a hard stop. If projected hours pass the staff profile contract but stay within 40, the save succeeds and returns a warning.</tspan></text>
+</svg>
