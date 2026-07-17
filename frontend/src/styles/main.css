@@ -4039,6 +4039,24 @@ body[data-theme='dark'] .rota-mobile-week-cell.is-selected:not(.is-filled) {
   line-height: 1.4;
 }
 
+.chat-conversation-label {
+  display: grid;
+  gap: 4px;
+  padding: 8px 16px 0;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.chat-conversation-picker {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 6px 8px;
+}
+
 .chat-unread-pointer {
   display: inline-block;
   align-self: start;

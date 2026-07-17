@@ -4,6 +4,8 @@ const { findUserById } = require('./auth-service');
 const {
   createChatMessage,
   getChatBootstrap,
+  getConversationForUser,
+  getConversationParticipantIds,
   markChatMessagesRead,
   validateChatMessage
 } = require('./chat-service');
@@ -80,13 +82,16 @@ const setupChatWebSocket = (server) => {
     socket.isAlive = true;
     socket.lastMessageAt = 0;
     socket.user = user;
+    socket.conversationId = null;
 
     socket.on('pong', () => {
       socket.isAlive = true;
     });
 
     try {
-      sendJson(socket, { ...(await getChatBootstrap(user.id)), type: 'history' });
+      const bootstrap = await getChatBootstrap(user.id);
+      socket.conversationId = bootstrap.conversationId;
+      sendJson(socket, { ...bootstrap, type: 'history' });
     } catch (error) {
       sendJson(socket, { message: 'Chat history could not be loaded.', type: 'error' });
     }
@@ -109,6 +114,18 @@ const setupChatWebSocket = (server) => {
         return;
       }
 
+      if (payload?.type === 'open-conversation') {
+        const conversation = await getConversationForUser(user.id, payload.conversationId);
+        if (!conversation) {
+          sendJson(socket, { message: 'You cannot open this conversation.', type: 'error' });
+          return;
+        }
+        const bootstrap = await getChatBootstrap(user.id, conversation.id);
+        socket.conversationId = bootstrap.conversationId;
+        sendJson(socket, { ...bootstrap, type: 'history' });
+        return;
+      }
+
       if (payload?.type !== 'message') {
         sendJson(socket, { message: 'Unsupported chat action.', type: 'error' });
         return;
@@ -127,10 +144,18 @@ const setupChatWebSocket = (server) => {
       }
 
       try {
-        const result = await createChatMessage(user.id, payload);
+        const result = await createChatMessage(user.id, {
+          ...payload,
+          conversationId: socket.conversationId
+        });
+        if (!result.message) {
+          sendJson(socket, { details: result.details, message: result.details[0] || 'The message could not be saved.', type: 'error' });
+          return;
+        }
         const messagePayload = JSON.stringify({ message: result.message, type: 'message' });
+        const participantIds = await getConversationParticipantIds(result.message.conversationId);
         webSocketServer.clients.forEach((client) => {
-          if (client.readyState === WebSocket.OPEN) {
+          if (client.readyState === WebSocket.OPEN && participantIds.includes(client.user?.id)) {
             client.send(messagePayload);
           }
         });

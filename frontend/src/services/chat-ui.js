@@ -24,6 +24,10 @@ window.SmartSchedule.chatUi = (function createChatUi() {
   let enterToSend = window.localStorage.getItem(enterToSendStorageKey) !== 'false';
   let firstUnreadMessageId = null;
   let unreadPointer = null;
+  let conversationPicker = null;
+  let people = [];
+  let conversations = [];
+  let activeConversationId = null;
 
   const escapeText = (value) => String(value || '').slice(0, maxMessageLength);
 
@@ -106,6 +110,45 @@ window.SmartSchedule.chatUi = (function createChatUi() {
     updateLatestButton();
   };
 
+  const renderConversationPicker = () => {
+    if (!conversationPicker) return;
+    conversationPicker.textContent = '';
+    const workplace = conversations.find((conversation) => conversation.kind === 'WORKPLACE');
+    if (workplace) {
+      const workplaceOption = document.createElement('option');
+      workplaceOption.value = workplace.id;
+      workplaceOption.textContent = 'Workplace room';
+      conversationPicker.appendChild(workplaceOption);
+    }
+    people.forEach((person) => {
+      const option = document.createElement('option');
+      option.value = `person:${person.id}`;
+      option.textContent = `Message ${person.fullName}`;
+      conversationPicker.appendChild(option);
+    });
+    const activeConversation = conversations.find((conversation) => conversation.id === activeConversationId);
+    if (activeConversation?.kind === 'DIRECT' && activeConversation.other?.id) {
+      conversationPicker.value = `person:${activeConversation.other.id}`;
+    } else if (activeConversationId) {
+      conversationPicker.value = activeConversationId;
+    }
+  };
+
+  const openConversation = async (value) => {
+    if (!value || !socket || socket.readyState !== WebSocket.OPEN) return;
+    if (value.startsWith('person:')) {
+      try {
+        const result = await apiClient.post('/api/v1/chat/conversations', { userId: value.slice(7) });
+        socket.send(JSON.stringify({ conversationId: result.conversation.id, type: 'open-conversation' }));
+        setStatus('Opening direct conversation…');
+      } catch (error) {
+        setStatus(error.message || 'The direct conversation could not be opened.', 'error');
+      }
+      return;
+    }
+    socket.send(JSON.stringify({ conversationId: value, type: 'open-conversation' }));
+  };
+
   const showToast = (message) => {
     if (!toast || isMuted || isOpen) return;
     toast.textContent = `${message.sender?.fullName || 'New message'} sent a message`;
@@ -126,6 +169,15 @@ window.SmartSchedule.chatUi = (function createChatUi() {
   };
 
   const receiveMessage = (message) => {
+    if (message.conversationId !== activeConversationId) {
+      const conversation = conversations.find((entry) => entry.id === message.conversationId);
+      if (conversation) conversation.unreadCount += 1;
+      unreadCount += 1;
+      updateLauncher();
+      updateUnreadPointer();
+      showToast(message);
+      return;
+    }
     const shouldScrollToLatest = isAtLatest();
     messages = [...messages, message].slice(-100);
     renderMessages(shouldScrollToLatest);
@@ -154,6 +206,10 @@ window.SmartSchedule.chatUi = (function createChatUi() {
       let payload;
       try { payload = JSON.parse(event.data); } catch (error) { return; }
       if (payload.type === 'history') {
+        activeConversationId = payload.conversationId;
+        conversations = payload.conversations || conversations;
+        people = payload.people || people;
+        renderConversationPicker();
         messages = payload.messages || [];
         unreadCount = Number(payload.unreadCount || 0);
         firstUnreadMessageId = payload.firstUnreadMessageId || null;
@@ -229,6 +285,16 @@ window.SmartSchedule.chatUi = (function createChatUi() {
     notice.className = 'chat-professional-notice';
     notice.textContent = 'Keep messages professional, respectful, and related to work. Do not share passwords or private customer information.';
     panel.appendChild(notice);
+
+    const conversationLabel = document.createElement('label');
+    conversationLabel.className = 'chat-conversation-label';
+    conversationLabel.textContent = 'Conversation';
+    conversationPicker = document.createElement('select');
+    conversationPicker.className = 'chat-conversation-picker';
+    conversationPicker.setAttribute('aria-label', 'Choose a NodyChat conversation');
+    conversationPicker.addEventListener('change', () => openConversation(conversationPicker.value));
+    conversationLabel.appendChild(conversationPicker);
+    panel.appendChild(conversationLabel);
 
     unreadPointer = document.createElement('button');
     unreadPointer.className = 'chat-unread-pointer';
@@ -355,6 +421,9 @@ window.SmartSchedule.chatUi = (function createChatUi() {
         socket = null;
         previousSocket.close();
         messages = [];
+        conversations = [];
+        people = [];
+        activeConversationId = null;
         unreadCount = 0;
       }
       currentUser = result.user;
