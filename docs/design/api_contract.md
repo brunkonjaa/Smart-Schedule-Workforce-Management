@@ -156,7 +156,7 @@ That matters because the auth direction is no longer abstract. The app already h
 1. `backend/src/config/session.js`
 2. `smart_schedule.sid` cookie naming
 3. `user_sessions` store configuration
-4. production `trust proxy` handling in `backend/src/app.js`
+4. production `trust proxy` configuration in `backend/src/app.js`
 
 That part is no longer just planned. The session base is live now because the auth routes are using it already. Assignment conflict checks, contract-hours warnings, the rota route layer, and audit log writes are now live too, while deployment checks still come later.
 
@@ -333,7 +333,7 @@ Current duplicate-shift conflict:
 `409`
 
 Current limitation:
-This route stores the assignment and blocks the main hard conflicts. Contract-hours is handled as a warning, not a hard block, because a manager may still need to approve extra hours in a real week.
+This route stores the assignment and blocks the main hard conflicts. Going over contract hours is shown as a warning, not a hard block, because a manager may still need to approve extra hours in a real week.
 
 Current success body:
 

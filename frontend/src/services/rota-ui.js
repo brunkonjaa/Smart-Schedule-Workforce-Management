@@ -1608,7 +1608,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
         }
 
         state.loading = false;
-        const feedback = uiHelpers.getErrorFeedback(error, 'Could not load the rota.');
+        const feedback = uiHelpers.getErrorFeedback(error, 'The rota did not load. Refresh the page.');
         setFlash(state, 'error', feedback.text, feedback.details);
         render();
         if (shouldAnimate) {
@@ -1652,7 +1652,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
         state.draft = buildDraftRota(state, shiftTemplates);
       } catch (error) {
         state.weekStart = sourceWeekStart;
-        const feedback = uiHelpers.getErrorFeedback(error, 'Could not prepare next week.');
+        const feedback = uiHelpers.getErrorFeedback(error, "Next week's rota draft was not prepared. Reload the rota and try again.");
         setFlash(state, 'error', feedback.text, feedback.details);
       }
       state.draftLoading = false;
@@ -1790,7 +1790,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
           tone: 'success'
         });
       } catch (error) {
-        const feedback = uiHelpers.getErrorFeedback(error, 'Could not remove this shift.');
+        const feedback = uiHelpers.getErrorFeedback(error, 'The shift was not removed. Reload the rota and try again.');
 
         if (state.modal) {
           state.modal = {
@@ -1875,7 +1875,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
 
         state.modal = {
           ...state.modal,
-          error: uiHelpers.getErrorFeedback(error, 'Could not save this shift.')
+          error: uiHelpers.getErrorFeedback(error, 'The shift was not saved. Check the times and try again.')
         };
         render();
       }
@@ -1899,7 +1899,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       } catch (error) {
         state.modal = {
           ...state.modal,
-          error: uiHelpers.getErrorFeedback(error, 'Could not change this shift time.')
+          error: uiHelpers.getErrorFeedback(error, 'The shift time was not changed. Check both times and try again.')
         };
         render();
       }
@@ -1917,7 +1917,7 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       } catch (error) {
         state.modal = {
           ...state.modal,
-          error: uiHelpers.getErrorFeedback(error, 'Could not send the swap request.')
+          error: uiHelpers.getErrorFeedback(error, 'The swap request was not sent. Reload the rota and try again.')
         };
         render();
       }

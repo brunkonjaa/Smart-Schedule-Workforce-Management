@@ -368,7 +368,7 @@ Problem:
 Asking staff to submit availability every week did not match how the hospitality rota is normally managed, and it added another page that staff had to maintain.
 
 Selected option:
-Keep the normal staffing pattern in the rota and handle exceptions through leave requests and future shift swaps.
+Keep the normal staffing pattern in the rota and record exceptions through Time Off requests and future shift swaps.
 
 Reason for selection:
 This keeps the weekly workflow closer to the real use case. It also means an assignment is not blocked just because a staff member has no weekly availability row.

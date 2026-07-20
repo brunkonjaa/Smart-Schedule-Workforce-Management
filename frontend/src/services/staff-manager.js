@@ -815,11 +815,8 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
           return;
         }
 
-        setFlash(
-          state,
-          'error',
-          error.message || 'Could not load staff right now.'
-        );
+        const feedback = uiHelpers.getErrorFeedback(error, 'Staff records did not load. Refresh the page.');
+        setFlash(state, 'error', feedback.text, feedback.details);
         render();
       }
     };
@@ -880,12 +877,8 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
         }
 
         state.isSubmitting = false;
-        setFlash(
-          state,
-          'error',
-          error.message || 'Could not save this staff member.',
-          error.payload?.details || []
-        );
+        const feedback = uiHelpers.getErrorFeedback(error, 'This staff record was not saved. Check the fields and try again.');
+        setFlash(state, 'error', feedback.text, feedback.details);
         render();
       }
     };

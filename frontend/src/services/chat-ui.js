@@ -142,7 +142,12 @@ window.SmartSchedule.chatUi = (function createChatUi() {
         socket.send(JSON.stringify({ conversationId: result.conversation.id, type: 'open-conversation' }));
         setStatus('Opening direct conversation…');
       } catch (error) {
-        setStatus(error.message || 'The direct conversation could not be opened.', 'error');
+        setStatus(
+          error.status
+            ? error.message
+            : 'The direct conversation did not open. Check the connection and choose the staff member again.',
+          'error'
+        );
       }
       return;
     }

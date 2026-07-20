@@ -52,7 +52,7 @@ I have left these out of the current build:
 
 ## Direction change: weekly availability
 
-Weekly availability was removed from the final workflow. In a real hospitality team staff are not normally expected to send management a fresh availability form every week. The rota uses the normal staffing pattern and handles exceptions through leave and future shift swap requests. The old availability migration remains in the ordered history, and migration `014_remove_weekly_availability.sql` removes the old table safely.
+Weekly availability was removed from the final workflow. In a real hospitality team staff are not normally expected to send management a fresh availability form every week. The rota uses the normal staffing pattern and records exceptions through Time Off and future shift swap requests. The old availability migration remains in the ordered history, and migration `014_remove_weekly_availability.sql` removes the old table safely.
 
 ## What still needs proof
 

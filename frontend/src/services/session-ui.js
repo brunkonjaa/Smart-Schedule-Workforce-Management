@@ -63,6 +63,66 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     type: credential.type
   });
 
+  const getPasskeyLoginErrorMessage = (error) => {
+    const errorName = error && error.name;
+
+    if (errorName === 'NotAllowedError') {
+      return 'Passkey sign-in was cancelled or took too long. Try again when you are ready.';
+    }
+
+    if (errorName === 'AbortError') {
+      return 'Passkey sign-in was interrupted. Try again when you are ready.';
+    }
+
+    if (errorName === 'SecurityError') {
+      return 'Smart Schedule could not start passkey sign-in securely. Reload the page and try again.';
+    }
+
+    if (errorName === 'NotSupportedError' || (error && error.message === 'This browser does not support passkeys.')) {
+      return 'This browser cannot use passkeys. Open Smart Schedule in a current browser or use another registered device.';
+    }
+
+    if (['ConstraintError', 'InvalidStateError', 'UnknownError'].includes(errorName)) {
+      return 'This device could not complete passkey sign-in. Try again or use another registered device.';
+    }
+
+    if (errorName && errorName !== 'Error') {
+      return 'Smart Schedule could not complete passkey sign-in. Try again or use another registered device.';
+    }
+
+    return error && error.status
+      ? error.message
+      : 'Smart Schedule could not verify this passkey. Try again or use another registered device.';
+  };
+
+  const getPasskeyRegistrationErrorMessage = (error) => {
+    const errorName = error && error.name;
+
+    if (errorName === 'NotAllowedError') {
+      return 'Passkey setup was cancelled or took too long. Select Add passkey when you are ready.';
+    }
+
+    if (errorName === 'AbortError') {
+      return 'Passkey setup was interrupted. Select Add passkey to try again.';
+    }
+
+    if (errorName === 'SecurityError') {
+      return 'Smart Schedule could not start passkey setup securely. Reload the page and try again.';
+    }
+
+    if (errorName === 'NotSupportedError' || (error && error.message === 'This browser does not support passkeys.')) {
+      return 'This browser cannot create passkeys. Open Smart Schedule in a current browser or use another device.';
+    }
+
+    if (errorName && errorName !== 'Error') {
+      return 'This device could not create the passkey. Try again or choose another device.';
+    }
+
+    return error && error.status
+      ? error.message
+      : 'Smart Schedule could not create the passkey. Try again or choose another device.';
+  };
+
   const createElement = (tagName, { className, text, attributes } = {}) => {
     const element = document.createElement(tagName);
 
@@ -156,7 +216,12 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
         const result = await apiClient.post('/api/v1/auth/password-reset/request', { email: input.value.trim() });
         renderPasswordResetRequest(workspaceElement, { text: result.message, tone: 'success' });
       } catch (error) {
-        renderPasswordResetRequest(workspaceElement, { text: error.message || 'Could not request a reset link.', tone: 'error' });
+        renderPasswordResetRequest(workspaceElement, {
+          text: error.status
+            ? error.message
+            : 'The reset email request did not reach Smart Schedule. Check the connection and try again.',
+          tone: 'error'
+        });
       }
     });
     panel.appendChild(form);
@@ -203,7 +268,12 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
         window.location.hash = 'login';
         window.setTimeout(() => renderSignedOutState(workspaceElement, { text: result.message, tone: 'success' }), 0);
       } catch (error) {
-        renderPasswordResetConfirm(workspaceElement, token, { text: error.message || 'Could not reset the password.', tone: 'error' });
+        renderPasswordResetConfirm(workspaceElement, token, {
+          text: error.status
+            ? error.message
+            : 'The new password was not saved. Check the connection and try again.',
+          tone: 'error'
+        });
       }
     });
     panel.appendChild(form);
@@ -229,14 +299,22 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     const grid = createElement('div', { className: 'workspace-grid workspace-grid--login' });
     const panel = createElement('section', { className: 'content-panel content-panel--form content-panel--span-8' });
     const heading = createElement('div', { className: 'panel-heading' });
-    heading.appendChild(createElement('h3', { text: 'Manager passkey required' }));
-    heading.appendChild(createElement('p', { className: 'panel-copy', text: 'Use Windows Hello, your phone, a fingerprint, or a security key to finish signing in.' }));
+    heading.appendChild(createElement('h3', { text: 'Confirm manager sign-in' }));
+    heading.appendChild(createElement('p', { className: 'panel-copy', text: 'Use Windows Hello, your phone, fingerprint, or security key to confirm it is you.' }));
     panel.appendChild(heading);
     if (flashMessage) {
-      panel.appendChild(createElement('p', { className: `panel-copy panel-copy--${flashMessage.tone}`, text: flashMessage.text }));
+      panel.appendChild(createElement('p', {
+        className: `panel-copy panel-copy--${flashMessage.tone}`,
+        text: flashMessage.text,
+        attributes: { role: 'alert' }
+      }));
     }
     const actions = createElement('div', { className: 'actions-row' });
-    const verifyButton = createElement('button', { className: 'action-button button-primary', text: 'Use passkey', attributes: { type: 'button' } });
+    const verifyButton = createElement('button', {
+      className: 'action-button button-primary',
+      text: flashMessage ? 'Try passkey again' : 'Use passkey',
+      attributes: { type: 'button' }
+    });
     actions.appendChild(verifyButton);
     panel.appendChild(actions);
     verifyButton.addEventListener('click', async () => {
@@ -253,7 +331,7 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
         const result = await apiClient.post('/api/v1/auth/passkeys/login/verify', serializeAuthenticationCredential(credential));
         navigateToUserHome(result.user);
       } catch (error) {
-        renderPasskeyLogin(workspaceElement, renderToken, { text: error.message || 'Passkey verification failed.', tone: 'error' });
+        renderPasskeyLogin(workspaceElement, renderToken, { text: getPasskeyLoginErrorMessage(error), tone: 'error' });
       }
     });
     grid.appendChild(panel);
@@ -389,7 +467,9 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
         navigateToUserHome(result.user);
       } catch (error) {
         renderSignedOutState(workspaceElement, {
-          text: error.message || 'Could not sign in with those credentials.',
+          text: error.status
+            ? error.message
+            : 'Sign-in did not reach Smart Schedule. Check the connection and try again.',
           tone: 'error'
         });
       }
@@ -592,7 +672,9 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
           workspaceElement,
           sessionUser,
           {
-            text: error.message || 'Could not change the password right now.',
+            text: error.status
+              ? error.message
+              : 'The password was not changed. Check the connection and try again.',
             tone: 'error'
           },
           renderToken
@@ -631,7 +713,9 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
         }, renderToken);
       } catch (error) {
         renderSignedInState(workspaceElement, sessionUser, {
-          text: error.message || 'Could not request a reset link right now.',
+          text: error.status
+            ? error.message
+            : 'The reset email request did not reach Smart Schedule. Check the connection and try again.',
           tone: 'error'
         }, renderToken);
       }
@@ -663,7 +747,10 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
           const result = await apiClient.post('/api/v1/auth/passkeys/registration/verify', serializeRegistrationCredential(credential));
           renderSignedInState(workspaceElement, sessionUser, { text: result.message, tone: 'success' }, renderToken);
         } catch (error) {
-          renderSignedInState(workspaceElement, sessionUser, { text: error.message || 'Passkey registration failed.', tone: 'error' }, renderToken);
+          renderSignedInState(workspaceElement, sessionUser, {
+            text: getPasskeyRegistrationErrorMessage(error),
+            tone: 'error'
+          }, renderToken);
         }
       });
       grid.appendChild(passkeyPanel);

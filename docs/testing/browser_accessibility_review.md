@@ -62,4 +62,12 @@ A fresh hosted fake-staff login then returned 200 after a 25.144 second cold wak
 
 Screenshot `138` records the future-date assignment rejection and visible focus return. The only remaining live account check is a fresh hosted manager login. The current manager password was not reset or guessed for this check. Independent participant testing remains outside the agreed work plan.
 
+## Lighthouse check on 20 July 2026
+
+I ran Lighthouse from Chrome Incognito against the warm hosted application. The valid mobile login navigation run scored 99 Performance, 91 Accessibility, 96 Best Practices and 90 SEO. It found that the two invisible login autofill decoys still counted as unlabelled controls, the mobile layout hid the page `h2` above an `h3`, and the document had no meta description.
+
+I removed the decoy controls and gave the real labelled email/password fields their standard autocomplete purposes. `Account access` is now the section `h2`, and `frontend/public/index.html` has a Smart Schedule-specific description. After commit `4a67646a58982e58d542b9fbfba07c470f424b26` deployed, the desktop login snapshot scored 100 Accessibility, 96 Best Practices and 100 SEO. The authenticated mobile manager Rota snapshot separately passed 17/17 Accessibility and 4/4 Best Practices checks.
+
+The remaining Best Practices reduction comes from the public page checking `/api/v1/auth/me` and correctly receiving `401` without a session. I kept that authentication boundary instead of returning a false success only to change a Lighthouse score. Later navigation attempts failed with `NO_NAVSTART`, which means Chrome did not record the start of the page trace. Those attempts are not presented as performance failures. Screenshots `142` to `144` and the HTML/JSON files under `lighthouse/` keep the valid results separate.
+
 This matrix is developer-run accessibility evidence. Independent participant testing remains outside the agreed work plan.

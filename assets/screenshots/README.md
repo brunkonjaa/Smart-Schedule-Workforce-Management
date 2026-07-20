@@ -186,6 +186,13 @@ Examples:
 - `138` local manager assignment rejected because the end time is before the start time, with focus returned to Start time
 - `139` fresh local PowerShell coverage run with 14 suites and 91 tests passing on 20 July 2026
 - `140` successful GitHub Actions backend job showing PostgreSQL setup, migrations, coverage tests, dependency audit and coverage upload
+- `141` safe hosted Audit Log print preview using landscape layout and page 1 only
+- `142` mobile hosted login Lighthouse navigation result: 99 Performance, 91 Accessibility, 96 Best Practices and 90 SEO before the semantic fixes
+- `143` authenticated mobile manager Rota Lighthouse snapshot with 17/17 Accessibility and 4/4 Best Practices checks passing
+- `144` post-fix desktop hosted login Lighthouse snapshot with 100 Accessibility, 96 Best Practices and 100 SEO
+- `145` hosted manager Rota confirmation after 61 generated next-week assignments were approved and saved
+- `146` hosted manager assignment dialog rejecting a shift that overlaps or touches an existing shift
+- `147` hosted manager passkey registration reaching the browser-managed WebAuthn confirmation prompt
 
 ## Practical Reminder
 

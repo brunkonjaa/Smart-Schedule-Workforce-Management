@@ -295,7 +295,7 @@ window.SmartSchedule.liveUiHelpers = (function createLiveUiHelpers() {
 
   const simplifyErrorDetail = (detail) => {
     if (typeof detail !== 'string') {
-      return 'Please check the form and try again.';
+      return 'One or more form values were not accepted.';
     }
 
     if (
@@ -343,7 +343,7 @@ window.SmartSchedule.liveUiHelpers = (function createLiveUiHelpers() {
     }
 
     if (detail === 'request body must be a JSON object') {
-      return 'The form data could not be read. Please try again.';
+      return 'Smart Schedule could not read this form. Reopen it and enter the details again.';
     }
 
     if (detail === 'reason is required') {
@@ -372,6 +372,10 @@ window.SmartSchedule.liveUiHelpers = (function createLiveUiHelpers() {
 
     if (detail === 'startDate cannot be in the past') {
       return 'Start date cannot be in the past.';
+    }
+
+    if (detail === 'shiftDate cannot be in the past') {
+      return 'Past rota dates cannot be changed. Open this week or a future week.';
     }
 
     if (detail === 'managerComment cannot be empty') {
@@ -409,7 +413,9 @@ window.SmartSchedule.liveUiHelpers = (function createLiveUiHelpers() {
     }
 
     if (error?.status >= 500) {
-      return 'Something went wrong. Please try again.';
+      return fallbackText
+        ? `${fallbackText} The server did not complete the request. Try again.`
+        : 'The server did not complete this request. Try again.';
     }
 
     const directMessages = {

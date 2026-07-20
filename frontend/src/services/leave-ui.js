@@ -482,7 +482,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
       grid.appendChild(renderToolbar(state, actions));
       grid.appendChild(
         uiHelpers.createStepsPanel(
-          state.sessionUser.role === 'MANAGER' ? 'How to handle time off' : 'How time off works',
+          state.sessionUser.role === 'MANAGER' ? 'How to use Time Off' : 'How Time Off works',
           state.sessionUser.role === 'MANAGER'
             ? 'Keep the decision clear before shifts are final.'
             : 'The request stays visible while it waits for a manager.',
@@ -536,7 +536,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
         }
 
         state.loading = false;
-        const feedback = uiHelpers.getErrorFeedback(error, 'Could not load leave requests.');
+        const feedback = uiHelpers.getErrorFeedback(error, 'Time Off requests did not load. Refresh the page.');
         setFlash(state, 'error', feedback.text, feedback.details);
         render();
       }
@@ -557,7 +557,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
           tone: 'success'
         });
       } catch (error) {
-        const feedback = uiHelpers.getErrorFeedback(error, 'Could not send time off request.');
+        const feedback = uiHelpers.getErrorFeedback(error, 'Your Time Off request was not sent. Check the dates and try again.');
         setFlash(state, 'error', feedback.text, feedback.details);
         render();
       }
@@ -580,7 +580,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
           tone: 'success'
         });
       } catch (error) {
-        const feedback = uiHelpers.getErrorFeedback(error, 'Could not decide this time off request.');
+        const feedback = uiHelpers.getErrorFeedback(error, 'The Time Off decision was not saved. Reload the request and try again.');
         setFlash(state, 'error', feedback.text, feedback.details);
         render();
       }
@@ -600,7 +600,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
           tone: 'success'
         });
       } catch (error) {
-        const feedback = uiHelpers.getErrorFeedback(error, 'Could not remove this time off request.');
+        const feedback = uiHelpers.getErrorFeedback(error, 'The Time Off request was not removed. Reload the list and try again.');
         setFlash(state, 'error', feedback.text, feedback.details);
         render();
       }

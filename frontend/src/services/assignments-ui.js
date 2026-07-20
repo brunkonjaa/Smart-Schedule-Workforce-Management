@@ -477,7 +477,7 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
         }
 
         state.loading = false;
-        const feedback = uiHelpers.getErrorFeedback(error, 'Could not load shifts.');
+        const feedback = uiHelpers.getErrorFeedback(error, 'Shifts did not load. Refresh the page.');
         setFlash(state, 'error', feedback.text, feedback.details);
         render();
       }
@@ -547,7 +547,7 @@ window.SmartSchedule.assignmentsUi = (function createAssignmentsUi() {
           tone: warningDetails.length > 0 ? 'warning' : 'success'
         });
       } catch (error) {
-        const feedback = uiHelpers.getErrorFeedback(error, 'Could not save this shift.');
+        const feedback = uiHelpers.getErrorFeedback(error, 'The shift was not saved. Check the fields and try again.');
         setFlash(state, 'error', feedback.text, feedback.details);
         render();
       }

@@ -276,7 +276,8 @@ window.SmartSchedule.swapRequestsUi = (function createSwapRequestsUi() {
                 showEligibilityWarning(request, () => actions.accept(request, true));
                 return;
               }
-              flash = { text: error.message || 'Could not accept this swap.', tone: 'error', details: [] };
+              const feedback = uiHelpers.getErrorFeedback(error, 'The swap was not accepted. Reload the requests and try again.');
+              flash = { text: feedback.text, tone: 'error', details: feedback.details };
               render();
             }
           },
@@ -285,7 +286,8 @@ window.SmartSchedule.swapRequestsUi = (function createSwapRequestsUi() {
               await apiClient.put(`/api/v1/shift-swaps/${request.id}/${decision}`, {});
               await load(`Swap ${decision === 'approve' ? 'approved' : 'rejected'}.`, 'success');
             } catch (error) {
-              flash = { text: error.message || 'Could not update this swap.', tone: 'error', details: [] };
+              const feedback = uiHelpers.getErrorFeedback(error, 'The manager decision was not saved. Reload the requests and try again.');
+              flash = { text: feedback.text, tone: 'error', details: feedback.details };
               render();
             }
           }
@@ -310,7 +312,7 @@ window.SmartSchedule.swapRequestsUi = (function createSwapRequestsUi() {
         render();
       } catch (error) {
         loading = false;
-        const feedback = uiHelpers.getErrorFeedback(error, 'Could not load swap requests.');
+        const feedback = uiHelpers.getErrorFeedback(error, 'Swap requests did not load. Refresh the page.');
         flash = { text: feedback.text, tone: 'error', details: feedback.details };
         render();
       }

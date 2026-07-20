@@ -29,7 +29,7 @@ After that, `OTHER` was added for the Kitchen Porter rota tab, audit rows were a
 
 ## Current database rules
 
-The SQL layer handles UUID keys, foreign keys, non-negative contract hours, valid time/date ranges, allowed roles and statuses, unique assignment per shift, and token/request tables. The service layer handles role matching, leave, overlap, touching shifts, weekly shift/hour limits, swap eligibility, and ownership.
+The SQL layer enforces UUID keys, foreign keys, non-negative contract hours, valid time/date ranges, allowed roles and statuses, unique assignment per shift, and token/request tables. The service layer checks role matching, Time Off, overlap, touching shifts, weekly shift/hour limits, swap eligibility, and ownership.
 
 ## Running migrations
 

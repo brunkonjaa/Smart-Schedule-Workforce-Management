@@ -27,6 +27,22 @@ Each entry should answer four practical things:
 3. what proves it
 4. what comes next
 
+## 2026-07-20
+
+### Hosted Lighthouse check and accessibility correction
+
+- Deployed fix: `4a67646a58982e58d542b9fbfba07c470f424b26`
+- GitHub Actions: passed after the push
+- Valid mobile login navigation: 99 Performance, 91 Accessibility, 96 Best Practices and 90 SEO
+- Post-fix desktop login snapshot: 100 Accessibility, 96 Best Practices and 100 SEO
+- Authenticated manager Rota snapshot: 17/17 Accessibility and 4/4 Best Practices checks passed
+
+The first login audit found two invisible autofill-decoy inputs without labels, an `h3` left below the hidden mobile page intro, and no meta description. I removed the decoys instead of adding fake labels to controls the user never sees. The real email and password inputs now use `username` and `current-password`, `Account access` is the section `h2`, and the document description names the rota, availability, Time Off, swaps and NodyChat scope. I also made the existing Helmet HSTS policy explicit at two years.
+
+The rerun confirmed the Accessibility and SEO corrections. Best Practices stayed at 96 because the public login session check correctly receives `401`; changing that response would contradict the API contract. Two later performance-navigation attempts returned `NO_NAVSTART`. I kept the earlier valid 99 Performance run and did not describe the trace failures as zero scores. Screenshots `141` to `144` contain the safe print view and successful Lighthouse evidence. The HTML and JSON exports are under `lighthouse/`.
+
+The Lighthouse checks are automated browser evidence, not independent participant testing. The manual keyboard, focus, zoom and modal checks remain separate because Lighthouse lists those as items a person still has to check. Screenshot `145` records 61 generated next-week assignments approved and saved on the hosted manager Rota. Screenshot `146` records the hosted assignment dialog rejecting a shift that overlaps or touches an existing shift. Screenshot `147` records Smart Schedule reaching the browser-managed WebAuthn confirmation prompt during manager passkey registration.
+
 ## 2026-07-18 to 2026-07-20
 
 ### Final quality and live-browser pass
@@ -684,7 +700,7 @@ The demo password remains `DemoStaffPass123!`. These accounts are seed data only
 1. I added `backend/src/config/session.js`.
 2. I wired `express-session` and `connect-pg-simple` into `backend/src/app.js`.
 3. I configured the PostgreSQL-backed store to use `user_sessions` and create the table if missing.
-4. I added production proxy handling and a development fallback secret so the app still boots cleanly outside production.
+4. I added the production proxy settings and a development fallback secret so the app still boots cleanly outside production.
 
 ### Why It Changed
 

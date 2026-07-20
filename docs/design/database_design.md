@@ -22,8 +22,8 @@ Smart Schedule uses PostgreSQL as the source of truth for identity, staff profil
 2. shifts come before assignments because an assignment must point to a real shift
 3. a shift has one assignment in the current MVP
 4. foreign keys protect links between users, profiles, shifts, assignments, and requests
-5. SQL constraints handle simple ranges and allowed values
-6. service code handles the scheduling rules that need several rows at once
+5. SQL constraints enforce simple ranges and allowed values
+6. service code checks the scheduling rules that need several rows at once
 
 ## Important constraints
 

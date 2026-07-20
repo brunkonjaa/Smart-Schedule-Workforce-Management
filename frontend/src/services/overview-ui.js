@@ -302,7 +302,7 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
         dashboard.recentLeave.map((request) => {
           return `${request.fullName || 'Staff member'}: ${request.startDate} to ${request.endDate} (${request.reason})`;
         }),
-        'No time off requests are waiting right now.',
+        'No Time Off requests are waiting.',
         'leave',
         'Open time off',
         'manager-overview-panel'
@@ -388,7 +388,10 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
             renderStaffDashboard(workspaceElement, weekStart, refreshed, sessionResult.user, refresh);
           } catch (error) {
             button.disabled = false;
-            button.textContent = error.message || 'Could not accept';
+            const feedback = uiHelpers.getErrorFeedback(error, 'The swap was not accepted. Reload the page and try again.');
+            button.textContent = 'Try accept again';
+            button.title = feedback.text;
+            button.setAttribute('aria-label', `${feedback.text} Try accept again.`);
           }
         };
         renderStaffDashboard(workspaceElement, weekStart, dashboard, sessionResult.user, refresh);
