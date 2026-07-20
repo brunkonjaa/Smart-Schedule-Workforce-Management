@@ -83,7 +83,7 @@ window.SmartSchedule.chatUi = (function createChatUi() {
     if (messages.length === 0) {
       const empty = document.createElement('p');
       empty.className = 'chat-empty';
-      empty.textContent = 'No workplace messages yet. Keep the conversation professional and work-related.';
+      empty.textContent = 'No messages yet. Keep the conversation professional and work-related.';
       messageList.appendChild(empty);
       updateLatestButton();
       return;
@@ -201,7 +201,7 @@ window.SmartSchedule.chatUi = (function createChatUi() {
     socket = new WebSocket(`${protocol}//${window.location.host}/ws/chat`);
     setStatus('Connecting…');
 
-    socket.addEventListener('open', () => setStatus('Workplace chat · connected', 'success'));
+    socket.addEventListener('open', () => setStatus('NodyChat · connected', 'success'));
     socket.addEventListener('message', (event) => {
       let payload;
       try { payload = JSON.parse(event.data); } catch (error) { return; }
@@ -216,7 +216,7 @@ window.SmartSchedule.chatUi = (function createChatUi() {
         renderMessages();
         updateLauncher();
         updateUnreadPointer();
-        setStatus('Workplace chat · connected', 'success');
+        setStatus('NodyChat · connected', 'success');
       } else if (payload.type === 'message' && payload.message) {
         receiveMessage(payload.message);
       } else if (payload.type === 'error') {
@@ -277,7 +277,7 @@ window.SmartSchedule.chatUi = (function createChatUi() {
     const title = document.createElement('h2');
     title.textContent = 'NodyChat';
     const copy = document.createElement('p');
-    copy.textContent = 'One workplace room for rota and staff updates.';
+    copy.textContent = 'Use the workplace room or choose a direct staff conversation.';
     heading.append(title, copy);
     const close = document.createElement('button');
     close.className = 'chat-close-button';
@@ -346,8 +346,8 @@ window.SmartSchedule.chatUi = (function createChatUi() {
     input = document.createElement('textarea');
     input.maxLength = maxMessageLength;
     input.rows = 2;
-    input.placeholder = 'Write a workplace message…';
-    input.setAttribute('aria-label', 'Workplace message');
+    input.placeholder = 'Write a message…';
+    input.setAttribute('aria-label', 'Chat message');
     const actions = document.createElement('div');
     actions.className = 'chat-compose-actions';
     const mute = document.createElement('button');
@@ -388,7 +388,7 @@ window.SmartSchedule.chatUi = (function createChatUi() {
     });
     input.addEventListener('input', () => {
       if (status?.dataset.tone === 'error' && input.value.trim()) {
-        setStatus('Workplace chat · connected', 'success');
+        setStatus('NodyChat · connected', 'success');
       }
     });
     form.addEventListener('submit', (event) => {

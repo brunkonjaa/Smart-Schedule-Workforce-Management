@@ -175,6 +175,16 @@ Examples:
 - `127` swap request awaiting manager decision
 - `128` swap approval blocked by role conflict
 - `129` rejected swap result
+- `130` hosted staff rota after a fresh authenticated sign-in
+- `131` hosted staff Time Off page with an approved demo request
+- `132` hosted NodyChat workplace room with unread-state evidence
+- `133` corrected local NodyChat direct conversation selected for Maeve Ryan
+- `134` terminal migration status showing migrations `001` through `022` applied
+- `135` hosted staff rota at verified 200% Chrome zoom
+- `136` terminal backend coverage run with 14 suites and 91 tests passing
+- `137` local staff Time Off request rejected because the end date is before the start date
+- `138` local manager assignment rejected because the end time is before the start time, with focus returned to Start time
+- `139` fresh local PowerShell coverage run with 14 suites and 91 tests passing on 20 July 2026
 
 ## Practical Reminder
 

@@ -7,24 +7,30 @@ This plan describes the checks used for the current Smart Schedule workflow. The
 The current local migrated database run passes:
 
 ```text
-12 test suites passed
-87 tests passed across 13 suites in 43.998 seconds on 17 July 2026. This current working-tree result includes five NodyChat route/read-state tests added after the frozen `a12490f885146d77475faf6f7308b3133305e1b7` checkpoint.
+14 test suites passed
+91 tests passed
+Time: 20.142 seconds
 ```
 
-The suites cover authentication, staff, leave, shifts, assignments, rota, password reset, shift swaps, rate limiting, middleware, and database configuration. The test database needs all current migrations before the full suite runs.
+This local run was completed on 20 July 2026 against migrations 001 to 022. Screenshot `139` records the terminal result. It starts from final report-evidence commit `db2837c854291b8965c3f3e4b3d9b1cc9e018527` and includes the current quality pass: five NodyChat route/read-state tests plus four WebSocket authentication/lifetime tests.
+
+The suites cover authentication, staff, leave, shifts, assignments, rota, password reset, shift swaps, rate limiting, middleware, database configuration and NodyChat HTTP/WebSocket boundaries. The test database needs all current migrations before the full suite runs.
 
 Run it from `backend/`:
 
 ```powershell
-npm test -- --runInBand
+npm test
 ```
 
-For the local evidence database in PowerShell:
+Jest sets `NODE_ENV=test`. The environment loader then uses `backend/local-evidence.env`, so the local suite writes only to `smart_schedule_local`. A `DATABASE_URL` supplied by GitHub Actions still takes precedence, which keeps the CI PostgreSQL service separate as well.
+
+Coverage is reproducible with:
 
 ```powershell
-$env:DOTENV_CONFIG_PATH='local-evidence.env'
-node -r dotenv/config node_modules/jest/bin/jest.js --runInBand
+npm run test:coverage
 ```
+
+The current backend result is 72.99% statements, 57.63% branches, 81.67% functions and 73.61% lines. `backend/jest.config.js` enforces minimum global thresholds of 70% statements, 55% branches, 80% functions and 70% lines. The detailed scope and limits are in [backend_coverage.md](backend_coverage.md).
 
 ## What is checked automatically
 
@@ -39,6 +45,8 @@ node -r dotenv/config node_modules/jest/bin/jest.js --runInBand
 9. rota week, department, staff visibility, and manager action behavior
 10. password reset generic response, token expiry, single-use behavior, and manager request visibility
 11. shift swap creation, past-shift rejection, open/targeted requests, target acceptance, manager approval/rejection, ownership, and conflict checks
+12. NodyChat workplace membership, direct-room reuse, unread clearing, outsider denial/no insert, and self-conversation rejection
+13. WebSocket cross-origin denial, unauthenticated denial, authenticated history, and closure after account deactivation
 
 ## Local database checks
 
@@ -72,4 +80,4 @@ Screenshots belong under `assets/screenshots/tests/`, use one project-wide numbe
 
 ## Still to do
 
-The four confirmed fixes passed focused local regression on 16 July 2026. The remaining work is final report and evidence alignment, followed by one hosted check after this checkpoint is committed and deployed.
+The GitHub Actions workflow now defines a clean PostgreSQL 16 migration, coverage, test and production dependency-audit job. It cannot have a visible remote pass until this working tree is committed and pushed. The live manager/staff browser, keyboard and focus checks passed at 1920 x 855, 1024 x 768 and 390 x 844. Actual 200% Chrome zoom also passed at a measured 960 x 427 CSS viewport with device pixel ratio 2 and no page-level horizontal overflow. The manager assignment dialog rejected 17:00 to 10:00, returned focus to Start time and left the future rota cell OFF. The fresh hosted staff sign-in and rota, Time Off, swap, rota-history and NodyChat reads passed on 18 July 2026. A fresh hosted manager sign-in is still open because its current password is not stored in the project files.

@@ -46,9 +46,9 @@ Nothing from this preview is saved straight away. The manager can check the sugg
 
 ## Current check
 
-The frozen starting checkpoint is `a12490f885146d77475faf6f7308b3133305e1b7`, committed on 17 July 2026 at 02:59:56 +01:00. The current uncommitted report-audit working tree passes `87` tests across `13` suites in 43.998 seconds, including the new NodyChat route and read-state suite. Committed screenshot files reach `129`, including NodyChat workplace-room evidence, the local chat migration, Render configuration limits, current local layouts and the staff/manager swap sequence.
+The pushed report-evidence checkpoint is `db2837c854291b8965c3f3e4b3d9b1cc9e018527`, committed on 17 July 2026 at 20:13:17 +01:00. The current quality pass builds on that commit with WebSocket lifetime re-authorisation/tests, backend coverage thresholds and a PostgreSQL-backed GitHub Actions workflow. The local migrated run passes `91` tests across `14` suites. Screenshot evidence now reaches `139`, including a fresh hosted staff session, workplace and direct NodyChat views, the full migration chain, actual 200% Chrome zoom, the terminal coverage result, rejected Time Off date order, focused invalid assignment-time feedback and the fresh 20 July terminal rerun.
 
-The main code workflows are in place. Fresh hosted manager and staff UAT still needs a final pass, then the report and evidence references need to be checked against this version of the app. I have not described those as finished because the final UAT has not happened yet.
+The main code workflows and final report-supporting files are in place. The live manager/staff browser matrix passes at 1920 x 855, 1024 x 768 and 390 x 844, including invalid login, direct manager-route denial for staff, NodyChat focus/Escape and the rota modal focus trap. Chrome was also checked at a real 200% zoom level: the CSS viewport changed from 1920 x 855 to 960 x 427 and no page-level horizontal overflow appeared. A fresh hosted staff sign-in then loaded the rota, Time Off, swap, rota-history and NodyChat endpoints. A fresh hosted manager sign-in is still separate because the current manager password is not stored in the repo. The WebSocket harness is local and passing, but its GitHub status cannot be claimed until the workflow is committed and runs remotely.
 
 ## Important route groups
 
@@ -110,7 +110,9 @@ Run from `backend/`:
 npm test
 ```
 
-The current result is `13` passed suites and `87` passed tests in 43.998 seconds. The test database needs the migrations through `022_create_private_chat_conversations.sql`, not only the older password-reset and swap migrations. `chat-routes.test.js` now checks workplace enrolment, direct-room reuse, unread clearing, outsider denial/no insert and self-conversation rejection. WebSocket connection-lifetime re-authorisation remains a documented security limitation rather than a tested claim.
+The current local result is `14` passed suites and `91` passed tests in 20.142 seconds with the coverage thresholds active. This is the recorded run in screenshot `139`; the exact time changes slightly between runs. When Jest sets `NODE_ENV=test`, `backend/src/config/env.js` loads `local-evidence.env`, so the local suite uses `smart_schedule_local` instead of the hosted Neon database. An explicit CI `DATABASE_URL` still takes precedence. The test database needs the migrations through `022_create_private_chat_conversations.sql`, not only the older password-reset and swap migrations. `chat-routes.test.js` checks workplace enrolment, direct-room reuse, unread clearing, outsider denial/no insert and self-conversation rejection. `chat-ws.test.js` checks cross-origin and unauthenticated denial, authenticated history and closure of an existing connection after account deactivation.
+
+`npm run test:coverage` currently reports 72.99% statements, 57.63% branches, 81.67% functions and 73.61% lines. The enforced minimums and limitations are recorded in `docs/testing/backend_coverage.md`. `.github/workflows/backend-checks.yml` defines the same migration, coverage, test and production dependency-audit path for GitHub Actions.
 
 ## Main project files
 

@@ -27,7 +27,61 @@ Each entry should answer four practical things:
 3. what proves it
 4. what comes next
 
+## 2026-07-18 to 2026-07-20
+
+### Final quality and live-browser pass
+
+- Pushed base: `db2837c854291b8965c3f3e4b3d9b1cc9e018527`
+- Current recorded result: 14 suites and 91 tests passed in 20.142 seconds with coverage thresholds active
+- Coverage: 72.99% statements, 57.63% branches, 81.67% functions and 73.61% lines
+- Production dependency audit: zero known vulnerabilities across 118 production dependencies
+
+### What Changed
+
+1. I added four WebSocket harness tests for cross-origin denial, missing authentication, authenticated history and closing an existing connection after account deactivation.
+2. The WebSocket now reloads its PostgreSQL session and active user before actions and during heartbeat. Invalid connections close with code 1008.
+3. I added global backend coverage thresholds and a GitHub Actions workflow that installs against PostgreSQL 16, applies all migrations, runs coverage/tests and checks production dependencies.
+4. I reran the local browser matrix with manager and staff accounts at 1920 x 855, 1024 x 768 and 390 x 844.
+5. Invalid login, manager routes, staff RBAC denial, NodyChat direct selection/Escape focus return and the rota modal focus trap passed live.
+6. The hosted public root returned 200 after a 23.536 second free-tier wake-up. A warm health response returned 200 in 81 ms with the database connected, and unauthenticated `/api/v1/auth/me` returned 401 in 114 ms.
+7. A fresh hosted fake-staff sign-in passed. The same session loaded the weekly rota, Time Off, swaps, rota history and NodyChat data, and the interface showed the staff-only navigation boundary.
+8. I completed a real 200% Chrome zoom run. The measured viewport changed from 1920 x 855 at device pixel ratio 1 to 960 x 427 at device pixel ratio 2 without page-level horizontal overflow.
+9. I corrected NodyChat's static workplace-only wording so the same panel now describes workplace and direct conversations accurately.
+10. The Jest environment now loads `local-evidence.env` when `NODE_ENV=test`. This stopped local tests from writing synthetic accounts into the hosted Neon database. I removed the three exact `rota-...@example.com` residue accounts left by an earlier interrupted run.
+11. Screenshot evidence `130` to `139` records the hosted staff flow, corrected direct chat, migrations `001` to `022`, actual 200% zoom, the terminal coverage results, rejected Time Off date order and focused invalid assignment-time feedback. Screenshot `139` is the fresh PowerShell rerun completed on 20 July.
+
+### Limit Accepted
+
+1. The GitHub workflow has no remote result until this working tree is committed and pushed.
+2. The fresh hosted staff run passed, but a fresh hosted manager login is still open because the current manager password is not stored in the project files. I did not reset it only to create evidence.
+3. Invalid Time Off and assignment time order both passed, but these are two representative validation paths rather than proof of every invalid field combination.
+4. Independent participant testing remains outside this work plan.
+
+### Next Step
+
+The report wording, word count, TOC and rendered-page inspection are complete for this working tree. The main word count is 7,263 and the verified Word export is 31 pages. Figure 15 now uses the clean hosted staff screenshot, and the final PDF beside the DOCX was replaced after the last render. Do not add another product feature. Only record a new final hash after the user explicitly asks for a commit.
+
 ## 2026-07-17
+
+### Final report-evidence checkpoint
+
+- Final commit: `db2837c854291b8965c3f3e4b3d9b1cc9e018527`
+- Commit date: 17 July 2026, 20:13:17 +01:00
+- Regression result: 13 suites and 87 tests passed; the last staged-source run completed in 44.861 seconds
+
+### What Changed
+
+1. The report-audit files, six diagrams, version 2.0 SRS, security analysis, API table, performance evidence and NodyChat route tests were committed together.
+2. The final commit also contains the direct-conversation permission fixes, WebSocket origin/frame limits and keyboard/contrast changes described in the report evidence.
+3. Local `HEAD`, `origin/main` and the remote `main` ref were verified at the same full commit hash after the push.
+
+### Limit Accepted
+
+The commit does not prove the fresh hosted authenticated smoke test, live keyboard/browser-size/200% zoom matrix or WebSocket connection-lifetime re-authorisation. These stay named as evidence gaps instead of being turned into passed claims.
+
+### Next Step
+
+Use this full hash in the report, README and final control notes. Do not use the earlier `a12490f...` checkpoint as the current submission reference.
 
 ### NodyChat and evidence checkpoint
 
@@ -46,7 +100,7 @@ Each entry should answer four practical things:
 
 The report-audit pass added `chat-routes.test.js`. It covers workplace membership for later-created users, direct conversation reuse, per-conversation unread clearing, outsider send/read denial and self-conversation rejection. A dedicated WebSocket harness is still missing, especially for re-authorising a socket after a session expires or an account is deactivated.
 
-### Next Step
+### Next Step At That Checkpoint
 
 Align the report, README, requirements, API contract, RBAC matrix, migration list and screenshot log with this checkpoint before any final documentation commit.
 

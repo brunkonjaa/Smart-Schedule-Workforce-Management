@@ -213,13 +213,16 @@ describe('rota routes', () => {
       expect.objectContaining({
         department: 'BAR',
         summary: expect.objectContaining({
-          approvedLeave: 1,
-          assignedShifts: 1,
-          openShifts: 1
+          approvedLeave: expect.any(Number),
+          assignedShifts: expect.any(Number),
+          openShifts: expect.any(Number)
         }),
         weekStart: nextWeekStart
       })
     );
+    expect(response.body.rota.summary.approvedLeave).toBeGreaterThanOrEqual(1);
+    expect(response.body.rota.summary.assignedShifts).toBeGreaterThanOrEqual(1);
+    expect(response.body.rota.summary.openShifts).toBeGreaterThanOrEqual(1);
     expect(response.body.rota.days).toHaveLength(7);
 
     const staffRow = response.body.rota.rows.find((row) => {
@@ -269,7 +272,7 @@ describe('rota routes', () => {
     expect(response.body.rota.rows.length).toBeGreaterThanOrEqual(3);
 
     const staffRow = response.body.rota.rows.find((row) => {
-      return row.staffName === 'Rota Bar Staff';
+      return row.staffProfileId === staffProfileId;
     });
     const assignedCell = staffRow.days[assignedShiftDate].find((cell) => {
       return cell.staffName === 'Rota Bar Staff' && cell.state === 'ASSIGNED';

@@ -2,7 +2,7 @@
 
 ## Audit point
 
-This review uses repository checkpoint `a12490f885146d77475faf6f7308b3133305e1b7` as the frozen starting point and includes the narrow NodyChat corrections made during the report audit. It covers the Express backend, PostgreSQL/session boundary, browser frontend and NodyChat WebSocket. It does not claim a penetration test or an independent security assessment.
+This review starts from final report-evidence checkpoint `db2837c854291b8965c3f3e4b3d9b1cc9e018527`, committed on 17 July 2026 at 20:13:17 +01:00, and includes the current 18 July WebSocket lifetime test/fix. It covers the Express backend, PostgreSQL/session boundary, browser frontend and NodyChat WebSocket. It does not claim a penetration test or an independent security assessment.
 
 `npm audit --omit=dev --json` was run on 17 July 2026. It reported zero known vulnerabilities across 118 production dependencies at that time. This result can change when package advisories change, so the package-lock still needs to stay part of future checks.
 
@@ -28,7 +28,7 @@ The browser-to-Render connection is the first boundary. HTTPS carries the sessio
 | CSRF | state-changing REST calls | custom mutation header, same-origin `Origin`/`Referer` check when supplied, `SameSite=Lax` | the header is not a rotating token; this is accepted for the current same-origin browser client |
 | Broken role or object access | manager routes, leave ownership, swaps, direct chat | backend role middleware plus service ownership/participant queries | each new route needs its own negative test; hidden buttons alone are not treated as security |
 | Stored XSS through chat or names | NodyChat and staff data | strict CSP and DOM `textContent` for live chat content (`chat-ui.js:82-105`) | static page templates still use `innerHTML`; their data currently comes from local code, not API responses |
-| WebSocket hijacking | `/ws/chat` upgrade | active session lookup and exact same-origin requirement (`chat-ws.js:58-69`) | long-lived sockets are not re-authorised against the database after upgrade |
+| WebSocket hijacking or stale authority | `/ws/chat` upgrade and existing connection | active session lookup, exact same-origin requirement, and stored-session/account re-check before actions and during heartbeat | the check depends on the PostgreSQL session store being available; idle invalidation is detected on the next heartbeat |
 | Oversized/flood traffic | JSON and WebSocket input | 32 KB JSON limit (`app.js:50`), 16 KB WebSocket maximum (`chat-ws.js:47-51`), rate limits and per-socket send delay | limits are process-local; a multi-instance deployment would need a shared limiter |
 | Direct-message data leak | conversation bootstrap/send/read/broadcast | participant join in `chat-service.js:52-60`, read join at lines 225-239, broadcast list at `chat-ws.js:159-163` | no user-facing delete, retention or moderation workflow exists |
 | SQL injection or invalid relationships | all workflow input | parameterised `pg` calls, exact field validation, foreign keys/checks and serializable assignment operations | database credentials and Neon access controls are deployment concerns outside the repo |
@@ -40,19 +40,19 @@ The browser-to-Render connection is the first boundary. HTTPS carries the sessio
 2. `backend/src/config/session.js:8-12` sets the cookie to `HttpOnly`, `SameSite=Lax`, and production `Secure`. Lines 74-80 record the absolute and idle policy in the server-side session.
 3. `backend/src/middleware/auth.js:56-75` rejects an expired, missing, inactive-user or inactive-profile session after checking the database.
 4. `backend/src/middleware/request-security.js:17-35` requires the project mutation header and rejects a supplied cross-origin `Origin` or `Referer`.
-5. `backend/src/services/chat-ws.js:47-69` now caps frames at 16 KB, requires an `Origin` matching the request host, loads the server session and rejects inactive accounts.
+5. `backend/src/services/chat-ws.js` caps frames at 16 KB, requires an `Origin` matching the request host, loads the server session and rejects inactive accounts. It reloads the stored session and active account before each client action and during heartbeat.
 6. `backend/src/services/chat-service.js:52-60`, `225-239` and `242-252` enforce direct-conversation membership for load, read and send operations.
 7. `frontend/src/services/chat-ui.js:82-105` inserts message and sender data with `textContent`, not HTML parsing. The localStorage values in this frontend are shell page/theme and chat preference values, not passwords, session IDs or reset tokens.
 
 ## Prioritised findings
 
-### SS-SEC-01 - Medium - WebSocket authorisation is only checked at upgrade
+### SS-SEC-01 - Remediated - WebSocket lifetime authorisation
 
-Evidence: `backend/src/services/chat-ws.js:64-80` checks the account before `handleUpgrade`, but lines 82-185 keep the accepted user snapshot for the lifetime of the socket. The heartbeat checks whether the client is alive, not whether the account/session is still valid.
+Earlier evidence: the original socket checked the account before `handleUpgrade` but kept that accepted user snapshot for the lifetime of the connection.
 
-Impact: if a manager account is deactivated or its server session expires while NodyChat is open, that already-connected socket can continue until it disconnects. New REST calls and new WebSocket connections are correctly rejected.
+Change: `loadActiveSocketUser` and `reauthorizeSocket` reload the PostgreSQL session, check absolute expiry and reload the active account before a message/open/read action and during heartbeat. Invalid connections close with policy code 1008.
 
-Recommended fix: re-check the session absolute expiry and active account during heartbeat or before every message action, then close the socket on failure. This is not changed in the report pass because it alters live connection policy and needs a dedicated WebSocket test harness.
+Proof: `chat-ws.test.js` rejects cross-origin and unauthenticated upgrades, accepts an authenticated same-origin connection and proves that an already-connected socket closes after the account is deactivated. The remaining limit is that an idle invalid connection is detected at the next heartbeat rather than immediately at the database write.
 
 ### SS-SEC-02 - Low - Rate limits are local to one Node process
 
@@ -70,4 +70,4 @@ Impact: workplace and direct messages remain in PostgreSQL until an operator rem
 
 Recommended fix: document a retention period and deletion responsibility before using NodyChat with real employee data. This is outside the frozen student MVP and is recorded as a limitation, not silently presented as complete.
 
-No critical or high-severity issue was found in this repository review. That is not proof that none exists; it means none was demonstrated by the checked source, dependency audit and automated route evidence.
+No open critical, high or medium-severity issue was demonstrated by this repository review. The remaining recorded findings are the single-process limiter and chat retention/deletion policy. This is not proof that no other issue exists; the work is still a source/dependency/test review rather than an independent penetration test.

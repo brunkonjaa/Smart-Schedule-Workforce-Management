@@ -4,7 +4,10 @@ const dotenv = require('dotenv');
 
 const backendEnvPath = path.resolve(__dirname, '../../.env');
 const rootEnvPath = path.resolve(__dirname, '../../../.env');
-const envPath = fs.existsSync(backendEnvPath) ? backendEnvPath : rootEnvPath;
+const localTestEnvPath = path.resolve(__dirname, '../../local-evidence.env');
+const envPath = process.env.NODE_ENV === 'test' && fs.existsSync(localTestEnvPath)
+  ? localTestEnvPath
+  : fs.existsSync(backendEnvPath) ? backendEnvPath : rootEnvPath;
 
 dotenv.config({
   path: envPath

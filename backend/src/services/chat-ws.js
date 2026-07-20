@@ -37,9 +37,66 @@ const parseSession = (request) => {
   });
 };
 
+const reloadSession = (request) => {
+  return new Promise((resolve, reject) => {
+    if (!request.session?.reload) {
+      resolve(null);
+      return;
+    }
+
+    request.session.reload((error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve(request.session);
+    });
+  });
+};
+
+const loadActiveSocketUser = async (request, { reload = false } = {}) => {
+  const session = reload ? await reloadSession(request) : request.session;
+  const userId = session?.user?.id;
+  const absoluteExpiresAt = session?.auth?.absoluteExpiresAt;
+
+  if (absoluteExpiresAt) {
+    const expiresAtTimestamp = Date.parse(absoluteExpiresAt);
+
+    if (Number.isFinite(expiresAtTimestamp) && expiresAtTimestamp <= Date.now()) {
+      return null;
+    }
+  }
+
+  const user = userId ? await findUserById(userId) : null;
+
+  if (!user || !user.isActive || user.staffProfileIsActive === false) {
+    return null;
+  }
+
+  return user;
+};
+
 const sendJson = (socket, payload) => {
   if (socket.readyState === WebSocket.OPEN) {
     socket.send(JSON.stringify(payload));
+  }
+};
+
+const reauthorizeSocket = async (socket) => {
+  try {
+    const user = await loadActiveSocketUser(socket.request, { reload: true });
+
+    if (!user) {
+      socket.close(1008, 'Session is no longer valid.');
+      return null;
+    }
+
+    socket.user = user;
+    return user;
+  } catch (error) {
+    socket.close(1011, 'Session could not be checked.');
+    return null;
   }
 };
 
@@ -64,10 +121,10 @@ const setupChatWebSocket = (server) => {
 
     try {
       const session = await parseSession(request);
-      const userId = session?.user?.id;
-      const user = userId ? await findUserById(userId) : null;
+      request.session = session;
+      const user = await loadActiveSocketUser(request);
 
-      if (!user || !user.isActive || user.staffProfileIsActive === false) {
+      if (!user) {
         socket.destroy();
         return;
       }
@@ -85,6 +142,7 @@ const setupChatWebSocket = (server) => {
     socket.isAlive = true;
     socket.lastMessageAt = 0;
     socket.user = user;
+    socket.request = request;
     socket.conversationId = null;
 
     socket.on('pong', () => {
@@ -102,6 +160,11 @@ const setupChatWebSocket = (server) => {
     socket.on('message', async (rawMessage) => {
       let payload;
 
+      const activeUser = await reauthorizeSocket(socket);
+      if (!activeUser) {
+        return;
+      }
+
       try {
         payload = JSON.parse(rawMessage.toString());
       } catch (error) {
@@ -110,7 +173,7 @@ const setupChatWebSocket = (server) => {
       }
 
       if (payload?.type === 'read') {
-        const saved = await markChatMessagesRead(user.id, payload.messageId);
+        const saved = await markChatMessagesRead(activeUser.id, payload.messageId);
         if (saved) {
           sendJson(socket, { messageId: payload.messageId, type: 'read-confirmed' });
         }
@@ -118,12 +181,12 @@ const setupChatWebSocket = (server) => {
       }
 
       if (payload?.type === 'open-conversation') {
-        const conversation = await getConversationForUser(user.id, payload.conversationId);
+        const conversation = await getConversationForUser(activeUser.id, payload.conversationId);
         if (!conversation) {
           sendJson(socket, { message: 'You cannot open this conversation.', type: 'error' });
           return;
         }
-        const bootstrap = await getChatBootstrap(user.id, conversation.id);
+        const bootstrap = await getChatBootstrap(activeUser.id, conversation.id);
         socket.conversationId = bootstrap.conversationId;
         sendJson(socket, { ...bootstrap, type: 'history' });
         return;
@@ -147,7 +210,7 @@ const setupChatWebSocket = (server) => {
       }
 
       try {
-        const result = await createChatMessage(user.id, {
+        const result = await createChatMessage(activeUser.id, {
           ...payload,
           conversationId: socket.conversationId
         });
@@ -172,13 +235,19 @@ const setupChatWebSocket = (server) => {
 
   const heartbeat = setInterval(() => {
     webSocketServer.clients.forEach((socket) => {
-      if (!socket.isAlive) {
-        socket.terminate();
-        return;
-      }
+      void reauthorizeSocket(socket).then((activeUser) => {
+        if (!activeUser) {
+          return;
+        }
 
-      socket.isAlive = false;
-      socket.ping();
+        if (!socket.isAlive) {
+          socket.terminate();
+          return;
+        }
+
+        socket.isAlive = false;
+        socket.ping();
+      });
     });
   }, heartbeatIntervalMs);
 
