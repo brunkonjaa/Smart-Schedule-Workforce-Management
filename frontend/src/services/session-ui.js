@@ -282,7 +282,7 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
       className: 'content-panel content-panel--form content-panel--span-5 content-panel--login'
     });
     const heading = createElement('div', { className: 'panel-heading' });
-    heading.appendChild(createElement('h3', { text: 'Account access' }));
+    heading.appendChild(createElement('h2', { text: 'Account access' }));
     heading.appendChild(
       createElement('p', {
         className: 'panel-copy',
@@ -300,24 +300,6 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     });
     const formGrid = createElement('div', { className: 'form-grid' });
 
-    const decoyUsernameInput = createElement('input', {
-      className: 'login-decoy-input',
-      attributes: {
-        autocomplete: 'username',
-        tabindex: -1,
-        type: 'text'
-      }
-    });
-    const decoyPasswordInput = createElement('input', {
-      className: 'login-decoy-input',
-      attributes: {
-        autocomplete: 'current-password',
-        tabindex: -1,
-        type: 'password'
-      }
-    });
-    form.append(decoyUsernameInput, decoyPasswordInput);
-
     const emailField = createElement('label', {
       className: 'form-field form-field--span-12'
     });
@@ -327,7 +309,7 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
       attributes: {
         autocapitalize: 'none',
         autocorrect: 'off',
-        autocomplete: 'off',
+        autocomplete: 'username',
         inputmode: 'email',
         name: 'work-account',
         spellcheck: false,
@@ -344,7 +326,7 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     const passwordInput = createElement('input', {
       className: 'input-control',
       attributes: {
-        autocomplete: 'off',
+        autocomplete: 'current-password',
         name: 'work-passcode',
         type: 'password'
       }

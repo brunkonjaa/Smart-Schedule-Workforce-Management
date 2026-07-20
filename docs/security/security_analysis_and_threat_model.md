@@ -36,7 +36,7 @@ The browser-to-Render connection is the first boundary. HTTPS carries the sessio
 
 ## Verified controls
 
-1. `backend/src/app.js:27-50` disables the Express signature, applies Helmet with a restrictive content security policy, and sets request body limits.
+1. `backend/src/app.js` disables the Express signature, applies Helmet with a restrictive content security policy, sets a two-year HSTS policy with subdomain coverage and the preload directive, and limits request body sizes.
 2. `backend/src/config/session.js:8-12` sets the cookie to `HttpOnly`, `SameSite=Lax`, and production `Secure`. Lines 74-80 record the absolute and idle policy in the server-side session.
 3. `backend/src/middleware/auth.js:56-75` rejects an expired, missing, inactive-user or inactive-profile session after checking the database.
 4. `backend/src/middleware/request-security.js:17-35` requires the project mutation header and rejects a supplied cross-origin `Origin` or `Referer`.

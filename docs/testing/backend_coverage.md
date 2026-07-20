@@ -31,4 +31,4 @@ Coverage does not prove that a tested assertion is correct, that the browser lay
 
 ## CI use
 
-`.github/workflows/backend-checks.yml` creates a clean PostgreSQL 16 service, installs from `package-lock.json`, applies every migration, runs the coverage command and runs `npm audit --omit=dev`. The workflow file is now present locally. A green GitHub status can only be claimed after the workflow is committed and runs on GitHub.
+`.github/workflows/backend-checks.yml` creates a clean PostgreSQL 16 service, installs from `package-lock.json`, applies every migration, runs the coverage command and runs `npm audit --omit=dev`. The first remote run passed for commit `8ed7c28c1b7f3e33377dc1012378676f31ee0931` on 20 July 2026. It completed in 55 seconds and uploaded the coverage report. Screenshot `140` records the job steps and green result.

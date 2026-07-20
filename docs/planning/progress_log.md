@@ -48,11 +48,11 @@ Each entry should answer four practical things:
 8. I completed a real 200% Chrome zoom run. The measured viewport changed from 1920 x 855 at device pixel ratio 1 to 960 x 427 at device pixel ratio 2 without page-level horizontal overflow.
 9. I corrected NodyChat's static workplace-only wording so the same panel now describes workplace and direct conversations accurately.
 10. The Jest environment now loads `local-evidence.env` when `NODE_ENV=test`. This stopped local tests from writing synthetic accounts into the hosted Neon database. I removed the three exact `rota-...@example.com` residue accounts left by an earlier interrupted run.
-11. Screenshot evidence `130` to `139` records the hosted staff flow, corrected direct chat, migrations `001` to `022`, actual 200% zoom, the terminal coverage results, rejected Time Off date order and focused invalid assignment-time feedback. Screenshot `139` is the fresh PowerShell rerun completed on 20 July.
+11. Screenshot evidence `130` to `140` records the hosted staff flow, corrected direct chat, migrations `001` to `022`, actual 200% zoom, the terminal coverage results, rejected Time Off date order, focused invalid assignment-time feedback and the successful GitHub Actions backend job. Screenshot `139` is the fresh PowerShell rerun and `140` is the remote workflow result from 20 July.
 
 ### Limit Accepted
 
-1. The GitHub workflow has no remote result until this working tree is committed and pushed.
+1. The GitHub workflow checks the backend against PostgreSQL 16, but it does not replace the separate browser and accessibility checks.
 2. The fresh hosted staff run passed, but a fresh hosted manager login is still open because the current manager password is not stored in the project files. I did not reset it only to create evidence.
 3. Invalid Time Off and assignment time order both passed, but these are two representative validation paths rather than proof of every invalid field combination.
 4. Independent participant testing remains outside this work plan.

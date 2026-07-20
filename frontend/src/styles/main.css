@@ -1353,6 +1353,7 @@ textarea {
   max-width: none;
 }
 
+.panel-heading h2,
 .panel-heading h3,
 .panel-copy,
 .detail-list,
@@ -1360,6 +1361,7 @@ table {
   margin: 0;
 }
 
+.panel-heading h2,
 .panel-heading h3 {
   font-size: 1.05rem;
   line-height: 1.2;
@@ -1390,14 +1392,6 @@ table {
 
 .login-help-list li + li {
   margin-top: 10px;
-}
-
-.login-decoy-input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
 }
 
 .step-list {

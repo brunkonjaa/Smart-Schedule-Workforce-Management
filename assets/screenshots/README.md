@@ -185,6 +185,7 @@ Examples:
 - `137` local staff Time Off request rejected because the end date is before the start date
 - `138` local manager assignment rejected because the end time is before the start time, with focus returned to Start time
 - `139` fresh local PowerShell coverage run with 14 suites and 91 tests passing on 20 July 2026
+- `140` successful GitHub Actions backend job showing PostgreSQL setup, migrations, coverage tests, dependency audit and coverage upload
 
 ## Practical Reminder
 

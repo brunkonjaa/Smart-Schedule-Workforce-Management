@@ -43,6 +43,11 @@ app.use(
         scriptSrc: ["'self'"],
         styleSrc: ["'self'"]
       }
+    },
+    strictTransportSecurity: {
+      includeSubDomains: true,
+      maxAge: 63072000,
+      preload: true
     }
   })
 );
