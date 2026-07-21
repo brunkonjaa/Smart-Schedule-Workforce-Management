@@ -17,7 +17,7 @@ I have kept the two SHA values separate on purpose. Commit `38f8b4b` is the appl
 | Environment | Detail | Result |
 |---|---|---|
 | Local | Windows PowerShell, Node.js `v24.13.0`, npm `11.11.0`, configured PostgreSQL test/evidence database | Phase 4 commands passed |
-| GitHub Actions | Ubuntu runner, Node.js 22 and PostgreSQL 16 from `.github/workflows/backend-checks.yml` | Baseline `main` run `29860448346` passed; Phase 4 PR run is pending |
+| GitHub Actions | Ubuntu runner, Node.js 22 and PostgreSQL 16 from `.github/workflows/backend-checks.yml` | Baseline `main` run `29860448346` and Phase 4 PR run `29862074201` passed |
 | Hosted application | Render free web service | Health connected, deployed CSP and service worker verified |
 | Hosted database | Neon PostgreSQL | Application health reports connected; screenshots `157` and `158` record the production monitoring check |
 
@@ -33,6 +33,7 @@ All npm commands were run from `backend/`.
 | `npm audit --omit=dev` | Zero known production dependency vulnerabilities |
 | `npm run security:repo-review` | No high-confidence secret found in tracked files or Git patch history |
 | `gh run view 29860448346` | Baseline `main` workflow passed migrations, coverage, password benchmark and production audit |
+| `gh run view 29862074201` | Phase 4 PR workflow passed 29 suites, 236 tests, migrations, password benchmark and production audit |
 | Hosted header, service-worker and health requests | Exact Render WebSocket CSP origin, `smart-schedule-static-v12` and connected database health returned |
 | Hosted fake staff login, `/me` and logout | `200`, `200` and `204`; cookie value omitted |
 
@@ -57,6 +58,7 @@ The global thresholds in `backend/jest.config.js` are 70% statements, 55% branch
 - `184`: repository and Git-history secret review;
 - `185`: hosted authenticated cookie attributes with the value omitted;
 - `186`: exact Phase 4 local coverage, migration, lint and audit result;
+- `187`: exact Phase 4 pull-request workflow and CI totals;
 - GitHub Actions run `29860448346`: successful baseline `main` run after evidence merge.
 
 No older screenshot was renamed as proof of the new 29-suite Phase 4 run. Screenshot `186` was captured from the exact rerun after the new Populate-next-week test was added.
@@ -67,8 +69,7 @@ The current limits are recorded in `docs/release/known_limitations.md`. The main
 
 ## Still pending before a release tag
 
-1. Push the Phase 4 branch and let its pull-request workflow finish.
-2. Merge only after that workflow passes.
-3. Record the Phase 4 merge SHA here or in a follow-up release record.
-4. Confirm the live service still returns health, CSP and the expected service-worker version.
-5. Create the release tag only after those checks, not before them.
+1. Merge the Phase 4 pull request now that its workflow has passed.
+2. Record the Phase 4 merge SHA here or in a follow-up release record.
+3. Confirm the live service still returns health, CSP and the expected service-worker version.
+4. Create the release tag only after those checks, not before them.

@@ -4,7 +4,7 @@ This is the last checklist before a Smart Schedule release tag. A checked item m
 
 ## Repository and database
 
-- [ ] Repository status reviewed after the Phase 4 commit. Unrelated local report scripts and screenshots must remain outside the commit.
+- [x] Repository status reviewed after the Phase 4 commit. Unrelated local report scripts and screenshots remained outside the commit.
 - [x] Tracked files and Git patch history passed `npm run security:repo-review`.
 - [x] No high-confidence secret was printed by the review.
 - [x] `npm run db:migrate:status` reports migrations `001` through `027` applied in the configured verification database.
@@ -18,7 +18,7 @@ This is the last checklist before a Smart Schedule release tag. A checked item m
 - [x] Coverage passed the thresholds in `backend/jest.config.js`.
 - [x] `npm audit --omit=dev` returned zero known production vulnerabilities.
 - [x] Baseline `main` GitHub Actions run `29860448346` passed.
-- [ ] Phase 4 pull-request GitHub Actions run passed.
+- [x] Phase 4 pull-request GitHub Actions run `29862074201` passed with 29 suites and 236 tests.
 
 ## Hosted checks
 
