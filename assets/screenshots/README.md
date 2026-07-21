@@ -235,10 +235,13 @@ Examples:
 - `191` Phase 5 final deployment showing merged SHA `14e66cf` passed the main workflow and exactly matched Render, with Neon 27/27 applied, the public Edge login check passing and all 21 JavaScript/CSS responses matching the commit
 - `192` Phase 6 local release gate showing 30 passing suites, 243 passing tests, migrations `001` to `027`, final coverage, Argon2id timing and memory, zero production dependency vulnerabilities and a clean repository/history secret review
 - `193` Phase 6 draft pull request showing exact source commit `b5a6206`, passed GitHub Actions run `29867189927`, coverage artifact upload and the deliberate decision not to create the submission tag before the remaining hosted checks
+- `194` fresh PageSpeed Insights mobile result after replacing the 1.4 MB hospitality background: 99 Performance, 100 Accessibility, 96 Best Practices, 100 SEO and 1.8 s Largest Contentful Paint
+- `195` the same deployed build in PageSpeed desktop mode: 100 Performance, 100 Accessibility, 96 Best Practices, 100 SEO and 0.4 s Largest Contentful Paint
+- `196` controlled local Time Off validation check showing the warning above the form, the form returned to Reason and the missing field focused without overlapping the heading
 
-## Phase 4 and Phase 5 index review
+## Evidence index review
 
-I checked the numbered image files against this index on 21 July 2026. There are 187 numbered files and every one has a caption here. Number `108` is a JPG, not a missing PNG. Numbers `148` and `150` to `152` are unused. I left those gaps in place because renumbering later screenshots would make older report references point at the wrong evidence. No evidence number is duplicated.
+I checked the numbered image files against this index again on 21 July 2026. There are 192 numbered files and every one has a caption here. Number `108` is a JPG, not a missing PNG. Numbers `148` and `150` to `152` are unused. I left those gaps in place because renumbering later screenshots would make older report references point at the wrong evidence. No evidence number is duplicated.
 
 ## Practical reminder
 
