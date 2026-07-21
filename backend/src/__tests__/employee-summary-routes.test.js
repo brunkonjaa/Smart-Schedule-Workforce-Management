@@ -354,7 +354,7 @@ describe('Employee Summary routes', () => {
 
   const login = async (email, password) => {
     const agent = request.agent(app);
-    const response = await agent.post('/api/v1/auth/login').send({ email, password });
+    const response = await agent.post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({ email, password });
     expect(response.status).toBe(200);
     return agent;
   };

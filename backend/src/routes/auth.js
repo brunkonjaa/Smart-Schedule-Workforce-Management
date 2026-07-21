@@ -26,7 +26,12 @@ const {
   setNoStoreHeaders
 } = require('../middleware/auth');
 const { requireMutationProtection } = require('../middleware/request-security');
-const { loginRateLimiter } = require('../config/rate-limit');
+const {
+  loginRateLimiter,
+  passkeyRateLimiter,
+  passwordActionRateLimiter,
+  passwordResetRateLimiter
+} = require('../config/rate-limit');
 const { createSecurityEvent } = require('../services/security-event-service');
 const {
   consumePasswordReset,
@@ -361,6 +366,7 @@ const resolvePasskeyRegistrationUser = async (request, response) => {
 router.post(
   '/login',
   loginRateLimiter,
+  requireMutationProtection,
   asyncHandler(async (request, response) => {
     const { details, email, password, rememberMe } = validateLoginPayload(request.body);
 
@@ -475,6 +481,7 @@ router.post(
 
 router.post(
   '/passkeys/registration/verify',
+  passkeyRateLimiter,
   requireMutationProtection,
   asyncHandler(async (request, response) => {
     const registrationContext = await resolvePasskeyRegistrationUser(request, response);
@@ -602,6 +609,7 @@ router.post(
 
 router.post(
   '/passkeys/login/verify',
+  passkeyRateLimiter,
   requireMutationProtection,
   asyncHandler(async (request, response) => {
     const pendingUser = request.session.pendingPasskeyUser;
@@ -694,6 +702,7 @@ router.post(
 
 router.post(
   '/password-reset/request',
+  passwordResetRateLimiter,
   requireMutationProtection,
   asyncHandler(async (request, response) => {
     const email = normalizeEmail(request.body?.email);
@@ -726,6 +735,7 @@ router.post(
 
 router.post(
   '/password-reset/confirm',
+  passwordActionRateLimiter,
   requireMutationProtection,
   asyncHandler(async (request, response) => {
     const { details, newPassword, token } = validateResetPasswordInput(request.body);
@@ -803,6 +813,7 @@ router.get(
 
 router.post(
   '/bootstrap/first-manager',
+  loginRateLimiter,
   requireMutationProtection,
   asyncHandler(async (request, response) => {
     if (!config.firstManagerBootstrapToken) {
@@ -993,6 +1004,7 @@ router.post(
 router.post(
   '/change-password',
   requireAuth,
+  passwordActionRateLimiter,
   requireMutationProtection,
   asyncHandler(async (request, response) => {
     const { currentPassword, details, newPassword } = validateChangePasswordPayload(

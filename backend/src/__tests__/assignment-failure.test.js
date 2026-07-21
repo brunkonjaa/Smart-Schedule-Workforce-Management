@@ -95,11 +95,11 @@ describe('assignment transaction and weekly boundary failures', () => {
     );
     firstManager = request.agent(app);
     secondManager = request.agent(app);
-    expect((await firstManager.post('/api/v1/auth/login').send({
+    expect((await firstManager.post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({
       email: managerEmail,
       password
     })).status).toBe(200);
-    expect((await secondManager.post('/api/v1/auth/login').send({
+    expect((await secondManager.post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({
       email: managerEmail,
       password
     })).status).toBe(200);

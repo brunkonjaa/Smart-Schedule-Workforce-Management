@@ -76,7 +76,7 @@ describe('administrator and submission-review routes', () => {
 
   const login = async (email, password) => {
     const agent = request.agent(app);
-    const response = await agent.post('/api/v1/auth/login').send({ email, password });
+    const response = await agent.post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({ email, password });
     expect(response.status).toBe(200);
     return agent;
   };
@@ -424,7 +424,7 @@ describe('administrator and submission-review routes', () => {
       [passkeyId, secondReviewerId, crypto.randomBytes(32), crypto.randomBytes(64)]
     );
 
-    const laterLogin = await request(app).post('/api/v1/auth/login').send({
+    const laterLogin = await request(app).post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({
       email: secondReviewerEmail,
       password: secondReviewerPassword
     });

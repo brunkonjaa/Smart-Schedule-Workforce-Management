@@ -249,7 +249,7 @@ describe('assignment routes', () => {
 
   const loginAsManager = async () => {
     const agent = request.agent(app);
-    const response = await agent.post('/api/v1/auth/login').send({
+    const response = await agent.post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({
       email: managerEmail,
       password: managerPassword
     });
@@ -260,7 +260,7 @@ describe('assignment routes', () => {
 
   const loginAsStaff = async () => {
     const agent = request.agent(app);
-    const response = await agent.post('/api/v1/auth/login').send({
+    const response = await agent.post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({
       email: staffEmail,
       password: staffPassword
     });

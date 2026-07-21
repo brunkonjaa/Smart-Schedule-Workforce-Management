@@ -38,6 +38,30 @@ const buildApiRateLimiter = (options = {}) => {
   });
 };
 
+const buildPasskeyRateLimiter = (options = {}) => {
+  return buildRateLimiter({
+    limit: options.limit || 10,
+    message: {
+      error: 'Too Many Requests',
+      message: 'Too many passkey attempts. Please start sign-in again later.'
+    },
+    skipSuccessfulRequests: true,
+    windowMs: options.windowMs || 15 * 60 * 1000
+  });
+};
+
+const buildPasswordActionRateLimiter = (options = {}) => {
+  return buildRateLimiter({
+    limit: options.limit || 5,
+    message: {
+      error: 'Too Many Requests',
+      message: 'Too many password checks. Please try again later.'
+    },
+    skipSuccessfulRequests: true,
+    windowMs: options.windowMs || 15 * 60 * 1000
+  });
+};
+
 const buildHealthRateLimiter = (options = {}) => {
   return buildRateLimiter({
     limit: options.limit || 30,
@@ -49,15 +73,35 @@ const buildHealthRateLimiter = (options = {}) => {
   });
 };
 
+const buildPasswordResetRateLimiter = (options = {}) => {
+  return buildRateLimiter({
+    limit: options.limit || 5,
+    message: {
+      error: 'Too Many Requests',
+      message: 'Too many password reset requests. Please try again later.'
+    },
+    windowMs: options.windowMs || 15 * 60 * 1000
+  });
+};
+
 const apiRateLimiter = buildApiRateLimiter();
 const healthRateLimiter = buildHealthRateLimiter();
 const loginRateLimiter = buildLoginRateLimiter();
+const passkeyRateLimiter = buildPasskeyRateLimiter();
+const passwordActionRateLimiter = buildPasswordActionRateLimiter();
+const passwordResetRateLimiter = buildPasswordResetRateLimiter();
 
 module.exports = {
   apiRateLimiter,
   buildApiRateLimiter,
   buildHealthRateLimiter,
   buildLoginRateLimiter,
+  buildPasskeyRateLimiter,
+  buildPasswordActionRateLimiter,
+  buildPasswordResetRateLimiter,
   healthRateLimiter,
-  loginRateLimiter
+  loginRateLimiter,
+  passkeyRateLimiter,
+  passwordActionRateLimiter,
+  passwordResetRateLimiter
 };

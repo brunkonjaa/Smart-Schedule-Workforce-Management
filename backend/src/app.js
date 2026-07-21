@@ -3,6 +3,10 @@ const path = require('path');
 const helmet = require('helmet');
 const config = require('./config/env');
 const { checkDatabaseConnection } = require('./config/db');
+const {
+  buildHelmetOptions,
+  configureTrustProxy
+} = require('./config/http-security');
 const { sessionMiddleware } = require('./config/session');
 const {
   apiRateLimiter,
@@ -18,6 +22,7 @@ const rotaRoutes = require('./routes/rota');
 const shiftSwapRoutes = require('./routes/shift-swaps');
 const auditLogRoutes = require('./routes/audit-logs');
 const chatRoutes = require('./routes/chat');
+const { requestErrorHandler } = require('./middleware/error-handler');
 
 const frontendPublicDirectory = path.resolve(__dirname, '../../frontend/public');
 const frontendSourceDirectory = path.resolve(__dirname, '../../frontend/src');
@@ -26,32 +31,8 @@ const assetsDirectory = path.resolve(__dirname, '../../assets');
 const app = express();
 
 app.disable('x-powered-by');
-
-if (config.nodeEnv === 'production') {
-  app.set('trust proxy', 1);
-}
-
-app.use(
-  helmet({
-    contentSecurityPolicy: {
-      directives: {
-        baseUri: ["'self'"],
-        connectSrc: ["'self'"],
-        defaultSrc: ["'self'"],
-        formAction: ["'self'"],
-        imgSrc: ["'self'", 'data:'],
-        objectSrc: ["'none'"],
-        scriptSrc: ["'self'"],
-        styleSrc: ["'self'"]
-      }
-    },
-    strictTransportSecurity: {
-      includeSubDomains: true,
-      maxAge: 63072000,
-      preload: true
-    }
-  })
-);
+configureTrustProxy(app, config.nodeEnv);
+app.use(helmet(buildHelmetOptions(config.appBaseUrl)));
 app.use(sessionMiddleware);
 app.use(express.json({ limit: '32kb' }));
 app.use(express.urlencoded({ extended: false, limit: '10kb', parameterLimit: 25 }));
@@ -86,31 +67,6 @@ app.get('/health', healthRateLimiter, async (request, response) => {
   }
 });
 
-app.use((error, request, response, next) => {
-  if (response.headersSent) {
-    next(error);
-    return;
-  }
-
-  if (error.type === 'entity.too.large') {
-    return response.status(413).json({
-      error: 'Payload Too Large',
-      message: 'The request body is larger than the server limit.'
-    });
-  }
-
-  console.error('[request-error]', {
-    method: request.method,
-    path: request.originalUrl,
-    message: error.message,
-    code: error.code,
-    stack: error.stack
-  });
-
-  response.status(500).json({
-    error: 'Internal Server Error',
-    message: 'The server could not complete this request.'
-  });
-});
+app.use(requestErrorHandler);
 
 module.exports = app;

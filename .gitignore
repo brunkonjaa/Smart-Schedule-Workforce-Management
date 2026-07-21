@@ -6,6 +6,20 @@ backend/local-evidence.env
 node_modules/
 coverage/
 dist/
+*.db
+*.sqlite
+*.sqlite3
+*.log
+logs/
+tmp/
+temp/
+playwright-report/
+test-results/
+trace.zip
+*.trace
+.idea/
+.vscode/
+*.lnk
 
 # OS junk
 Thumbs.db

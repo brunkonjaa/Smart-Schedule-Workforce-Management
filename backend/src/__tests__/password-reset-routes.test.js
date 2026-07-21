@@ -24,7 +24,7 @@ describe('password reset routes', () => {
 
   const login = async (email, password) => {
     const agent = request.agent(app);
-    await agent.post('/api/v1/auth/login').send({ email, password });
+    await agent.post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({ email, password });
     return agent;
   };
 
@@ -115,7 +115,7 @@ describe('password reset routes', () => {
       .send({ newPassword: 'AnotherPassword123!', token: rawToken });
     expect(secondResponse.status).toBe(400);
 
-    const loginResponse = await request(app).post('/api/v1/auth/login').send({
+    const loginResponse = await request(app).post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({
       email: staffEmail,
       password: newPassword
     });

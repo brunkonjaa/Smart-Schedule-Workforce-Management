@@ -82,7 +82,7 @@ describe('NodyChat WebSocket authentication and lifetime checks', () => {
 
   const loginForCookie = async (loginPassword = password) => {
     const loginResponse = await request(app)
-      .post('/api/v1/auth/login')
+      .post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1')
       .send({ email, password: loginPassword });
     expect(loginResponse.status).toBe(200);
     return loginResponse.headers['set-cookie'][0].split(';')[0];
@@ -117,7 +117,7 @@ describe('NodyChat WebSocket authentication and lifetime checks', () => {
     webSocketUrl = `ws://127.0.0.1:${address.port}/ws/chat`;
 
     const loginResponse = await request(app)
-      .post('/api/v1/auth/login')
+      .post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1')
       .send({ email, password });
     expect(loginResponse.status).toBe(200);
     cookie = loginResponse.headers['set-cookie'][0].split(';')[0];

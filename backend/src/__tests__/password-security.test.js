@@ -101,7 +101,7 @@ describe('peppered Argon2id password storage', () => {
   });
 
   test('successful legacy login silently upgrades bcrypt to the current peppered scheme', async () => {
-    const response = await request(app).post('/api/v1/auth/login').send({
+    const response = await request(app).post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({
       email: legacyEmail,
       password: legacyPassword
     });
@@ -122,7 +122,7 @@ describe('peppered Argon2id password storage', () => {
       'SELECT password_hash, password_scheme FROM users WHERE id = $1',
       [unchangedUserId]
     );
-    const response = await request(app).post('/api/v1/auth/login').send({
+    const response = await request(app).post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({
       email: unchangedEmail,
       password: 'Incorrect legacy password'
     });
@@ -153,7 +153,7 @@ describe('peppered Argon2id password storage', () => {
         passwordScheme: 'ARGON2ID_PEPPERED'
       })).resolves.toBe(true);
 
-      const response = await request(app).post('/api/v1/auth/login').send({
+      const response = await request(app).post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({
         email: rotationEmail,
         password: legacyPassword
       });
@@ -215,7 +215,7 @@ describe('peppered Argon2id password storage', () => {
 
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
     try {
-      const response = await request(app).post('/api/v1/auth/login').send({
+      const response = await request(app).post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({
         email: failureEmail,
         password: legacyPassword
       });
@@ -244,11 +244,11 @@ describe('peppered Argon2id password storage', () => {
   test('password change uses Argon2id and invalidates another existing session', async () => {
     const firstAgent = request.agent(app);
     const secondAgent = request.agent(app);
-    expect((await firstAgent.post('/api/v1/auth/login').send({
+    expect((await firstAgent.post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({
       email: legacyEmail,
       password: legacyPassword
     })).status).toBe(200);
-    expect((await secondAgent.post('/api/v1/auth/login').send({
+    expect((await secondAgent.post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({
       email: legacyEmail,
       password: legacyPassword
     })).status).toBe(200);

@@ -82,7 +82,7 @@ describe('auth routes', () => {
   });
 
   test('login creates a server-side session and returns the public user', async () => {
-    const response = await request(app).post('/api/v1/auth/login').send({
+    const response = await request(app).post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({
       email: testEmail,
       password: testPassword
     });
@@ -106,7 +106,7 @@ describe('auth routes', () => {
   });
 
   test('login rejects invalid credentials with a generic error', async () => {
-    const response = await request(app).post('/api/v1/auth/login').send({
+    const response = await request(app).post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({
       email: testEmail,
       password: 'wrong-password'
     });
@@ -119,7 +119,7 @@ describe('auth routes', () => {
   });
 
   test('login validates required fields', async () => {
-    const response = await request(app).post('/api/v1/auth/login').send({
+    const response = await request(app).post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({
       email: 'bad-email'
     });
 
@@ -135,7 +135,7 @@ describe('auth routes', () => {
 
   test('login rejects a non-object JSON payload', async () => {
     const response = await request(app)
-      .post('/api/v1/auth/login')
+      .post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1')
       .set('Content-Type', 'application/json')
       .send('[]');
 
@@ -150,7 +150,7 @@ describe('auth routes', () => {
   test('auth me returns the logged-in user from the session', async () => {
     const agent = request.agent(app);
 
-    const loginResponse = await agent.post('/api/v1/auth/login').send({
+    const loginResponse = await agent.post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({
       email: testEmail,
       password: testPassword
     });
@@ -176,7 +176,7 @@ describe('auth routes', () => {
   test('manager can start passkey registration and receives a server challenge', async () => {
     const agent = request.agent(app);
 
-    const loginResponse = await agent.post('/api/v1/auth/login').send({
+    const loginResponse = await agent.post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({
       email: testEmail,
       password: testPassword
     });
@@ -199,12 +199,12 @@ describe('auth routes', () => {
   });
 
   test('remember me issues a longer session cookie than the default login', async () => {
-    const shortSessionResponse = await request(app).post('/api/v1/auth/login').send({
+    const shortSessionResponse = await request(app).post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({
       email: testEmail,
       password: testPassword
     });
     const rememberedSessionResponse = await request(app)
-      .post('/api/v1/auth/login')
+      .post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1')
       .send({
         email: testEmail,
         password: testPassword,
@@ -221,7 +221,7 @@ describe('auth routes', () => {
   test('logout destroys the session', async () => {
     const agent = request.agent(app);
 
-    await agent.post('/api/v1/auth/login').send({
+    await agent.post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({
       email: testEmail,
       password: testPassword
     });
@@ -244,7 +244,7 @@ describe('auth routes', () => {
   test('authenticated users can change their password', async () => {
     const agent = request.agent(app);
 
-    const loginResponse = await agent.post('/api/v1/auth/login').send({
+    const loginResponse = await agent.post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({
       email: testEmail,
       password: testPassword
     });
@@ -274,13 +274,13 @@ describe('auth routes', () => {
     });
 
     const oldPasswordLoginResponse = await request(app)
-      .post('/api/v1/auth/login')
+      .post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1')
       .send({
         email: testEmail,
         password: testPassword
       });
     const newPasswordLoginResponse = await request(app)
-      .post('/api/v1/auth/login')
+      .post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1')
       .send({
         email: testEmail,
         password: changedPassword
@@ -302,11 +302,11 @@ describe('auth routes', () => {
     );
     const firstAgent = request.agent(app);
     const secondAgent = request.agent(app);
-    expect((await firstAgent.post('/api/v1/auth/login').send({
+    expect((await firstAgent.post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({
       email: testEmail,
       password: changedPassword
     })).body.mfaRequired).toBe(true);
-    expect((await secondAgent.post('/api/v1/auth/login').send({
+    expect((await secondAgent.post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({
       email: testEmail,
       password: changedPassword
     })).body.mfaRequired).toBe(true);
@@ -327,7 +327,7 @@ describe('auth routes', () => {
 
   test('expired passkey challenges fail before credential verification', async () => {
     const agent = request.agent(app);
-    expect((await agent.post('/api/v1/auth/login').send({
+    expect((await agent.post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({
       email: testEmail,
       password: changedPassword
     })).body.mfaRequired).toBe(true);
@@ -351,7 +351,7 @@ describe('auth routes', () => {
 
   test('a failed passkey attempt consumes its challenge so it cannot be reused', async () => {
     const agent = request.agent(app);
-    expect((await agent.post('/api/v1/auth/login').send({
+    expect((await agent.post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({
       email: testEmail,
       password: changedPassword
     })).body.mfaRequired).toBe(true);
