@@ -222,6 +222,12 @@ Examples:
 - `183` GitHub repository security settings showing secret scanning, push protection, Dependabot security updates and vulnerability alerts enabled
 - `184` repository security review showing clean current-file and Git-history scans plus the five largest tracked files, without printing matched secret values
 - `185` authenticated hosted login and `/me` evidence showing `Secure`, `HttpOnly` and `SameSite=Lax` with the cookie value omitted, followed by a `204` cleanup logout
+- `186` Phase 4 local verification showing 29 passing suites, 236 passing tests, final coverage, migrations `001` to `027`, clean ESLint and zero known production dependency vulnerabilities
+- `187` Phase 4 pull-request GitHub Actions run showing the passed PostgreSQL migration, coverage, Argon2id, audit and artifact steps with 29 suites and 236 tests
+
+## Phase 4 index review
+
+I checked the numbered image files against this index on 21 July 2026. There are 183 numbered files and every one has a caption here. Number `108` is a JPG, not a missing PNG. Numbers `148` and `150` to `152` are unused. I left those gaps in place because renumbering later screenshots would make older report references point at the wrong evidence. No evidence number is duplicated.
 
 ## Practical Reminder
 

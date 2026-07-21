@@ -14,7 +14,7 @@ The current build includes:
 
 1. plain HTML, CSS and JavaScript frontend
 2. Node.js and Express backend
-3. PostgreSQL with ordered migrations `001` to `026`
+3. PostgreSQL with ordered migrations `001` to `027`
 4. Neon for the hosted database and Render for the live app
 5. server-side sessions using `express-session` and `connect-pg-simple`
 6. peppered Argon2id for new and changed passwords, with a silent upgrade after a correct legacy bcrypt login
@@ -50,11 +50,11 @@ Nothing from this preview is saved straight away. The manager can check the sugg
 
 ## Current check
 
-The pushed accessibility-fix checkpoint is `4a67646a58982e58d542b9fbfba07c470f424b26`, committed on 20 July 2026 at 19:11:49 +01:00. It includes the WebSocket lifetime tests, backend coverage thresholds, PostgreSQL-backed GitHub Actions workflow and the hosted Lighthouse corrections. The backend workflow is green for that pushed checkpoint.
+The Admin, peppered-password and Phase 3 security work is now merged and deployed. Pull request `#1` merged the application work as `38f8b4b7ddd0ab440dec3cff3b4cd63664460a6c`. After that merge, Render returned the exact hosted WebSocket origin in CSP, `smart-schedule-static-v12`, connected database health and the authenticated `Secure`, `HttpOnly`, `SameSite=Lax` cookie attributes. Screenshots `181` and `185` record that hosted check without a cookie value or real account password.
 
-The Employee Summary work was pushed in `304a8c62b7c88c1ad2288f822849c87e359ad4cb`. Migration `023` only extends the allowed `audit_logs` action and entity values, so no staff or rota rows had to be rewritten. Evidence through `158` covers that work and the current Neon size/compute checks.
+The post-deployment evidence was merged as `ca970a6c6ab8fdde93672630dead098f6bf0388c`. GitHub Actions run `29860448346` passed on that `main` commit using Node.js 22 and PostgreSQL 16. This is a repository evidence merge, not a new hosted application SHA, because it did not change the configured `backend/` Render root. The final Phase 4 merge SHA and release tag are still pending and will only be recorded after they exist.
 
-The Admin and pepper work is included in this source checkpoint but has not been deployed yet. Migrations `024` to `026` are applied to the guarded local database used by the test and evidence commands. Migration `026` keeps proper Irish names and changes the four original seed accounts to Gmail-format addresses with the deliberate `fake` marker. The current local run passes `144` tests across `19` suites, and `npm audit --omit=dev` reports zero known production dependency vulnerabilities. The four-operation local Argon2id measurement used 19,456 KiB, time cost 2 and parallelism 1. The measured batch was 85.7 ms for hashes and 97.0 ms for verification, with a 76 MiB observed peak RSS increase. That is local evidence only. GitHub Actions and the free Render instance still need their own measurements before the settings can be treated as hosted evidence.
+The Phase 4 local verification passes 29 suites and 236 tests. Coverage is 77.26% statements, 62.56% branches, 86.34% functions and 78.24% lines. ESLint passes, migrations `001` through `027` report applied in the configured verification database, `npm audit --omit=dev` reports zero known production dependency vulnerabilities, and the repository/history secret review is clean. `populate-next-week-frontend-contract.test.js` closes the earlier traceability gap for rule-based draft generation and explicit manager approval.
 
 The main code workflows and final report-supporting files are in place. The live manager/staff browser matrix passes at 1920 x 855, 1024 x 768 and 390 x 844, including invalid login, direct manager-route denial for staff, NodyChat focus/Escape and the rota modal focus trap. Chrome was also checked at a real 200% zoom level: the CSS viewport changed from 1920 x 855 to 960 x 427 and no page-level horizontal overflow appeared. A fresh hosted staff sign-in then loaded the rota, Time Off, swap, rota-history and NodyChat endpoints. The hosted login Lighthouse snapshot now passes Accessibility and SEO at 100 after the decoy inputs, heading order and meta description were corrected. Best Practices remains 96 because the public session check deliberately receives `401` when no user is signed in. The authenticated manager Rota snapshot passed every automated Accessibility and Best Practices check.
 
@@ -129,16 +129,24 @@ Run from `backend/`:
 npm test
 ```
 
-The current local result is `19` passed suites and `144` passed tests. Screenshot `139` is still an earlier coverage run, so I have not relabelled it as evidence for this checkpoint. The test database needs migrations through `026_normalize_seed_account_addresses.sql`. `admin-routes.test.js` covers the separate role boundary, bootstrap, invitation state, reviewer exception, final-Admin rule and invalidated sessions. `password-security.test.js` covers bcrypt upgrade, independent Argon2id hashes, breach lookup privacy and the missing-production-pepper failure. `admin-frontend-contract.test.js` checks the new narrow interface and reviewer wording. The earlier Manager, Staff, Employee Summary, rota, audit and chat suites still run in the same complete command.
+The current local result is `29` passed suites and `236` passed tests. The test database needs migrations through `027_allow_overnight_shifts.sql`. `admin-routes.test.js` covers the separate role boundary, bootstrap, invitation state, reviewer exception, final-Admin rule and invalidated sessions. `password-security.test.js` covers bcrypt upgrade, independent Argon2id hashes, breach lookup privacy and the missing-production-pepper failure. `populate-next-week-frontend-contract.test.js` checks that the rota population remains a reviewable draft, applies the fixed eligibility rules and does not save before manager approval. The Manager, Staff, Employee Summary, rota, audit, swap and chat suites still run in the same complete command.
 
-`npm run test:coverage` currently reports 73.21% statements, 57.41% branches, 82.9% functions and 74.27% lines. The limitations are recorded in `docs/testing/backend_coverage.md`. `.github/workflows/backend-checks.yml` defines the same migration, coverage, production dependency-audit and Argon2id measurement path for GitHub Actions, but that updated workflow has not run remotely yet.
+`npm run test:coverage` currently reports 77.26% statements, 62.56% branches, 86.34% functions and 78.24% lines. The remaining gaps are recorded in `docs/testing/backend_coverage.md` and `docs/release/known_limitations.md`. `.github/workflows/backend-checks.yml` runs migrations, the same coverage command, the Argon2id measurement and the production dependency audit against PostgreSQL 16. Phase 4 pull-request run `29862074201` passed all steps with the same 29 suites and 236 tests; screenshot `187` records it.
+
+## Final release records
+
+1. `docs/release/final_verification_record.md` - exact environment, commands, totals and pending final SHA
+2. `docs/release/traceability_matrix.md` - route, implementation, automated test and evidence mapping
+3. `docs/release/final_release_checklist.md` - repository, CI, hosted and tag checks
+4. `docs/release/backup_and_recovery.md` - Neon, migrations, accidental deletion, secret rotation and Render recovery
+5. `docs/release/known_limitations.md` - final scope, provider and coverage limits
 
 ## Main project files
 
 1. `backend/` - Express app, routes, services, tests and local scripts
 2. `frontend/` - page setup, frontend services and responsive styles
 3. `database/migrations/` - ordered PostgreSQL schema and data changes
-4. `docs/` - requirements, design notes, test planning and the project work trail
+4. `docs/` - requirements, design notes, test planning, release records and the project work trail
 5. `assets/screenshots/` - numbered local and hosted evidence
 6. `scripts/` - the updated Smart Schedule test menu
 
@@ -149,3 +157,5 @@ I kept the frontend plain because adding a framework this late would add another
 I removed weekly availability instead of carrying an unused page into the final build. On the other hand I kept leave, role matching, active-account checks and weekly assignment limits because the rota still needs those rules before a manager can trust the save.
 
 The app does not include payroll, POS integration, multi-branch support, billing, a native mobile app or fully automatic rota publishing. Those are outside this semester build. `Populate next week` only prepares a rota draft for the manager to review, which was a more believable limit for the project than pretending the program could make every staffing decision on its own.
+
+Render free-tier cold starts, Brevo email delivery, Neon recovery-plan limits, Ireland-local wall-clock shifts and remaining test branches are listed in `docs/release/known_limitations.md` instead of being hidden from the final check.
