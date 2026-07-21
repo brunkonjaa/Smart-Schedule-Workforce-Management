@@ -4,21 +4,21 @@
 
 - Date: 21 July 2026
 - Phase: Phase 4 documentation, evidence and traceability
-- Repository baseline checked: `ca970a6c6ab8fdde93672630dead098f6bf0388c`
-- Working branch: `chore/phase-4-documentation`
-- Verified deployed application merge: `38f8b4b7ddd0ab440dec3cff3b4cd63664460a6c`
-- Final Phase 4 merge SHA: pending until the Phase 4 pull request is merged
+- Repository baseline checked: `093a12044fe452fe5120d34feef73c9a26467895`
+- Working branch: `chore/phase-4-release-verification`
+- Verified deployed application merge: `093a12044fe452fe5120d34feef73c9a26467895`
+- Final Phase 4 merge SHA: `093a12044fe452fe5120d34feef73c9a26467895`
 - Release tag: pending
 
-I have kept the two SHA values separate on purpose. Commit `38f8b4b` is the application merge that was actually seen on Render through the new CSP, service-worker cache and authenticated cookie checks. Commit `ca970a6` added the post-deployment evidence to `main`. It did not change `backend/`, so it was not relabelled as a new application deployment.
+Pull request `#3` merged Phase 4 as `093a120`. This merge added the Populate-next-week contract test inside `backend/`, so it triggered a new Render build. The hosted root changed from the earlier `19:03:05 GMT` build to `Tue, 21 Jul 2026 19:45:35 GMT`. I then checked the CSP, service worker and database health again instead of assuming that a green GitHub workflow meant the hosted service had changed.
 
 ## Environments checked
 
 | Environment | Detail | Result |
 |---|---|---|
 | Local | Windows PowerShell, Node.js `v24.13.0`, npm `11.11.0`, configured PostgreSQL test/evidence database | Phase 4 commands passed |
-| GitHub Actions | Ubuntu runner, Node.js 22 and PostgreSQL 16 from `.github/workflows/backend-checks.yml` | Baseline `main` run `29860448346` and Phase 4 PR run `29862074201` passed |
-| Hosted application | Render free web service | Health connected, deployed CSP and service worker verified |
+| GitHub Actions | Ubuntu runner, Node.js 22 and PostgreSQL 16 from `.github/workflows/backend-checks.yml` | Phase 4 PR runs `29862074201` and `29862399910`, then merged `main` run `29862501251`, passed |
+| Hosted application | Render free web service | Merge `093a120` served at `Tue, 21 Jul 2026 19:45:35 GMT`; health connected, CSP and service worker verified |
 | Hosted database | Neon PostgreSQL | Application health reports connected; screenshots `157` and `158` record the production monitoring check |
 
 ## Commands and results
@@ -34,6 +34,8 @@ All npm commands were run from `backend/`.
 | `npm run security:repo-review` | No high-confidence secret found in tracked files or Git patch history |
 | `gh run view 29860448346` | Baseline `main` workflow passed migrations, coverage, password benchmark and production audit |
 | `gh run view 29862074201` | Phase 4 PR workflow passed 29 suites, 236 tests, migrations, password benchmark and production audit |
+| `gh run view 29862399910` | Phase 4 PR workflow passed again after the CI evidence commit |
+| `gh run view 29862501251` | Merged Phase 4 `main` workflow passed |
 | Hosted header, service-worker and health requests | Exact Render WebSocket CSP origin, `smart-schedule-static-v12` and connected database health returned |
 | Hosted fake staff login, `/me` and logout | `200`, `200` and `204`; cookie value omitted |
 
@@ -59,7 +61,8 @@ The global thresholds in `backend/jest.config.js` are 70% statements, 55% branch
 - `185`: hosted authenticated cookie attributes with the value omitted;
 - `186`: exact Phase 4 local coverage, migration, lint and audit result;
 - `187`: exact Phase 4 pull-request workflow and CI totals;
-- GitHub Actions run `29860448346`: successful baseline `main` run after evidence merge.
+- `188`: hosted Phase 4 merge timestamp, CSP, service-worker version and connected health;
+- GitHub Actions run `29862501251`: successful merged Phase 4 `main` run.
 
 No older screenshot was renamed as proof of the new 29-suite Phase 4 run. Screenshot `186` was captured from the exact rerun after the new Populate-next-week test was added.
 
@@ -69,7 +72,4 @@ The current limits are recorded in `docs/release/known_limitations.md`. The main
 
 ## Still pending before a release tag
 
-1. Merge the Phase 4 pull request now that its workflow has passed.
-2. Record the Phase 4 merge SHA here or in a follow-up release record.
-3. Confirm the live service still returns health, CSP and the expected service-worker version.
-4. Create the release tag only after those checks, not before them.
+The Phase 4 merge, merged-branch workflow and hosted deployment are now verified. The release tag is the only unchecked release-identification item. I have left it pending because this phase asked for the final evidence and checklist, but it did not give a tag name or ask me to create one.
