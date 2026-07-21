@@ -19,6 +19,7 @@ This is the last checklist before a Smart Schedule release tag. A checked item m
 - [x] `npm audit --omit=dev` returned zero known production vulnerabilities.
 - [x] Baseline `main` GitHub Actions run `29860448346` passed.
 - [x] Phase 4 pull-request GitHub Actions run `29862074201` passed with 29 suites and 236 tests.
+- [x] Phase 4 merged `main` GitHub Actions run `29862501251` passed.
 
 ## Hosted checks
 
@@ -27,6 +28,7 @@ This is the last checklist before a Smart Schedule release tag. A checked item m
 - [x] Hosted authenticated session returned `Secure`, `HttpOnly` and `SameSite=Lax` with the value omitted in screenshot `185`.
 - [x] Neon production monitoring and database-size evidence exists in screenshots `157` and `158`.
 - [x] Render free-tier cold starts remain documented instead of treated as an application failure.
+- [x] Render served the Phase 4 merge with a new `Tue, 21 Jul 2026 19:45:35 GMT` timestamp in screenshot `188`.
 
 ## Main workflows and presentation
 
@@ -40,9 +42,9 @@ This is the last checklist before a Smart Schedule release tag. A checked item m
 
 ## Release identification
 
-- [ ] Phase 4 pull request merged.
-- [ ] Final merge SHA recorded after the merge exists.
-- [ ] Live service rechecked after the final merge where a backend deployment is triggered.
+- [x] Phase 4 pull request merged as `093a12044fe452fe5120d34feef73c9a26467895`.
+- [x] Final merge SHA recorded after the merge exists.
+- [x] Live service rechecked after the backend-triggered Render deployment.
 - [ ] Release tag created and pushed.
 
 The tag should not be created just to make this checklist look complete. It comes last, after the final SHA and hosted state have both been checked.
