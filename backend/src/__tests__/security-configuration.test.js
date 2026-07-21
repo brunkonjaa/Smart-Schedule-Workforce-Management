@@ -15,6 +15,28 @@ const {
 } = require('../middleware/request-security');
 
 describe('HTTP security configuration', () => {
+  test('health identifies the exact Render release without exposing arbitrary values', async () => {
+    const previousCommit = process.env.RENDER_GIT_COMMIT;
+    process.env.RENDER_GIT_COMMIT = '0123456789abcdef0123456789abcdef01234567';
+
+    try {
+      const response = await request(app).get('/health');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        database: 'connected',
+        releaseCommit: '0123456789abcdef0123456789abcdef01234567',
+        status: 'ok'
+      });
+    } finally {
+      if (previousCommit === undefined) {
+        delete process.env.RENDER_GIT_COMMIT;
+      } else {
+        process.env.RENDER_GIT_COMMIT = previousCommit;
+      }
+    }
+  });
+
   test('serves the intended browser security headers without broad CSP sources', async () => {
     const response = await request(app).get('/');
 

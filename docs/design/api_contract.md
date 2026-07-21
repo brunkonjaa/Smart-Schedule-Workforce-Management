@@ -16,15 +16,19 @@ Current response shape:
 ```json
 {
   "database": "connected",
+  "releaseCommit": "40-character Render Git commit or null",
   "status": "ok"
 }
 ```
+
+`releaseCommit` is only accepted from Render's `RENDER_GIT_COMMIT` value when it is a full hexadecimal SHA. Local runs return `null`. This lets the final deployment be matched to the exact GitHub commit without exposing an arbitrary environment value.
 
 If the database check fails, the route returns:
 
 ```json
 {
   "database": "disconnected",
+  "releaseCommit": "40-character Render Git commit or null",
   "status": "error"
 }
 ```
