@@ -21,4 +21,6 @@ This matrix maps the main Smart Schedule workflows to the source, an automated t
 
 ## Traceability limit
 
-The Populate-next-week test is a frontend contract test. It checks the rules and that the generation function does not save before approval. Screenshot `145` is the end-to-end hosted proof. A full browser test that creates a fresh week, reviews the exact suggestions and approves them is still not part of the normal Jest command.
+The Populate-next-week test is a frontend contract test. It checks the rules and that the generation function does not save before approval. Screenshot `145` is the earlier end-to-end hosted proof. A full browser test that creates a fresh week, reviews the exact suggestions and approves them is still not part of the normal Jest command.
+
+Phase 6 repeated the complete local gate, but the browser connector blocked both Render domains. The hosted permanent Admin/passkey state, invitation/session/passkey mutations, bcrypt migration account and full role smoke matrix remain open in `docs/release/phase_6_release_record.md`.

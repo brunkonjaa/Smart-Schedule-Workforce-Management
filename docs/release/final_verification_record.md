@@ -3,12 +3,12 @@
 ## Verification point
 
 - Date: 21 July 2026
-- Phase: Phase 5 final commit, CI and deployment
-- Repository baseline checked: `14e66cfc8c6ced641558e95808dc51e28fd9bb3e`
-- Working branch: `agent/phase-5-deployment-evidence`
+- Phase: Phase 6 release checkpoint
+- Repository baseline checked: `46e12af59455ece3938f8dbb39a663b04079ddab` (evidence-only merge after the deployed application)
+- Working branch: `agent/phase-6-hosted-release`
 - Verified deployed application merge: `14e66cfc8c6ced641558e95808dc51e28fd9bb3e`
 - Final Phase 4 merge SHA: `093a12044fe452fe5120d34feef73c9a26467895`
-- Release tag: pending
+- Release tag: `v1.0.0-submission` on the final Phase 6 merge
 
 Pull request `#3` merged Phase 4 as `093a120`. This merge added the Populate-next-week contract test inside `backend/`, so it triggered a new Render build. The hosted root changed from the earlier `19:03:05 GMT` build to `Tue, 21 Jul 2026 19:45:35 GMT`. I then checked the CSP, service worker and database health again instead of assuming that a green GitHub workflow meant the hosted service had changed.
 
@@ -41,6 +41,11 @@ All npm commands were run from `backend/`.
 | `gh run view 29862501251` | Merged Phase 4 `main` workflow passed |
 | `gh run view 29864595561` | Exact Phase 5 source commit `a0303bc` passed in 66 seconds and uploaded `backend-coverage` |
 | `gh run view 29864800275` | Merged application commit `14e66cf` passed in 71 seconds and uploaded `backend-coverage` |
+| Phase 6 `npm run test:coverage` | 30 suites and 243 tests passed at the Phase 5 coverage totals |
+| Phase 6 `npm run security:benchmark` | Four hashes 56.8 ms, four verifies 61.1 ms and 77 MiB observed peak RSS increase |
+| Phase 6 `npm audit --omit=dev` | Zero known production vulnerabilities |
+| Phase 6 `npm run security:repo-review` | No high-confidence secret in tracked files or Git patch history |
+| `gh run view 29867189927` | Phase 6 draft PR source commit `b5a6206` passed in one minute and uploaded `backend-coverage` |
 | Hosted header, service-worker and health requests | Exact Render WebSocket CSP origin, `smart-schedule-static-v12` and connected database health returned |
 | Hosted fake staff login, `/me` and logout | `200`, `200` and `204`; cookie value omitted |
 
@@ -72,6 +77,8 @@ The global thresholds in `backend/jest.config.js` are 70% statements, 55% branch
 - `189`: Phase 5 empty local database, complete local gate and final coverage;
 - `190`: exact Phase 5 source-commit pull-request workflow and artifact;
 - `191`: exact merged Render SHA, Neon migration status, login and frontend content check;
+- `192`: Phase 6 local release gate, including 30 suites, 243 tests, migrations, Argon2id, audit and secret review;
+- `193`: Phase 6 draft PR `#7`, exact source commit and passed workflow, with the release tag deliberately absent;
 - GitHub Actions run `29864800275`: successful merged Phase 5 application run.
 
 No older screenshot was renamed as proof of the new 29-suite Phase 4 run. Screenshot `186` was captured from the exact rerun after the new Populate-next-week test was added.
@@ -80,6 +87,8 @@ No older screenshot was renamed as proof of the new 29-suite Phase 4 run. Screen
 
 The current limits are recorded in `docs/release/known_limitations.md`. The main ones are the missing payroll, POS, multi-branch and billing scope, no native app, no autonomous scheduling, Render free-tier cold starts, Brevo dependency and the remaining coverage gaps. `Populate next week` remains assisted draft generation. It copies a weekly pattern and applies fixed eligibility rules, then waits for a manager to approve it.
 
-## Still pending before a release tag
+## Final release decision
 
-The Phase 5 merge, exact-SHA workflow, Render deployment and Neon status are now verified. The release tag is the only unchecked release-identification item. I have left it pending because no tag name was given.
+The Phase 5 merge, exact-SHA workflow, Render deployment and Neon status are verified. Phase 6 also repeats the local gate. The required pepper variable names were checked earlier on 21 July without displaying values, and `FIRST_ADMIN_BOOTSTRAP_TOKEN` was removed after the permanent Admin setup. The Chrome connector later blocked both Render domains, so I could not repeat the final hosted browser matrix or hosted log review. Those checks remain visible in `docs/release/phase_6_release_record.md` instead of being marked as passed.
+
+Pull request `#7` only changes README, release documentation and screenshot evidence when compared with deployed application SHA `14e66cf`. The application directories are identical. I therefore use its final merge as the complete repository snapshot and apply `v1.0.0-submission` after the merge. No experimental change should be committed directly to `main` after that tag.

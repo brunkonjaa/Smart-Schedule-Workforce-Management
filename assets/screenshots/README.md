@@ -213,6 +213,11 @@ Examples:
 - `169` the same Aoife Brennan Employee Summary at 390 x 844
 - `170` Employee access history showing Maeve Ryan opening Aoife Brennan's summary, without a linked employee name or implementation note in the heading
 - `171` A4 Employee Summary print evidence for Aoife Brennan after the Irish-name and fake-marked demo-address correction
+- `172` safely cropped hosted Admin workspace after the first administrator account and passkey were created, without account email details
+- `173` PageSpeed Insights desktop result for the hosted login page: 95 Performance, 100 Accessibility, 96 Best Practices and 100 SEO
+- `174` PageSpeed Insights mobile result for the hosted login page: 75 Performance, 100 Accessibility, 96 Best Practices and 100 SEO
+- `175` PageSpeed Insights mobile metrics showing 1.5 s First Contentful Paint, 0 ms Total Blocking Time, 1.5 s Speed Index, zero layout shift and an 8.7 s Largest Contentful Paint
+- `176` fresh backend coverage run launched from the repository root, showing 19 passing suites, 144 passing tests and the final guarded coverage totals without environment values or credentials
 - `177` combined Phase 1 and Phase 2 lint evidence showing the `chore/phase-1-verification` branch, the exact lint command and a clean returned PowerShell prompt
 - `178` combined Phase 1 and Phase 2 backend coverage showing 25 passing suites, 219 passing tests and 62.18% branch coverage
 - `179` combined Phase 1 and Phase 2 production dependency audit and Argon2id benchmark showing zero known vulnerabilities, the configured parameters, four concurrent operations and the observed local timing and memory result
@@ -228,6 +233,8 @@ Examples:
 - `189` Phase 5 local release gate showing a fresh empty PostgreSQL build through migration `027`, 30 passing suites, 243 passing tests, final coverage, Argon2id measurement and zero production dependency vulnerabilities
 - `190` Phase 5 pull-request workflow showing exact source commit `a0303bc`, run `29864595561`, all required steps passed in 66 seconds, 30 suites and 243 tests, and the `backend-coverage` artifact
 - `191` Phase 5 final deployment showing merged SHA `14e66cf` passed the main workflow and exactly matched Render, with Neon 27/27 applied, the public Edge login check passing and all 21 JavaScript/CSS responses matching the commit
+- `192` Phase 6 local release gate showing 30 passing suites, 243 passing tests, migrations `001` to `027`, final coverage, Argon2id timing and memory, zero production dependency vulnerabilities and a clean repository/history secret review
+- `193` Phase 6 draft pull request showing exact source commit `b5a6206`, passed GitHub Actions run `29867189927`, coverage artifact upload and the deliberate decision not to create the submission tag before the remaining hosted checks
 
 ## Phase 4 and Phase 5 index review
 
