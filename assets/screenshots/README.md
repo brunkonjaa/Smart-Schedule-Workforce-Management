@@ -200,8 +200,8 @@ Examples:
 - `152` cropped Employee access Audit Log with the Rota-style tabs stacked above the narrower table, including all six record columns
 - `153` local staff denial result returned to the read-only Rota with no Employee Summary panel, email, phone or manager-only employee links
 - `154` cropped local manager Rota workspace after the desktop width was reduced from the full app-shell width to 1560 pixels
-- `155` focused local Employee access page showing 39 records split across two 25-record pages
-- `156` focused local Rota activity page showing 86 records split across four 25-record pages
+- `155` cropped hosted Employee access page showing five real view and print-request records with the total and page controls
+- `156` cropped hosted Rota activity after page navigation, showing 1,744 records and page 3 of 70
 
 ## Practical Reminder
 
