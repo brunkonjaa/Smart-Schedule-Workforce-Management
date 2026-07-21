@@ -60,6 +60,8 @@ The Phase 4 local verification passes 29 suites and 236 tests. Coverage is 77.26
 
 Phase 5 merged as `14e66cfc8c6ced641558e95808dc51e28fd9bb3e`. GitHub Actions run `29864800275` passed that exact merge and Render now returns the same full SHA from `/health.releaseCommit`. Neon reports migrations `001` through `027` applied. A fresh Edge check loaded the public sign-in form without page errors, and all 21 referenced JavaScript and CSS files matched the same Git commit. Screenshots `189` to `191` record the local gate, exact source workflow and hosted deployment.
 
+The Phase 6 local gate was repeated on 21 July 2026 and still passes 30 suites and 243 tests. Screenshot `192` records the migration count, coverage totals, Argon2id result, production audit and repository secret review. The new hosted browser matrix and Render environment cleanup were not rerun from this workspace because the Chrome connector blocks both Render domains. `docs/release/phase_6_release_record.md` keeps those items open, including removal of `FIRST_ADMIN_BOOTSTRAP_TOKEN`, so `v1.0.0-submission` has not been created early.
+
 The main code workflows and final report-supporting files are in place. The live manager/staff browser matrix passes at 1920 x 855, 1024 x 768 and 390 x 844, including invalid login, direct manager-route denial for staff, NodyChat focus/Escape and the rota modal focus trap. Chrome was also checked at a real 200% zoom level: the CSS viewport changed from 1920 x 855 to 960 x 427 and no page-level horizontal overflow appeared. A fresh hosted staff sign-in then loaded the rota, Time Off, swap, rota-history and NodyChat endpoints. The hosted login Lighthouse snapshot now passes Accessibility and SEO at 100 after the decoy inputs, heading order and meta description were corrected. Best Practices remains 96 because the public session check deliberately receives `401` when no user is signed in. The authenticated manager Rota snapshot passed every automated Accessibility and Best Practices check.
 
 ## Important route groups
@@ -133,9 +135,9 @@ Run from `backend/`:
 npm test
 ```
 
-The current local result is `29` passed suites and `236` passed tests. The test database needs migrations through `027_allow_overnight_shifts.sql`. `admin-routes.test.js` covers the separate role boundary, bootstrap, invitation state, reviewer exception, final-Admin rule and invalidated sessions. `password-security.test.js` covers bcrypt upgrade, independent Argon2id hashes, breach lookup privacy and the missing-production-pepper failure. `populate-next-week-frontend-contract.test.js` checks that the rota population remains a reviewable draft, applies the fixed eligibility rules and does not save before manager approval. The Manager, Staff, Employee Summary, rota, audit, swap and chat suites still run in the same complete command.
+The current local result is `30` passed suites and `243` passed tests. The test database needs migrations through `027_allow_overnight_shifts.sql`. `admin-routes.test.js` covers the separate role boundary, bootstrap, invitation state, reviewer exception, final-Admin rule and invalidated sessions. `password-security.test.js` covers bcrypt upgrade, independent Argon2id hashes, breach lookup privacy and the missing-production-pepper failure. `populate-next-week-frontend-contract.test.js` checks that the rota population remains a reviewable draft, applies the fixed eligibility rules and does not save before manager approval. The Manager, Staff, Employee Summary, rota, audit, swap and chat suites still run in the same complete command.
 
-`npm run test:coverage` currently reports 77.26% statements, 62.56% branches, 86.34% functions and 78.24% lines. The remaining gaps are recorded in `docs/testing/backend_coverage.md` and `docs/release/known_limitations.md`. `.github/workflows/backend-checks.yml` runs migrations, the same coverage command, the Argon2id measurement and the production dependency audit against PostgreSQL 16. Phase 4 pull-request run `29862074201` passed all steps with the same 29 suites and 236 tests; screenshot `187` records it.
+`npm run test:coverage` currently reports 77.43% statements, 62.65% branches, 86.75% functions and 78.41% lines. The remaining gaps are recorded in `docs/testing/backend_coverage.md` and `docs/release/known_limitations.md`. `.github/workflows/backend-checks.yml` runs migrations, the same coverage command, the Argon2id measurement and the production dependency audit against PostgreSQL 16. Deployed-merge run `29864800275` passed every step with the same 30 suites and 243 tests.
 
 ## Final release records
 
@@ -144,6 +146,7 @@ The current local result is `29` passed suites and `236` passed tests. The test 
 3. `docs/release/final_release_checklist.md` - repository, CI, hosted and tag checks
 4. `docs/release/backup_and_recovery.md` - Neon, migrations, accidental deletion, secret rotation and Render recovery
 5. `docs/release/known_limitations.md` - final scope, provider and coverage limits
+6. `docs/release/phase_6_release_record.md` - final local gate, carried hosted evidence and the hosted items that still need a manual check
 
 ## Main project files
 

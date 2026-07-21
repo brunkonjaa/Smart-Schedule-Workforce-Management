@@ -1,6 +1,6 @@
 # Final release checklist
 
-This is the last checklist before a Smart Schedule release tag. A checked item means there is a command, file, workflow run or screenshot behind it. Items that depend on the Phase 4 pull request stay unchecked until that event happens.
+This is the last checklist before a Smart Schedule release tag. A checked item means there is a command, file, workflow run or screenshot behind it. Phase 6 hosted items stay unchecked until they are repeated or confirmed against the deployed SHA.
 
 ## Repository and database
 
@@ -14,7 +14,7 @@ This is the last checklist before a Smart Schedule release tag. A checked item m
 ## Automated checks
 
 - [x] `npm run lint` passed.
-- [x] `npm run test:coverage` passed with 29 suites and 236 tests.
+- [x] `npm run test:coverage` passed again in Phase 6 with 30 suites and 243 tests.
 - [x] Coverage passed the thresholds in `backend/jest.config.js`.
 - [x] `npm audit --omit=dev` returned zero known production vulnerabilities.
 - [x] Baseline `main` GitHub Actions run `29860448346` passed.
@@ -23,6 +23,7 @@ This is the last checklist before a Smart Schedule release tag. A checked item m
 - [x] Phase 5 source commit `a0303bc` passed pull-request run `29864595561`.
 - [x] Phase 5 merge `14e66cf` passed `main` run `29864800275`.
 - [x] Both Phase 5 workflows uploaded the `backend-coverage` artifact.
+- [x] Phase 6 local gate passed lint, migrations, coverage, Argon2id measurement, production audit and repository/history secret review in screenshot `192`.
 
 ## Hosted checks
 
@@ -36,6 +37,12 @@ This is the last checklist before a Smart Schedule release tag. A checked item m
 - [x] Neon reported migrations `001` through `027` applied, with nothing pending.
 - [x] A fresh Edge context loaded the hosted sign-in form with zero page errors.
 - [x] All 21 hosted JavaScript and CSS responses matched merge `14e66cf`.
+- [ ] Permanent hosted ordinary Admin and passkey state confirmed in committed evidence.
+- [ ] Required Render pepper variable names confirmed without displaying their values.
+- [ ] `FIRST_ADMIN_BOOTSTRAP_TOKEN` removed from Render after the permanent Admin/passkey check.
+- [ ] Hosted logs checked for password, pepper, reset/invitation token and cookie output.
+- [ ] Phase 6 invitation, account-state, session/passkey revocation and final-Admin checks repeated against the hosted SHA.
+- [ ] Phase 6 Manager, Staff, Admin and final browser smoke matrix repeated against the hosted SHA.
 
 ## Main workflows and presentation
 
@@ -44,7 +51,7 @@ This is the last checklist before a Smart Schedule release tag. A checked item m
 - [x] Populate next week has a named automated contract test and remains described as rule-based draft generation.
 - [x] Mobile evidence includes staff pages, Employee Summary and the Admin workspace.
 - [x] Accessibility evidence includes the authenticated manager check and the post-fix hosted login result.
-- [x] README describes the deployed Admin/security state and the current 29-suite verification result.
+- [x] README describes the deployed Admin/security state and the current 30-suite verification result.
 - [x] Screenshot index was checked without renumbering old evidence.
 
 ## Release identification
@@ -55,4 +62,4 @@ This is the last checklist before a Smart Schedule release tag. A checked item m
 - [x] Phase 5 exact source checkpoint passed locally, in GitHub Actions and on Render with connected Neon health.
 - [ ] Release tag created and pushed.
 
-The tag should not be created just to make this checklist look complete. It comes last, after the final SHA and hosted state have both been checked.
+The tag should not be created just to make this checklist look complete. It comes last, after the Render bootstrap variable is removed and the remaining hosted checks above have been confirmed.
