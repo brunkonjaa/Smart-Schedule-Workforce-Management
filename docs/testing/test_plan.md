@@ -4,17 +4,17 @@ This plan describes the checks used for the current Smart Schedule workflow. The
 
 ## Automated test result
 
-The current local migrated database run passes:
+The current Phase 4 local migrated database run passes:
 
 ```text
-14 test suites passed
-91 tests passed
-Time: 20.142 seconds
+29 test suites passed
+236 tests passed
+Time: 48.662 seconds
 ```
 
-This local run was completed on 20 July 2026 against migrations 001 to 022. Screenshot `139` records the terminal result. It starts from final report-evidence commit `db2837c854291b8965c3f3e4b3d9b1cc9e018527` and includes the current quality pass: five NodyChat route/read-state tests plus four WebSocket authentication/lifetime tests.
+This local run was completed on 21 July 2026 against migrations 001 to 027. Screenshot `139` remains the earlier 14-suite result and screenshot `176` remains the 19-suite checkpoint. Screenshot `186` records the new totals after the Phase 4 branch added the Populate-next-week contract suite.
 
-The suites cover authentication, staff, leave, shifts, assignments, rota, password reset, shift swaps, rate limiting, middleware, database configuration and NodyChat HTTP/WebSocket boundaries. The test database needs all current migrations before the full suite runs.
+The suites cover authentication, Admin, staff, leave, shifts, assignments, rota, Populate next week, password reset, password migration, shift swaps, Employee Summary, Audit Log, rate limiting, middleware, browser-output security, timezone behavior, database configuration and NodyChat HTTP/WebSocket boundaries. The test database needs all current migrations before the full suite runs.
 
 Run it from `backend/`:
 
@@ -30,7 +30,7 @@ Coverage is reproducible with:
 npm run test:coverage
 ```
 
-The current backend result is 72.99% statements, 57.63% branches, 81.67% functions and 73.61% lines. `backend/jest.config.js` enforces minimum global thresholds of 70% statements, 55% branches, 80% functions and 70% lines. The detailed scope and limits are in [backend_coverage.md](backend_coverage.md).
+The current backend result is 77.26% statements, 62.56% branches, 86.34% functions and 78.24% lines. `backend/jest.config.js` enforces minimum global thresholds of 70% statements, 55% branches, 80% functions and 70% lines. The detailed scope and limits are in [backend_coverage.md](backend_coverage.md).
 
 ## What is checked automatically
 
@@ -47,6 +47,12 @@ The current backend result is 72.99% statements, 57.63% branches, 81.67% functio
 11. shift swap creation, past-shift rejection, open/targeted requests, target acceptance, manager approval/rejection, ownership, and conflict checks
 12. NodyChat workplace membership, direct-room reuse, unread clearing, outsider denial/no insert, and self-conversation rejection
 13. WebSocket cross-origin denial, unauthenticated denial, authenticated history, and closure after account deactivation
+14. Admin invitation, passkey boundary, reviewer exception, final-Admin rule and session/passkey revocation
+15. Employee Summary field selection, hours, future shifts, access events, print request and pagination
+16. append-only Audit Log routes, stable pagination and role restrictions
+17. PWA cache limits, output text insertion, CSP, CSRF, request-size errors, cookie settings and rate-limit groups
+18. Ireland-local date boundaries, overnight shifts and both 2026 daylight-saving changes
+19. Populate next week as a draft-only source pattern, including role, leave, conflict and weekly-limit rules before explicit approval
 
 ## Local database checks
 
@@ -80,7 +86,7 @@ Screenshots belong under `assets/screenshots/tests/`, use one project-wide numbe
 
 ## Current automated and live evidence
 
-The GitHub Actions workflow completed successfully for commits `8ed7c28c1b7f3e33377dc1012378676f31ee0931` and `4a67646a58982e58d542b9fbfba07c470f424b26` on 20 July 2026. The workflow creates PostgreSQL 16, applies the migration chain, runs the coverage tests, checks production dependencies and uploads the coverage report. Screenshot `140` records the first completed run. The live manager/staff browser, keyboard and focus checks passed at 1920 x 855, 1024 x 768 and 390 x 844. Actual 200% Chrome zoom also passed at a measured 960 x 427 CSS viewport with device pixel ratio 2 and no page-level horizontal overflow. The manager assignment dialog rejected 17:00 to 10:00, returned focus to Start time and left the future rota cell OFF. The fresh hosted staff sign-in and rota, Time Off, swap, rota-history and NodyChat reads passed on 18 July 2026.
+The GitHub Actions workflow completed successfully for baseline `main` commit `ca970a6c6ab8fdde93672630dead098f6bf0388c` in run `29860448346`. The workflow creates PostgreSQL 16, applies the migration chain, runs the coverage tests, checks production dependencies and uploads the coverage report. Screenshot `180` records the earlier PR-triggered Phase 1 to 3 run. The Phase 4 PR run is pending until this branch is pushed. The live manager/staff browser, keyboard and focus checks passed at 1920 x 855, 1024 x 768 and 390 x 844. Actual 200% Chrome zoom also passed at a measured 960 x 427 CSS viewport with device pixel ratio 2 and no page-level horizontal overflow. The manager assignment dialog rejected 17:00 to 10:00, returned focus to Start time and left the future rota cell OFF. The fresh hosted staff sign-in and rota, Time Off, swap, rota-history and NodyChat reads passed on 18 July 2026.
 
 The warm hosted login page produced a valid mobile Lighthouse navigation result of 99 Performance, 91 Accessibility, 96 Best Practices and 90 SEO. That run exposed two invisible autofill-decoy inputs, a skipped heading level at the narrow layout and a missing meta description. Commit `4a67646a58982e58d542b9fbfba07c470f424b26` removed the decoys, connected the real fields to standard autocomplete purposes, corrected the heading and added the description. The post-fix desktop login snapshot then passed Accessibility at 100 and SEO at 100; Best Practices stayed at 96 because the deliberate unauthenticated `/api/v1/auth/me` request returns `401`. The manager Rota snapshot passed 17/17 Accessibility and 4/4 Best Practices checks. Two later navigation retries returned Lighthouse `NO_NAVSTART`, so they are recorded as trace failures rather than zero performance results and were not kept as evidence.
 
