@@ -34,7 +34,7 @@ The backend uses three access states: unauthenticated, `STAFF`, and `MANAGER`. T
 | `POST /api/v1/shift-swaps/{id}/accept` | Deny | Eligible target only | Deny | Target acceptance |
 | `PUT /api/v1/shift-swaps/{id}/approve` | Deny | Deny | Allow | Manager final decision |
 | `PUT /api/v1/shift-swaps/{id}/reject` | Deny | Deny | Allow | Manager final decision |
-| `GET /api/v1/audit-logs` | Deny | Deny | Allow | Rota activity only: shift and assignment events |
+| `GET /api/v1/audit-logs?page={page}` | Deny | Deny | Allow | Rota activity only: shift and assignment events; fixed 25 records per interface page |
 | `GET /api/v1/audit-logs/employee-access?page={page}` | Deny | Deny | Allow | Employee Summary view, print-request and denied events; fixed 25 records per page |
 | `GET /api/v1/chat/messages` | Deny | Participant conversations | Participant conversations | Defaults to `WORKPLACE`; a requested direct conversation is only loaded for a participant |
 | `GET /api/v1/chat/people` | Deny | Allow | Allow | Lists other active accounts that can receive a direct message |
@@ -58,4 +58,4 @@ The backend uses three access states: unauthenticated, `STAFF`, and `MANAGER`. T
 
 ## Test expectation
 
-The route suites include unauthenticated `401`, wrong-role `403`, ownership denial, and business-rule `409` cases where those rules apply. The current local run passes `116` tests across `16` suites. `employee-summary-routes.test.js` checks the `401`/`403` boundary, the denied event, the approved manager fields, print logging and 25-record access pagination. `chat-ws.test.js` now covers the WebSocket upgrade and long-lived session checks as well.
+The route suites include unauthenticated `401`, wrong-role `403`, ownership denial, and business-rule `409` cases where those rules apply. The current local run passes `118` tests across `16` suites. `employee-summary-routes.test.js` checks the `401`/`403` boundary, the denied event, the approved manager fields, print logging and 25-record access pagination. `audit-log-routes.test.js` checks the separate 25-record Rota activity pages. `chat-ws.test.js` now covers the WebSocket upgrade and long-lived session checks as well.

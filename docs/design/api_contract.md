@@ -492,7 +492,7 @@ Current behavior:
 ### `GET /api/v1/audit-logs`
 
 Purpose:
-Return manager Rota activity. The route now keeps the existing shift and assignment actions separate from employee access events. `limit` is optional and is clamped to 1-200 records.
+Return manager Rota activity. The route keeps the existing shift and assignment actions separate from employee access events. `page` is optional, must be a positive whole number and uses 25 records per page. The older `limit` query remains available from 1-200 for compatibility, but the Audit Log interface uses the fixed 25-record pages.
 
 ### `GET /api/v1/audit-logs/employee-access`
 

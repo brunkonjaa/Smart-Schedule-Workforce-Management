@@ -43,6 +43,16 @@ The rerun confirmed the Accessibility and SEO corrections. Best Practices stayed
 
 The Lighthouse checks are automated browser evidence, not independent participant testing. The manual keyboard, focus, zoom and modal checks remain separate because Lighthouse lists those as items a person still has to check. Screenshot `145` records 61 generated next-week assignments approved and saved on the hosted manager Rota. Screenshot `146` records the hosted assignment dialog rejecting a shift that overlaps or touches an existing shift. Screenshot `147` records Smart Schedule reaching the browser-managed WebAuthn confirmation prompt during manager passkey registration.
 
+## 2026-07-21
+
+### Audit Log and dependency follow-up
+
+- Pushed base: `304a8c62b7c88c1ad2288f822849c87e359ad4cb`
+- Current local result: 16 suites and 118 tests passed with coverage thresholds active
+- Production dependency audit: zero known vulnerabilities across 118 production dependencies
+
+The hosted Employee access page was empty because no Employee Summary had been opened after deployment. I did not backfill old rota rows because they are not employee-access events. I added separate 25-record server pages to Rota activity, kept the existing Employee access pages, and changed the page label so the total record count is visible. The failed GitHub Actions step was separate from those changes: `body-parser` 1.20.5 had received a low-severity advisory, so the lockfile now selects 1.20.6. Two development-only `brace-expansion` entries were updated by the same audit fix.
+
 ## 2026-07-18 to 2026-07-20
 
 ### Final quality and live-browser pass

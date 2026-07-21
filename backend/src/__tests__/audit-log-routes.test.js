@@ -110,11 +110,73 @@ describe('audit log routes', () => {
       status: 'OPEN',
       requiredRole: 'BAR'
     });
+    expect(response.body.pagination).toEqual(
+      expect.objectContaining({
+        page: 1,
+        pageSize: 1
+      })
+    );
   });
 
-  test('rejects an invalid limit', async () => {
+  test('returns 25 Rota activity records per page and keeps older records reachable', async () => {
     const agent = await login(managerEmail, managerPassword);
-    const response = await agent.get('/api/v1/audit-logs?limit=not-a-number');
+    const values = [];
+    const placeholders = [];
+
+    for (let index = 0; index < 30; index += 1) {
+      const offset = values.length;
+      values.push(
+        crypto.randomUUID(),
+        managerId,
+        crypto.randomUUID(),
+        `Paged audit record ${index + 1}`,
+        JSON.stringify({
+          fullName: 'Audit Staff',
+          shiftDate: '2026-07-21',
+          staffProfileId
+        })
+      );
+      placeholders.push(
+        `($${offset + 1}, $${offset + 2}, 'ASSIGNMENT_CREATED', 'ASSIGNMENT', `
+        + `$${offset + 3}, $${offset + 4}, NULL, $${offset + 5}::jsonb, NOW())`
+      );
+    }
+
+    await query(
+      `
+        INSERT INTO audit_logs (
+          id, actor_user_id, action, entity_type, entity_id, summary,
+          before_state, after_state, created_at
+        )
+        VALUES ${placeholders.join(', ')}
+      `,
+      values
+    );
+
+    const firstPage = await agent.get('/api/v1/audit-logs?page=1');
+    const secondPage = await agent.get('/api/v1/audit-logs?page=2');
+
+    expect(firstPage.status).toBe(200);
+    expect(firstPage.body.logs).toHaveLength(25);
+    expect(firstPage.body.pagination).toEqual(
+      expect.objectContaining({
+        hasNext: true,
+        hasPrevious: false,
+        page: 1,
+        pageSize: 25
+      })
+    );
+    expect(secondPage.status).toBe(200);
+    expect(secondPage.body.logs.length).toBeGreaterThan(0);
+    expect(secondPage.body.pagination.hasPrevious).toBe(true);
+  });
+
+  test.each([
+    { field: 'limit', path: '/api/v1/audit-logs?limit=not-a-number' },
+    { field: 'page', path: '/api/v1/audit-logs?page=0' }
+  ])('rejects an invalid $field query', async ({ path }) => {
+    const agent = await login(managerEmail, managerPassword);
+    const response = await agent.get(path);
 
     expect(response.status).toBe(400);
   });

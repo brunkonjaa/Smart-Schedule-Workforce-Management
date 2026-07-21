@@ -84,6 +84,36 @@ window.SmartSchedule.auditLogsUi = (function createAuditLogsUi() {
     EMPLOYEE_SUMMARY_VIEWED: 'Viewed Employee Summary'
   }[action] || action);
 
+  const renderPagination = ({ label, onNext, onPrevious, pagination }) => {
+    const paginationElement = helpers.createElement('nav', {
+      className: 'audit-log-pagination',
+      attributes: { 'aria-label': label }
+    });
+    const previous = helpers.createElement('button', {
+      className: 'action-button button-ghost',
+      text: 'Previous',
+      attributes: {
+        disabled: !pagination.hasPrevious,
+        type: 'button'
+      }
+    });
+    previous.addEventListener('click', onPrevious);
+    const pageText = helpers.createElement('span', {
+      text: `${pagination.total} records · Page ${pagination.page} of ${pagination.totalPages}`
+    });
+    const next = helpers.createElement('button', {
+      className: 'action-button button-ghost',
+      text: 'Next',
+      attributes: {
+        disabled: !pagination.hasNext,
+        type: 'button'
+      }
+    });
+    next.addEventListener('click', onNext);
+    paginationElement.append(previous, pageText, next);
+    return paginationElement;
+  };
+
   const renderTabs = (state, actions) => {
     const tabs = helpers.createElement('div', {
       className: 'audit-log-tabs',
@@ -109,7 +139,7 @@ window.SmartSchedule.auditLogsUi = (function createAuditLogsUi() {
     return tabs;
   };
 
-  const renderRotaActivity = (logs) => {
+  const renderRotaActivity = (state, actions) => {
     const panel = helpers.createElement('section', {
       className: 'content-panel content-panel--span-16 audit-log-panel'
     });
@@ -118,55 +148,61 @@ window.SmartSchedule.auditLogsUi = (function createAuditLogsUi() {
       'The existing shift and assignment changes remain in this section.'
     ));
 
-    if (logs.length === 0) {
+    if (state.rotaLogs.length === 0) {
       panel.appendChild(helpers.createElement('p', {
         className: 'panel-copy',
         text: 'No rota activity has been recorded yet.'
       }));
-      return panel;
+    } else {
+      const tableWrap = helpers.createElement('div', { className: 'table-wrap' });
+      const table = helpers.createElement('table', {
+        className: 'audit-log-table audit-log-table--rota'
+      });
+      const head = helpers.createElement('thead');
+      const headRow = helpers.createElement('tr');
+      ['When', 'Change', 'Manager', 'Staff member', 'Shift'].forEach((label) => {
+        headRow.appendChild(helpers.createElement('th', { text: label }));
+      });
+      head.appendChild(headRow);
+      table.appendChild(head);
+      const body = helpers.createElement('tbody');
+      state.rotaLogs.forEach((log) => {
+        const logState = getState(log);
+        const row = helpers.createElement('tr');
+        row.appendChild(helpers.createTableCell('When', formatDateTime(log.createdAt)));
+        row.appendChild(helpers.createTableCell('Change', getReadableChange(log)));
+        row.appendChild(helpers.createTableCell(
+          'Manager',
+          log.actorName || log.actorEmail || 'Manager account'
+        ));
+        const staffCell = helpers.createElement('td', {
+          attributes: { 'data-label': 'Staff member' }
+        });
+        if (logState.staffProfileId) {
+          staffCell.appendChild(employeeSummaryUi.createEmployeeLink({
+            fullName: getStaffName(logState),
+            source: 'audit-log',
+            staffProfileId: logState.staffProfileId,
+            weekStart: getWeekStart(logState.shiftDate)
+          }));
+        } else {
+          staffCell.textContent = getStaffName(logState);
+        }
+        row.appendChild(staffCell);
+        row.appendChild(helpers.createTableCell('Shift', getReadableShift(logState)));
+        body.appendChild(row);
+      });
+      table.appendChild(body);
+      tableWrap.appendChild(table);
+      panel.appendChild(tableWrap);
     }
 
-    const tableWrap = helpers.createElement('div', { className: 'table-wrap' });
-    const table = helpers.createElement('table', {
-      className: 'audit-log-table audit-log-table--rota'
-    });
-    const head = helpers.createElement('thead');
-    const headRow = helpers.createElement('tr');
-    ['When', 'Change', 'Manager', 'Staff member', 'Shift'].forEach((label) => {
-      headRow.appendChild(helpers.createElement('th', { text: label }));
-    });
-    head.appendChild(headRow);
-    table.appendChild(head);
-    const body = helpers.createElement('tbody');
-    logs.forEach((log) => {
-      const state = getState(log);
-      const row = helpers.createElement('tr');
-      row.appendChild(helpers.createTableCell('When', formatDateTime(log.createdAt)));
-      row.appendChild(helpers.createTableCell('Change', getReadableChange(log)));
-      row.appendChild(helpers.createTableCell(
-        'Manager',
-        log.actorName || log.actorEmail || 'Manager account'
-      ));
-      const staffCell = helpers.createElement('td', {
-        attributes: { 'data-label': 'Staff member' }
-      });
-      if (state.staffProfileId) {
-        staffCell.appendChild(employeeSummaryUi.createEmployeeLink({
-          fullName: getStaffName(state),
-          source: 'audit-log',
-          staffProfileId: state.staffProfileId,
-          weekStart: getWeekStart(state.shiftDate)
-        }));
-      } else {
-        staffCell.textContent = getStaffName(state);
-      }
-      row.appendChild(staffCell);
-      row.appendChild(helpers.createTableCell('Shift', getReadableShift(state)));
-      body.appendChild(row);
-    });
-    table.appendChild(body);
-    tableWrap.appendChild(table);
-    panel.appendChild(tableWrap);
+    panel.appendChild(renderPagination({
+      label: 'Rota activity pages',
+      onNext: () => actions.loadRotaPage(state.rotaPagination.page + 1),
+      onPrevious: () => actions.loadRotaPage(state.rotaPagination.page - 1),
+      pagination: state.rotaPagination
+    }));
     return panel;
   };
 
@@ -182,7 +218,7 @@ window.SmartSchedule.auditLogsUi = (function createAuditLogsUi() {
     if (state.employeeLogs.length === 0) {
       panel.appendChild(helpers.createElement('p', {
         className: 'panel-copy',
-        text: 'No Employee Summary access has been recorded yet.'
+        text: 'No Employee Summary access has been recorded yet. Opening a summary or requesting its print view creates the first record.'
       }));
     } else {
       const tableWrap = helpers.createElement('div', { className: 'table-wrap' });
@@ -221,33 +257,12 @@ window.SmartSchedule.auditLogsUi = (function createAuditLogsUi() {
       panel.appendChild(tableWrap);
     }
 
-    const pagination = helpers.createElement('nav', {
-      className: 'audit-log-pagination',
-      attributes: { 'aria-label': 'Employee access pages' }
-    });
-    const previous = helpers.createElement('button', {
-      className: 'action-button button-ghost',
-      text: 'Previous',
-      attributes: {
-        disabled: !state.pagination.hasPrevious,
-        type: 'button'
-      }
-    });
-    previous.addEventListener('click', () => actions.loadEmployeePage(state.pagination.page - 1));
-    const pageText = helpers.createElement('span', {
-      text: `Page ${state.pagination.page} of ${state.pagination.totalPages}`
-    });
-    const next = helpers.createElement('button', {
-      className: 'action-button button-ghost',
-      text: 'Next',
-      attributes: {
-        disabled: !state.pagination.hasNext,
-        type: 'button'
-      }
-    });
-    next.addEventListener('click', () => actions.loadEmployeePage(state.pagination.page + 1));
-    pagination.append(previous, pageText, next);
-    panel.appendChild(pagination);
+    panel.appendChild(renderPagination({
+      label: 'Employee access pages',
+      onNext: () => actions.loadEmployeePage(state.pagination.page + 1),
+      onPrevious: () => actions.loadEmployeePage(state.pagination.page - 1),
+      pagination: state.pagination
+    }));
     return panel;
   };
 
@@ -266,6 +281,14 @@ window.SmartSchedule.auditLogsUi = (function createAuditLogsUi() {
         totalPages: 1
       },
       rotaLogs: [],
+      rotaPagination: {
+        hasNext: false,
+        hasPrevious: false,
+        page: 1,
+        pageSize: 25,
+        total: 0,
+        totalPages: 1
+      },
       tab: 'rota'
     };
 
@@ -276,7 +299,7 @@ window.SmartSchedule.auditLogsUi = (function createAuditLogsUi() {
           label: state.tab === 'rota' ? 'Rota activity' : 'Employee access',
           value: state.loading
             ? 'Loading...'
-            : String(state.tab === 'rota' ? state.rotaLogs.length : state.pagination.total),
+            : String(state.tab === 'rota' ? state.rotaPagination.total : state.pagination.total),
           tone: 'accent'
         },
         { label: 'Access', value: 'Manager', tone: 'neutral' }
@@ -299,19 +322,20 @@ window.SmartSchedule.auditLogsUi = (function createAuditLogsUi() {
       } else {
         grid.appendChild(
           state.tab === 'rota'
-            ? renderRotaActivity(state.rotaLogs)
+            ? renderRotaActivity(state, actions)
             : renderEmployeeAccess(state, actions)
         );
       }
       workspaceElement.appendChild(grid);
     };
 
-    const loadRota = async () => {
+    const loadRotaPage = async (requestedPage) => {
       state.loading = true;
       render();
       try {
-        const result = await apiClient.get('/api/v1/audit-logs?limit=100');
+        const result = await apiClient.get(`/api/v1/audit-logs?page=${requestedPage}`);
         state.rotaLogs = result.logs;
+        state.rotaPagination = result.pagination;
         state.loading = false;
         render();
       } catch (error) {
@@ -348,18 +372,19 @@ window.SmartSchedule.auditLogsUi = (function createAuditLogsUi() {
 
     const actions = {
       loadEmployeePage,
+      loadRotaPage,
       selectTab: async (tab) => {
         if (tab === state.tab) return;
         state.tab = tab;
         if (tab === 'employee') {
           await loadEmployeePage(1);
         } else {
-          await loadRota();
+          await loadRotaPage(1);
         }
       }
     };
 
-    await loadRota();
+    await loadRotaPage(1);
   };
 
   return { mount };

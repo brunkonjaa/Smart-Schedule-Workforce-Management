@@ -46,10 +46,20 @@ router.get(
   '/',
   requireRole('MANAGER'),
   asyncHandler(async (request, response) => {
-    const rawLimit = Number(request.query.limit || 100);
-    const limit = Number.isInteger(rawLimit) ? Math.min(Math.max(rawLimit, 1), 200) : null;
+    const rawPage = Number(request.query.page || 1);
+    const rawPageSize = request.query.limit === undefined
+      ? 25
+      : Number(request.query.limit);
 
-    if (!limit) {
+    if (!Number.isInteger(rawPage) || rawPage < 1) {
+      return response.status(400).json({
+        details: ['page must be a whole number greater than 0'],
+        error: 'Validation Failed',
+        message: 'The Rota activity request contains invalid fields.'
+      });
+    }
+
+    if (!Number.isInteger(rawPageSize) || rawPageSize < 1 || rawPageSize > 200) {
       return response.status(400).json({
         details: ['limit must be a whole number between 1 and 200'],
         error: 'Validation Failed',
@@ -57,8 +67,20 @@ router.get(
       });
     }
 
-    const logs = await listAuditLogs({ limit });
-    return response.status(200).json({ logs });
+    const result = await listAuditLogs({
+      page: rawPage,
+      pageSize: rawPageSize
+    });
+
+    if (rawPage > result.pagination.totalPages) {
+      return response.status(400).json({
+        details: ['page is beyond the available Rota activity records'],
+        error: 'Validation Failed',
+        message: 'The Rota activity request contains invalid fields.'
+      });
+    }
+
+    return response.status(200).json(result);
   })
 );
 

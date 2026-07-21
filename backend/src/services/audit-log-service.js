@@ -19,33 +19,60 @@ const mapAuditLogRecord = (record) => ({
   summary: record.summary
 });
 
-const listAuditLogs = async ({ limit = 100 } = {}) => {
-  const result = await query(
-    `
-      SELECT
-        audit_logs.id,
-        audit_logs.action,
-        audit_logs.entity_type,
-        audit_logs.entity_id,
-        audit_logs.summary,
-        audit_logs.before_state,
-        audit_logs.after_state,
-        audit_logs.created_at,
-        users.email AS actor_email,
-        staff_profiles.full_name AS actor_name
-      FROM audit_logs
-      LEFT JOIN users
-        ON users.id = audit_logs.actor_user_id
-      LEFT JOIN staff_profiles
-        ON staff_profiles.user_id = users.id
-      WHERE audit_logs.entity_type IN ('ASSIGNMENT', 'SHIFT')
-      ORDER BY audit_logs.created_at DESC
-      LIMIT $1
-    `,
-    [limit]
-  );
+const buildPagination = ({ page, pageSize, total }) => {
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
-  return result.rows.map(mapAuditLogRecord);
+  return {
+    hasNext: page < totalPages,
+    hasPrevious: page > 1,
+    page,
+    pageSize,
+    total,
+    totalPages
+  };
+};
+
+const listAuditLogs = async ({ page = 1, pageSize = 25 } = {}) => {
+  const offset = (page - 1) * pageSize;
+  const [recordsResult, countResult] = await Promise.all([
+    query(
+      `
+        SELECT
+          audit_logs.id,
+          audit_logs.action,
+          audit_logs.entity_type,
+          audit_logs.entity_id,
+          audit_logs.summary,
+          audit_logs.before_state,
+          audit_logs.after_state,
+          audit_logs.created_at,
+          users.email AS actor_email,
+          staff_profiles.full_name AS actor_name
+        FROM audit_logs
+        LEFT JOIN users
+          ON users.id = audit_logs.actor_user_id
+        LEFT JOIN staff_profiles
+          ON staff_profiles.user_id = users.id
+        WHERE audit_logs.entity_type IN ('ASSIGNMENT', 'SHIFT')
+        ORDER BY audit_logs.created_at DESC, audit_logs.id DESC
+        LIMIT $1 OFFSET $2
+      `,
+      [pageSize, offset]
+    ),
+    query(
+      `
+        SELECT COUNT(*)::int AS total
+        FROM audit_logs
+        WHERE entity_type IN ('ASSIGNMENT', 'SHIFT')
+      `
+    )
+  ]);
+  const total = Number(countResult.rows[0]?.total || 0);
+
+  return {
+    logs: recordsResult.rows.map(mapAuditLogRecord),
+    pagination: buildPagination({ page, pageSize, total })
+  };
 };
 
 const createAuditLog = async ({
@@ -169,18 +196,10 @@ const listEmployeeAccessLogs = async ({ page = 1, pageSize = 25 } = {}) => {
     )
   ]);
   const total = Number(countResult.rows[0]?.total || 0);
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return {
     logs: recordsResult.rows.map(mapEmployeeAccessRecord),
-    pagination: {
-      hasNext: page < totalPages,
-      hasPrevious: page > 1,
-      page,
-      pageSize,
-      total,
-      totalPages
-    }
+    pagination: buildPagination({ page, pageSize, total })
   };
 };
 

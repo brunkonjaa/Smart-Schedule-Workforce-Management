@@ -4,7 +4,7 @@
 
 This review starts from final report-evidence checkpoint `db2837c854291b8965c3f3e4b3d9b1cc9e018527`, committed on 17 July 2026 at 20:13:17 +01:00, and includes the current 18 July WebSocket lifetime test/fix. It covers the Express backend, PostgreSQL/session boundary, browser frontend and NodyChat WebSocket. It does not claim a penetration test or an independent security assessment.
 
-`npm audit --omit=dev --json` was run on 17 July 2026. It reported zero known vulnerabilities across 118 production dependencies at that time. This result can change when package advisories change, so the package-lock still needs to stay part of future checks.
+The GitHub Actions run for `304a8c62b7c88c1ad2288f822849c87e359ad4cb` found a new low-severity `body-parser` denial-of-service advisory on 21 July 2026. The lockfile had selected `body-parser` 1.20.5 through Express. I updated it to the compatible 1.20.6 fix and also accepted the current patched `brace-expansion` lock entries. The repeated `npm audit --omit=dev --json` result is zero known vulnerabilities across 118 production dependencies. This can change again when package advisories change, so the lockfile check remains in GitHub Actions.
 
 ## Assets and trust boundaries
 
