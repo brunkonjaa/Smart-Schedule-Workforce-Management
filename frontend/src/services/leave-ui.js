@@ -271,13 +271,13 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
 
       startInput = uiHelpers.createElement('input', {
         className: 'input-control',
-        attributes: { type: 'date', value: state.form.startDate }
+        attributes: { name: 'startDate', type: 'date', value: state.form.startDate }
       });
       appendField('Start date', startInput, 'form-field--span-6');
 
       endInput = uiHelpers.createElement('input', {
         className: 'input-control',
-        attributes: { type: 'date', value: state.form.endDate }
+        attributes: { name: 'endDate', type: 'date', value: state.form.endDate }
       });
       appendField('End date', endInput, 'form-field--span-6');
     }
@@ -293,7 +293,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
       reasonInput = uiHelpers.createElement('textarea', {
         className: 'input-control',
         text: state.form.reason,
-        attributes: { rows: 5 }
+        attributes: { name: 'reason', rows: 5 }
       });
       appendField('Reason', reasonInput);
     }
@@ -570,8 +570,38 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
         });
       } catch (error) {
         const feedback = uiHelpers.getErrorFeedback(error, 'Your Time Off request was not sent. Check the dates and try again.');
+        const reasonError = feedback.details.some((detail) => {
+          return detail === 'Enter a reason.' || detail.startsWith('Reason must be');
+        });
+        const endDateError = feedback.details.some((detail) => {
+          return detail.includes('end date') || detail.includes('after the start date');
+        });
+        const startDateError = feedback.details.some((detail) => {
+          return detail.includes('start date');
+        });
+        let errorFieldSelector = null;
+
+        if (reasonError) {
+          state.formStep = 2;
+          errorFieldSelector = '[name="reason"]';
+        } else if (endDateError) {
+          state.formStep = 1;
+          errorFieldSelector = '[name="endDate"]';
+        } else if (startDateError) {
+          state.formStep = 1;
+          errorFieldSelector = '[name="startDate"]';
+        }
+
         setFlash(state, 'error', feedback.text, feedback.details);
         render();
+
+        if (errorFieldSelector) {
+          window.requestAnimationFrame(() => {
+            const errorField = workspaceElement.querySelector(errorFieldSelector);
+            errorField?.setAttribute('aria-invalid', 'true');
+            errorField?.focus();
+          });
+        }
       }
     };
 

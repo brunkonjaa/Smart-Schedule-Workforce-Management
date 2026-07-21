@@ -13,8 +13,25 @@ describe('PWA and browser output security', () => {
       path.join(frontendRoot, 'public/offline.html'),
       'utf8'
     );
+    const indexPage = fs.readFileSync(
+      path.join(frontendRoot, 'public/index.html'),
+      'utf8'
+    );
+    const styles = fs.readFileSync(
+      path.join(frontendRoot, 'src/styles/main.css'),
+      'utf8'
+    );
+    const leaveUi = fs.readFileSync(
+      path.join(frontendRoot, 'src/services/leave-ui.js'),
+      'utf8'
+    );
+    const backgroundPath = path.resolve(
+      frontendRoot,
+      '../assets/images/gentle_hospitality_background-v2.webp'
+    );
 
     expect(serviceWorker).toContain("const OFFLINE_URL = '/offline.html'");
+    expect(serviceWorker).toContain("const CACHE_NAME = 'smart-schedule-static-v13'");
     expect(serviceWorker).toContain("const STATIC_PATH_PREFIXES = ['/assets/images/', '/icons/', '/src/']");
     expect(serviceWorker).toContain("event.request.mode === 'navigate'");
     expect(serviceWorker).not.toContain("cache.add('/')");
@@ -22,6 +39,14 @@ describe('PWA and browser output security', () => {
     expect(serviceWorker).not.toContain("'/api/'");
     expect(serviceWorker).not.toContain("'/health'");
     expect(offlinePage).toContain('The current rota and NodyChat messages are not available');
+    expect(indexPage).toContain('href="/assets/images/gentle_hospitality_background-v2.webp"');
+    expect(indexPage).toContain('fetchpriority="high"');
+    expect(styles).toContain("url('/assets/images/gentle_hospitality_background-v2.webp')");
+    expect(styles).not.toContain("url('/assets/images/gentle_hospitality_background.png')");
+    expect(styles).toMatch(/\.workspace-grid--leave > \.content-panel--alert\s*\{[\s\S]*?grid-column:\s*1 \/ -1;/);
+    expect(fs.statSync(backgroundPath).size).toBeLessThan(100 * 1024);
+    expect(leaveUi).toContain("state.formStep = 2");
+    expect(leaveUi).toContain("errorField?.focus()");
   });
 
   test('user-facing services use text insertion instead of innerHTML', () => {

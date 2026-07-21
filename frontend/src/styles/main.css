@@ -67,7 +67,7 @@ body {
   background-color: var(--bg);
   background-image:
     linear-gradient(rgba(245, 247, 251, 0.48), rgba(245, 247, 251, 0.48)),
-    url('/assets/images/gentle_hospitality_background.png');
+    url('/assets/images/gentle_hospitality_background-v2.webp');
   background-position: center;
   background-size: cover;
   background-attachment: scroll;
@@ -78,7 +78,7 @@ body {
 body[data-theme='dark'] {
   background-image:
     linear-gradient(rgba(9, 17, 31, 0.78), rgba(9, 17, 31, 0.78)),
-    url('/assets/images/gentle_hospitality_background.png');
+    url('/assets/images/gentle_hospitality_background-v2.webp');
 }
 
 body[data-page='reset-password'] {
@@ -3820,6 +3820,14 @@ body[data-theme='dark'] .rota-mobile-week-cell.is-selected:not(.is-filled) {
 .workspace-grid--leave .leave-guide-panel,
 .workspace-grid--leave .leave-toolbar-panel {
   grid-column: span 4;
+}
+
+.workspace-grid--leave > .content-panel--alert {
+  grid-column: 1 / -1;
+  order: 0;
+  width: auto;
+  min-width: 0;
+  max-width: none;
 }
 
 .workspace-grid--leave .leave-toolbar-panel { order: 3; }

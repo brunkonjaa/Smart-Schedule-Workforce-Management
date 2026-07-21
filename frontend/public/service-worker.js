@@ -1,4 +1,4 @@
-const CACHE_NAME = 'smart-schedule-static-v12';
+const CACHE_NAME = 'smart-schedule-static-v13';
 const OFFLINE_URL = '/offline.html';
 const STATIC_PATH_PREFIXES = ['/assets/images/', '/icons/', '/src/'];
 const STATIC_PATHS = new Set(['/manifest.webmanifest', OFFLINE_URL]);
