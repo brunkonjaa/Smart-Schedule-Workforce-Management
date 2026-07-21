@@ -6,6 +6,8 @@ This is the running build log for the repo.
 
 I use it to record what changed, why I changed it, what evidence exists, and what still had to happen next. Older entries stay here even when the direction later changed, because that is still part of the real project trail.
 
+The status inside an older entry belongs to that checkpoint. A line saying something was still pending in June or early July is not today's release status. The submitted repo is tagged `v1.0.0-submission`, all 27 migrations and 30 suites/243 tests passed at the final local gate, and the remaining hosted evidence limits are listed in `docs/release/phase_6_release_record.md`.
+
 ## Reference Files
 
 1. [technology_stack.md](technology_stack.md)
@@ -80,7 +82,7 @@ The hosted Employee access page was empty because no Employee Summary had been o
 
 1. The GitHub workflow checks the backend against PostgreSQL 16, but it does not replace the separate browser and accessibility checks.
 2. The fresh hosted staff run passed, but a fresh hosted manager login is still open because the current manager password is not stored in the project files. I did not reset it only to create evidence.
-3. Invalid Time Off and assignment time order both passed, but these are two representative validation paths rather than proof of every invalid field combination.
+3. Invalid Time Off and the assignment-time rule at that checkpoint both passed, but these are two representative validation paths rather than proof of every invalid field combination. Migration `027` later changed an earlier end clock time into an overnight shift.
 4. Independent participant testing remains outside this work plan.
 
 ### Next Step
@@ -214,7 +216,7 @@ The seeded accounts use addresses such as `aoifeosullivanfake@gmail.com` and `ci
 3. `seed-staff-history.js` targets Aoife O'Sullivan at `aoifeosullivanfake@gmail.com` by default.
 4. local PostgreSQL and Neon were migrated through `016` and reseeded with 24 staff, 840 shifts, 840 assignments, and 5 approved leave records.
 
-The demo password remains `DemoStaffPass123!`. These accounts are seed data only and are not real humans.
+The demo password stayed outside committed notes and screenshots. These accounts are seed data only and are not real humans.
 2. hosted UAT and final cross-browser evidence still need a focused pass
 3. the current browser connector was not available for fresh automated screenshots, so visual checks used the running local page and supplied browser captures
 

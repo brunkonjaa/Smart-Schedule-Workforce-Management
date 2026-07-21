@@ -1,5 +1,7 @@
 # Browser, Keyboard And Accessibility Review
 
+This review asks whether a real person can move through the pages, see the feedback and keep control of the keyboard focus. A layout looking correct in one screenshot is not enough, so I checked several sizes, real browser zoom, dialogs, invalid input and the Manager/Staff boundary.
+
 ## Current status
 
 I reran the live browser checks on 18 July 2026 against the guarded `smart_schedule_local` database after migrations 001 to 022 were confirmed. I signed in as Maeve O'Connor and Aaron Collins. The browser sizes were 1920 x 855, 1024 x 768 and 390 x 844. The manager and staff rota views, manager pages, invalid login, NodyChat, manager/staff navigation boundary and rota modal keyboard behaviour were checked from the running interface.
@@ -16,7 +18,7 @@ The live checks passed at those three sizes without page-level horizontal overfl
 | NodyChat keyboard | input receives focus on open; Escape closes; focus returns to launcher | Passed live for the workplace/direct selector and message field |
 | NodyChat announcements | message list uses `role=log`/polite additions; status uses `role=status`/polite live region | Added in this pass |
 | Department filter | regular buttons with `aria-pressed` instead of incomplete ARIA tab semantics | Corrected in this pass |
-| Validation | invalid manager login plus native/server-side validation paths | Invalid login passed live with `Invalid email or password.`; a staff Time Off request with an end date before its start date stayed unsaved; an assignment with 17:00 start and 10:00 end stayed unsaved, showed the server message and returned focus to Start time |
+| Validation | invalid Manager login plus native/server-side validation paths | Invalid login passed live; a Staff Time Off request with an end date before its start stayed unsaved; the earlier shift-time check returned focus to Start time. Migration `027` later changed an earlier end clock time into a valid overnight shift, so that old rejection is evidence of focus handling, not the final time rule. |
 | Reduced motion | `prefers-reduced-motion: reduce` rules are present | Code support present |
 | Manager/staff RBAC | manager-only Staff and Audit log navigation, plus direct hash access | Staff navigation hid both links and direct `#audit-logs` access returned the staff user to `#rota` |
 | Dark theme | staff rota at 390 x 844 | Passed the visual/overflow spot check; body text/background resolved to light text on the dark surface |
@@ -48,7 +50,7 @@ The earlier bright teal end of the primary-button gradient did not give enough c
 | Staff role boundary | Passed; Staff and Audit log links were absent and direct audit hash access returned to Rota |
 | Invalid login | Passed; the rejected credentials stayed on `#login` and showed the server message |
 | Invalid Time Off date order | Passed; end date before start date was rejected with `End date must be the same as or after the start date.` and the existing request count stayed at one |
-| Invalid assignment time order | Passed; 17:00 to 10:00 was rejected with `End time must be later than start time.`, focus returned to Start time, and the future rota cell stayed OFF |
+| Earlier assignment-time validation | Passed at that checkpoint; 17:00 to 10:00 was rejected, focus returned to Start time, and the rota stayed unchanged. This predates migration `027`; the final build accepts that clock order as overnight and rejects matching start/end times instead. |
 | NodyChat | Passed; workplace room opened with message focus, direct conversation selection reached connected state, and Escape returned focus to the launcher |
 | Rota modal | Passed; focus entry, containment, Escape close and return to the original cell action were observed |
 | 1920 x 855, 1024 x 768 and 390 x 844 | Passed without document-level horizontal overflow |

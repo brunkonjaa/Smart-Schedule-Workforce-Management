@@ -1,5 +1,7 @@
 # Phase 6 release record
 
+This is the final submission checkpoint. It separates the application SHA actually running on Render from later evidence-only repository commits and keeps the hosted checks I could not repeat visible.
+
 ## Verification point
 
 - Date: 21 July 2026

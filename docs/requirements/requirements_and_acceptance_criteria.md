@@ -1,6 +1,6 @@
 # Requirements And Acceptance Criteria
 
-These are the current MVP requirements. They describe the workflows now in the repo, while the last section keeps the remaining proof and deferred work separate.
+These are the promises the finished MVP is meant to keep. They turn broad ideas such as "staff can request Time Off" into results that can be checked in a route test, browser workflow or screenshot. The wording stays close to the actual repo so a feature is not counted just because a page exists.
 
 The earlier SRS requirement `FR-004` for weekly availability is retired from this final baseline. Migration `014_remove_weekly_availability.sql` removed that table and the live rota no longer depends on a weekly form. It is not counted as an undelivered MUST. The current assignment rules use active state, required role, approved leave, existing shifts and the weekly five-shift/forty-hour limits instead.
 
@@ -132,4 +132,6 @@ The earlier SRS requirement `FR-004` for weekly availability is retired from thi
 
 ## Deferred work
 
-The following are not acceptance criteria for this MVP: full automatic scheduling, payroll, POS integration, native mobile app, multi-branch support, and wider reports. Weekly availability is retired rather than pending. The current manager audit page is limited to the shift and assignment records already written by the backend. NodyChat HTTP/direct/read-state permission tests are now included. Measured performance timings, a dedicated WebSocket harness and independent participant testing remain evidence gaps rather than new product features.
+The following are not acceptance criteria for this MVP: full automatic scheduling, payroll, accounting, a larger HR section, POS integration, a native mobile app, multi-branch support and wider business reporting. This keeps the application small enough for the ordinary rota work of one hospitality workplace. Weekly availability is retired rather than pending.
+
+The current audit area records rota activity and Employee Summary access; it is not a general business audit system. NodyChat HTTP, direct-message, unread-state and WebSocket permission tests are included. Hosted WebAuthn actions, provider behaviour and independent participant testing still need manual evidence and are not turned into new product claims.

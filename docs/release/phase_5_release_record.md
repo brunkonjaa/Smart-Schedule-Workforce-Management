@@ -1,5 +1,7 @@
 # Phase 5 release record
 
+This checkpoint connects one exact source tree to local PostgreSQL, GitHub Actions, Render and Neon. It exists because a successful page load does not identify which commit is actually running.
+
 ## Why this checkpoint exists
 
 Phase 5 freezes the feature set and checks one source tree through local PostgreSQL, GitHub Actions, Render and Neon. I added one narrow operational field to `/health`: `releaseCommit`. Render already provides the deployed SHA through `RENDER_GIT_COMMIT`, but the app had no safe way to prove which build answered the request. The helper accepts only a full 40-character hexadecimal value. Local or malformed values return `null`.

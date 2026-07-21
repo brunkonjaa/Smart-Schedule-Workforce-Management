@@ -1,5 +1,7 @@
 # Phase 1 and Phase 2 verification evidence
 
+This record explains why the tooling cleanup and regression-test work were captured together. It preserves the exact result from that checkpoint; the larger final 30-suite result is recorded in the later release files.
+
 ## Combined result
 
 I kept the Phase 1 tooling cleanup and the Phase 2 regression work as one checkpoint. The Phase 2 tests were already in the working tree before the final Phase 1 screenshots were taken, so trying to recreate the older 144-test result would no longer show the actual project state.

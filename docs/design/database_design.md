@@ -1,6 +1,8 @@
 # Database Design
 
-Smart Schedule uses PostgreSQL as the source of truth for identity, administrator invitations, staff profiles, leave, shifts, assignments, password recovery, swaps, and manager audit records.
+Smart Schedule uses PostgreSQL as the main record of what the application knows. A browser page can be closed or refreshed, but the users, staff, Time Off, shifts, assignments, swaps, conversations and audit history stay linked in the database.
+
+I used separate tables because these things have different jobs. A login user is not the same record as a staff profile, and a request to swap a shift is not the shift assignment itself. Keeping those differences in the design makes it possible to check permission and history without putting everything into one large staff table.
 
 ## Tables in the current migration chain
 
@@ -14,6 +16,13 @@ Smart Schedule uses PostgreSQL as the source of truth for identity, administrato
 8. `password_reset_requests` - hashed reset token, expiry, use state, and request timestamps
 9. `shift_swap_requests` - source assignment, requester, optional target, acceptance and manager decision state
 10. `admin_invitations` - invited email/name, hashed one-use token, inviting Admin, expiry and terminal state
+11. `user_passkeys` - registered passkey identifiers, public-key material, counter and account link
+12. `chat_conversations` - the shared workplace room and each two-person direct room
+13. `chat_conversation_participants` - the users allowed into each conversation
+14. `chat_messages` - the message, sender and conversation link
+15. `chat_read_states` - each participant's last read message in each conversation
+16. `user_sessions` - server-side login sessions created by `connect-pg-simple`
+17. `schema_migrations` - the ordered migration filenames already applied
 
 `availability_entries` is historical. Migration `014_remove_weekly_availability.sql` removes that table because weekly availability submission was removed from the rota workflow.
 
@@ -48,7 +57,7 @@ Existing login rows start with `password_scheme = BCRYPT`. A correct legacy logi
 
 ### `shifts`
 
-The end time must be after the start time. The current statuses are `DRAFT`, `OPEN`, and `CANCELLED`. The current rota seed uses Monday-Friday shifts, while the rota view can show the whole week.
+Migration `027_allow_overnight_shifts.sql` treats an end time earlier than the start as the following day, so 22:00 to 02:00 is a four-hour overnight shift. Matching start and end times are rejected because the length would be unclear. The current statuses are `DRAFT`, `OPEN`, and `CANCELLED`. The demo seed uses Monday-Friday shifts, while the rota can show the whole week.
 
 ### `shift_assignments`
 
@@ -80,6 +89,8 @@ Before an assignment is saved, the backend checks:
 
 Contract hours can produce a warning instead of a hard block. A manager may need to approve extra contracted hours in a busy week, but the hard safety limits still apply.
 
+NodyChat uses the same kind of separation. A direct conversation is returned only through a participant row, and read state belongs to one user in one conversation. This prevents one global read marker from clearing another person's unread messages.
+
 ## PostgreSQL choices
 
-The schema uses UUID keys, `TIMESTAMPTZ` timestamps, `CHECK` constraints, `JSONB` audit snapshots, and `gen_random_uuid()` from `pgcrypto`. The migration runner records applied filenames in `schema_migrations`.
+The schema uses UUID keys, `TIMESTAMPTZ` timestamps, `CHECK` constraints, `JSONB` audit snapshots, and `gen_random_uuid()` from `pgcrypto`. These details help keep links and history consistent, but they do not replace the service checks that need to look across several rows at once.

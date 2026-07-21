@@ -2,7 +2,7 @@
 
 ## Why This File Exists
 
-This file records the main project decisions, including the ones that later changed.
+This file records the main project decisions, including the ones that later changed. It is the reason behind the build order, not a list of every commit.
 
 I kept the older decisions in here on purpose. They show how the repo moved from an earlier direction into the current one instead of pretending the final version appeared fully formed.
 
@@ -174,7 +174,7 @@ Reason for selection:
 Hashed passwords, backend role checks, validation, and testable ownership rules are enough for this stage.
 
 Drawback accepted:
-Advanced controls like MFA are out of scope.
+At this checkpoint I left advanced authentication out so the basic login and role boundary could be finished first. Manager and Admin passkey work was added later after that base was stable.
 
 Status:
 Active
@@ -426,6 +426,40 @@ The weekly draft fits how the manager uses Smart Schedule. The manager starts fr
 
 Drawback accepted:
 There is no separate ranked list for one open shift now. The manager uses the rota actions and the normal assignment checks instead.
+
+Status:
+Active
+
+### D-20 Add Passkeys Without Making Admin A Super-Role
+
+Problem:
+The later security review needed stronger protection for administrator accounts, but giving Admin every Manager permission would expose staff and rota information for no reason.
+
+Selected option:
+Add passkeys and short Admin sessions while keeping `ADMIN`, `MANAGER` and `STAFF` as separate roles.
+
+Reason for selection:
+My previous cybersecurity study and CompTIA A+, Network+ and Security+ work made the account boundary as important as the visible page. A normal Admin now completes passkey setup, while the backend still refuses Manager rota, Staff, Employee Summary, Audit Log and NodyChat routes.
+
+Drawback accepted:
+Real WebAuthn depends on a compatible browser and device, so part of its evidence remains a manual browser check rather than only a Jest result.
+
+Status:
+Active
+
+### D-21 Keep The Product Small And Hospitality-Focused
+
+Problem:
+Adding payroll, accounting and a large HR section would make the application look broader, but it would also make a small hospitality business work around pages it may not need.
+
+Selected option:
+Keep Smart Schedule focused on rota, staff records, Time Off, swaps, short account-security workflows and workplace communication.
+
+Reason for selection:
+After more than 25 years in hospitality management, I wanted the common jobs to be quick. A Manager or Staff user should sign in, do the rota task and get on with the rest of the day. The project is meant to be useful, not a collection of menu items.
+
+Drawback accepted:
+A business that needs payroll, accounting, several branches or a full HR platform will need another system or a later extension. Smart Schedule only fits if its smaller boundary suits the workplace.
 
 Status:
 Active

@@ -1,12 +1,12 @@
 # Screenshot Evidence Log
 
-This folder is for report evidence and build proof only.
+This folder is the index for report evidence and build proof. A screenshot only proves the state visible when it was taken, so the number and caption need to say exactly what was checked. Older screenshots stay historical when the application later changes.
 
-## Main Rule
+## Main rule
 
 Do not treat screenshots like random desktop captures. Save them in a way that still makes sense later when the report needs a direct reference.
 
-## Folder Rule
+## Folder rule
 
 Keep current evidence under `tests/` and split it by what the screenshot is proving.
 
@@ -24,7 +24,7 @@ Current folders in use:
 
 If a new type of evidence is needed later, add another clear folder instead of dumping everything into one place.
 
-## Filename Rule
+## Filename rule
 
 Use this format:
 
@@ -36,7 +36,7 @@ Examples:
 2. `tests/database-setup/028_staff-profiles-table-visible-in-neon.png`
 3. `tests/jira/032_scrum-12-in-progress.png`
 
-## Numbering Rule
+## Numbering rule
 
 1. use one number sequence across the whole project
 2. do not restart numbering inside each folder
@@ -44,7 +44,7 @@ Examples:
 4. if the screenshot is a replacement of the exact same evidence item, keeping the same number is fine
 5. if it proves something else, use the next number
 
-## Current Numbering Log
+## Current numbering log
 
 - `001` backend health check response
 - `002` backend server running
@@ -104,11 +104,11 @@ Examples:
 - `056` staff filter floor
 - `057` staff filter bar
 - `058` availability save success
-- `059` availability validation end time before start
+- `059` historical weekly-availability validation before that feature was removed
 - `060` leave request validation missing reason
 - `061` leave request submitted pending
 - `062` leave request approved manager view
-- `063` shift validation end time before start
+- `063` historical shift-time validation before migration `027` added overnight shifts
 - `064` staff blocked from manager shifts page
 - `065` workflow route test suite passing
 - `066` shift delete button visible
@@ -183,7 +183,7 @@ Examples:
 - `135` hosted staff rota at verified 200% Chrome zoom
 - `136` terminal backend coverage run with 14 suites and 91 tests passing
 - `137` local staff Time Off request rejected because the end date is before the start date
-- `138` local manager assignment rejected because the end time is before the start time, with focus returned to Start time
+- `138` historical pre-migration-027 assignment-time rejection, kept as focus-return evidence; the final build supports overnight shifts
 - `139` fresh local PowerShell coverage run with 14 suites and 91 tests passing on 20 July 2026
 - `140` successful GitHub Actions backend job showing PostgreSQL setup, migrations, coverage tests, dependency audit and coverage upload
 - `141` safe hosted Audit Log print preview using landscape layout and page 1 only
@@ -240,7 +240,7 @@ Examples:
 
 I checked the numbered image files against this index on 21 July 2026. There are 187 numbered files and every one has a caption here. Number `108` is a JPG, not a missing PNG. Numbers `148` and `150` to `152` are unused. I left those gaps in place because renumbering later screenshots would make older report references point at the wrong evidence. No evidence number is duplicated.
 
-## Practical Reminder
+## Practical reminder
 
 Avoid screenshots that leak things I would not want sitting in the repo or in a report draft.
 

@@ -1,6 +1,6 @@
-# RBAC Matrix
+# Role And Access Matrix
 
-The backend uses four access states: unauthenticated, `STAFF`, `MANAGER`, and `ADMIN`. Admin is separate from Manager. It can manage administrator account security but it does not inherit rota, staff record, Employee Summary, Audit Log or chat access. The frontend hides pages where possible, but the route middleware and service ownership checks are the real protection.
+This table answers a practical question: who is allowed to do what? The backend uses four access states: signed out, `STAFF`, `MANAGER`, and `ADMIN`. Admin is separate from Manager. It can manage administrator account security but does not inherit rota, staff record, Employee Summary, Audit Log or chat access. The browser hides pages where possible, but the backend route and ownership checks are the real protection.
 
 | Endpoint | Unauthenticated | Staff | Manager | Admin | Note |
 | --- | --- | --- | --- | --- | --- |
@@ -71,4 +71,4 @@ The backend uses four access states: unauthenticated, `STAFF`, `MANAGER`, and `A
 
 ## Test expectation
 
-The route suites include unauthenticated `401`, wrong-role `403`, ownership denial, and business-rule `409` cases where those rules apply. The current local run passes `144` tests across `19` suites. `admin-routes.test.js` checks the separate role boundary, first Admin bootstrap, invitation lifecycle, reviewer exception, final-Admin rule, passkey/session revocation and metadata redaction. `password-security.test.js` checks silent bcrypt migration, Argon2id storage, breach checking and missing-pepper startup failure. The existing Employee Summary, rota, chat, Manager and Staff tests still run in the same complete suite.
+The route suites include signed-out `401`, wrong-role `403`, ownership denial and business-rule `409` cases where those rules apply. The final local run passed `243` tests across `30` suites. `admin-routes.test.js` checks the separate role boundary, first Admin bootstrap, invitation lifecycle, reviewer exception, final-Admin rule, passkey/session revocation and metadata redaction. `password-security.test.js` checks silent bcrypt migration, Argon2id storage, breach checking and missing-pepper startup failure. The Employee Summary, rota, chat, Manager and Staff tests run in the same complete command.

@@ -1,6 +1,6 @@
 # Database Migrations
 
-The migrations in this folder are ordered PostgreSQL changes. Do not renumber an applied file.
+The migrations in this folder tell the database side of the build in order. A later file can change an earlier decision, as migration `014` does for weekly availability and `027` does for overnight shifts. Do not renumber or rewrite an applied file, because another database may already have recorded that exact filename.
 
 ## Current files
 

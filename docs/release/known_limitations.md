@@ -1,6 +1,6 @@
 # Known limitations
 
-These are current Smart Schedule limits, not future features being presented as finished work.
+These are current Smart Schedule limits, not future features being presented as finished work. Some are technical limits and some are deliberate scope choices. The application stays small because it is aimed at the everyday staffing work of one hospitality workplace, not every back-office job a larger company might have.
 
 ## Out of scope
 
@@ -9,6 +9,7 @@ These are current Smart Schedule limits, not future features being presented as 
 3. There is no multi-branch or multi-property model. The current rota belongs to one hospitality workplace.
 4. There is no billing, subscription or payment workflow.
 5. There is no native Android or iOS app. The frontend is an installable web app where the browser supports it.
+6. There is no full HR or accounting section. Staff records contain only the information needed by the rota and the protected Employee Summary.
 
 ## Scheduling limit
 

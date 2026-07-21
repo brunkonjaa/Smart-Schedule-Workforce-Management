@@ -1,5 +1,7 @@
 # Backup and recovery note
 
+This is the practical recovery plan for the parts of Smart Schedule that live outside a developer's laptop. It covers what I would check before changing Neon, what to do after a failed migration or deletion, and why removing an exposed secret from one file is not enough.
+
 ## Before a database change
 
 First check the current Neon plan and its history-retention window. Create a Neon branch or a restore point from production before applying a migration that changes or removes data. The branch needs a clear name with the date and migration number, for example `before-027-2026-07-21`. Then connect to that branch and check at least the `users`, `staff_profiles`, `shifts`, `shift_assignments` and `schema_migrations` tables before treating it as recovery evidence.
