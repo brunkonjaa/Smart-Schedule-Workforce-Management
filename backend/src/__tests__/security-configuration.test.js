@@ -39,6 +39,9 @@ describe('HTTP security configuration', () => {
 
   test('serves the intended browser security headers without broad CSP sources', async () => {
     const response = await request(app).get('/');
+    const compressedStyles = await request(app)
+      .get('/src/styles/main.css')
+      .set('Accept-Encoding', 'gzip');
 
     expect(response.status).toBe(200);
     expect(response.headers['x-frame-options']).toBe('SAMEORIGIN');
@@ -55,6 +58,9 @@ describe('HTTP security configuration', () => {
     expect(policy).toContain("frame-ancestors 'self'");
     expect(policy).not.toContain('*');
     expect(policy).not.toContain("'unsafe-inline'");
+    expect(compressedStyles.status).toBe(200);
+    expect(compressedStyles.headers['content-encoding']).toBe('gzip');
+    expect(compressedStyles.headers.vary).toContain('Accept-Encoding');
   });
 
   test('uses the exact hosted WebSocket origin and one trusted proxy hop', () => {

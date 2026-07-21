@@ -80,7 +80,10 @@ window.SmartSchedule.liveUiHelpers = (function createLiveUiHelpers() {
     }
 
     const panel = createElement('section', {
-      className: `content-panel content-panel--span-16 content-panel--alert content-panel--alert-${flash.tone}`
+      className: `content-panel content-panel--span-16 content-panel--alert content-panel--alert-${flash.tone}`,
+      attributes: flash.tone === 'error'
+        ? { 'aria-live': 'assertive', role: 'alert' }
+        : { 'aria-live': 'polite', role: 'status' }
     });
     panel.appendChild(
       createElement('p', {

@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const helmet = require('helmet');
+const compression = require('compression');
 const config = require('./config/env');
 const { checkDatabaseConnection } = require('./config/db');
 const { getReleaseCommit } = require('./config/release');
@@ -34,6 +35,7 @@ const app = express();
 app.disable('x-powered-by');
 configureTrustProxy(app, config.nodeEnv);
 app.use(helmet(buildHelmetOptions(config.appBaseUrl)));
+app.use(compression());
 app.use(sessionMiddleware);
 app.use(express.json({ limit: '32kb' }));
 app.use(express.urlencoded({ extended: false, limit: '10kb', parameterLimit: 25 }));
