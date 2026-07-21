@@ -2,17 +2,17 @@
 
 ## Result
 
-I completed the local Phase 3 review on `chore/phase-3-security-review`. The final automated result is 28 Jest suites and 232 tests passing. Coverage finished at 77.26% statements, 62.56% branches, 86.34% functions and 78.24% lines. ESLint also returned with no errors or warnings.
+I completed the Phase 3 review on `chore/phase-3-security-review`. The final automated result is 28 Jest suites and 232 tests passing. Coverage finished at 77.26% statements, 62.56% branches, 86.34% functions and 78.24% lines. ESLint also returned with no errors or warnings.
 
-This phase changed security configuration and tests, but it did not upgrade the main application dependencies. The hosted Render service is still running the earlier `main` commit until this branch is merged and deployed, so I kept the hosted and local evidence separate instead of describing the local CSP change as already deployed.
+This phase changed security configuration and tests, but it did not upgrade the main application dependencies. Pull request `#1` ran the backend workflow against commit `f97d9a5` and every step passed. The branch was then merged as `38f8b4b`, and Render served the new build at 19:03:05 GMT on 21 July 2026. This order matters because screenshot `180` is the PR check, while screenshots `181` and `185` were taken only after the hosted response changed.
 
 ## Request and browser security
 
 Helmet is now configured through `backend/src/config/http-security.js`. The policy keeps scripts, styles, forms, images and frames on the sources already used by Smart Schedule. It does not use `*` or `unsafe-inline`. `connect-src` contains `'self'` and the exact WebSocket origin derived from `APP_BASE_URL`. For the current Render URL, that is `wss://smart-schedule-workforce-management.onrender.com`.
 
-The hosted header capture in screenshot `181` proves the currently deployed page returns CSP, `SAMEORIGIN`, `nosniff`, `no-referrer` and the two-year HSTS policy. The deployed CSP is the older one from `main`; the exact `wss://` addition is covered locally and needs a new hosted capture after deployment.
+The hosted header capture in screenshot `181` proves the deployed page returns the exact `wss://smart-schedule-workforce-management.onrender.com` connection source, `SAMEORIGIN`, `nosniff`, `no-referrer` and the two-year HSTS policy. The same capture also shows `smart-schedule-static-v12`, the connected database health result and the new deployment timestamp.
 
-Production proxy trust is one hop. Production session cookies resolve to `Secure=true`, `HttpOnly=true` and `SameSite=lax`. Screenshot `182` records those attributes without showing a cookie value. I did not enter a real account password into a terminal just to obtain a hosted `Set-Cookie` header, so the hosted cookie capture still needs to be repeated after deployment during a normal signed-in browser check.
+Production proxy trust is one hop. Production session cookies resolve to `Secure=true`, `HttpOnly=true` and `SameSite=lax`. Screenshot `182` records the local production configuration without showing a cookie value. Screenshot `185` repeats this against Render using the documented fake Aoife O'Sullivan staff seed account. Login and `/me` both returned `200`, the live `Set-Cookie` response contained `Secure`, `HttpOnly` and `SameSite=Lax`, and the value was deliberately omitted. The temporary session was logged out immediately and returned `204`.
 
 The 32 KB JSON and 10 KB form limits now have oversized-request tests. Both return the same generic `413` response. Malformed JSON returns a generic `400` response. The central `500` response does not return stack traces, SQL, local paths, database hostnames or environment-variable names, while the server log still keeps the request method, path, error message, code and stack.
 
@@ -69,10 +69,12 @@ This is an accepted limitation. The schema cannot represent which occurrence of 
 
 ## Evidence files
 
-- `181_hosted-phase-3-security-headers.png`: current Render response headers, with no credentials.
+- `180_github-actions-phase-1-to-3-checks-passed.png`: PR-triggered backend workflow for pull request `#1`, commit `f97d9a5` and run `29859249959`.
+- `181_hosted-phase-3-security-headers.png`: deployed Render CSP, security headers, service-worker cache version and health response, with no credentials.
 - `182_terminal-phase-3-cookie-and-http-security.png`: production cookie attributes with the value omitted and six focused HTTP security tests.
 - `183_terminal-phase-3-github-security-settings.png`: secret scanning, push protection, Dependabot security updates and vulnerability alerts.
 - `184_terminal-phase-3-repository-review.png`: clean current/history secret scan summaries and the five largest tracked files.
+- `185_hosted-phase-3-authenticated-cookie-attributes.png`: hosted authenticated cookie attributes with the value omitted, followed by the successful session cleanup.
 - `backend/src/__tests__/security-configuration.test.js`: headers, CSP, proxy, cookies, request limits, mutation routes and public errors.
 - `backend/src/__tests__/pwa-output-security.test.js`: cache boundaries, offline copy, DOM insertion and external-link protection.
 - `backend/src/__tests__/timezone-strategy.test.js`: Monday boundaries, both 2026 DST transitions and wall-clock shift totals.
