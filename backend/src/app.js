@@ -92,6 +92,13 @@ app.use((error, request, response, next) => {
     return;
   }
 
+  if (error.type === 'entity.too.large') {
+    return response.status(413).json({
+      error: 'Payload Too Large',
+      message: 'The request body is larger than the server limit.'
+    });
+  }
+
   console.error('[request-error]', {
     method: request.method,
     path: request.originalUrl,

@@ -1,4 +1,5 @@
 const { query, withTransaction } = require('../config/db');
+const config = require('../config/env');
 const { allowedWorkRoles } = require('./workflow-service-utils');
 const {
   ARGON2ID_PEPPERED,
@@ -240,7 +241,16 @@ const authenticateUser = async ({ email, password }) => {
 
     let passwordUpgraded = false;
 
-    if ((userRecord.password_scheme || BCRYPT) === BCRYPT) {
+    const storedPasswordScheme = userRecord.password_scheme || BCRYPT;
+    const storedPepperVersion = Number(userRecord.password_pepper_version || 0);
+    const passwordNeedsUpgrade =
+      storedPasswordScheme === BCRYPT ||
+      (
+        storedPasswordScheme === ARGON2ID_PEPPERED &&
+        storedPepperVersion !== config.passwordPepperCurrentVersion
+      );
+
+    if (passwordNeedsUpgrade) {
       const passwordRecord = await createPasswordHash(password);
       await client.query(
         `
@@ -340,6 +350,17 @@ const changeCurrentUserPassword = async ({
         passwordRecord.passwordPepperVersion,
         userId
       ]
+    );
+
+    await executeQuery(
+      client,
+      `
+        UPDATE password_reset_requests
+        SET used_at = COALESCE(used_at, NOW())
+        WHERE user_id = $1
+          AND used_at IS NULL
+      `,
+      [userId]
     );
 
     return {

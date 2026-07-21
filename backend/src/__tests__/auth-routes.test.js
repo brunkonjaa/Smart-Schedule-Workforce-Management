@@ -14,6 +14,7 @@ describe('auth routes', () => {
   const changedPassword = 'SmartScheduleChanged123!';
   const testUserId = crypto.randomUUID();
   const testStaffProfileId = crypto.randomUUID();
+  const passkeyId = crypto.randomUUID();
   const testEmail = `aidanorourke${Date.now()}fake@gmail.com`;
   const mutationHeader = {
     [mutationProtectionHeaderName]: '1'
@@ -74,6 +75,7 @@ describe('auth routes', () => {
   });
 
   afterAll(async () => {
+    await query('DELETE FROM user_passkeys WHERE id = $1', [passkeyId]);
     await query('DELETE FROM staff_profiles WHERE id = $1', [testStaffProfileId]);
     await query('DELETE FROM users WHERE id = $1', [testUserId]);
     await closePool();
@@ -286,5 +288,90 @@ describe('auth routes', () => {
 
     expect(oldPasswordLoginResponse.status).toBe(401);
     expect(newPasswordLoginResponse.status).toBe(200);
+  });
+
+  test('passkey challenges cannot be used from a different session', async () => {
+    await query(
+      `
+        INSERT INTO user_passkeys (
+          id, user_id, credential_id, public_key, counter, device_name, transports
+        )
+        VALUES ($1, $2, $3, $4, 0, 'Challenge test passkey', ARRAY[]::TEXT[])
+      `,
+      [passkeyId, testUserId, crypto.randomBytes(32), crypto.randomBytes(64)]
+    );
+    const firstAgent = request.agent(app);
+    const secondAgent = request.agent(app);
+    expect((await firstAgent.post('/api/v1/auth/login').send({
+      email: testEmail,
+      password: changedPassword
+    })).body.mfaRequired).toBe(true);
+    expect((await secondAgent.post('/api/v1/auth/login').send({
+      email: testEmail,
+      password: changedPassword
+    })).body.mfaRequired).toBe(true);
+
+    const options = await firstAgent
+      .post('/api/v1/auth/passkeys/login/options')
+      .set(mutationHeader)
+      .send({});
+    expect(options.status).toBe(200);
+
+    const crossSession = await secondAgent
+      .post('/api/v1/auth/passkeys/login/verify')
+      .set(mutationHeader)
+      .send({ id: 'not-used' });
+    expect(crossSession.status).toBe(401);
+    expect(crossSession.body.message).toContain('expired');
+  });
+
+  test('expired passkey challenges fail before credential verification', async () => {
+    const agent = request.agent(app);
+    expect((await agent.post('/api/v1/auth/login').send({
+      email: testEmail,
+      password: changedPassword
+    })).body.mfaRequired).toBe(true);
+    expect((await agent
+      .post('/api/v1/auth/passkeys/login/options')
+      .set(mutationHeader)
+      .send({})).status).toBe(200);
+
+    const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(Date.now() + (6 * 60 * 1000));
+    try {
+      const expired = await agent
+        .post('/api/v1/auth/passkeys/login/verify')
+        .set(mutationHeader)
+        .send({ id: 'not-used' });
+      expect(expired.status).toBe(401);
+      expect(expired.body.message).toContain('expired');
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+
+  test('a failed passkey attempt consumes its challenge so it cannot be reused', async () => {
+    const agent = request.agent(app);
+    expect((await agent.post('/api/v1/auth/login').send({
+      email: testEmail,
+      password: changedPassword
+    })).body.mfaRequired).toBe(true);
+    expect((await agent
+      .post('/api/v1/auth/passkeys/login/options')
+      .set(mutationHeader)
+      .send({})).status).toBe(200);
+
+    const firstAttempt = await agent
+      .post('/api/v1/auth/passkeys/login/verify')
+      .set(mutationHeader)
+      .send({ id: 'invalid-credential' });
+    expect(firstAttempt.status).toBe(401);
+    expect(firstAttempt.body.message).toContain('could not be verified');
+
+    const reused = await agent
+      .post('/api/v1/auth/passkeys/login/verify')
+      .set(mutationHeader)
+      .send({ id: 'invalid-credential' });
+    expect(reused.status).toBe(401);
+    expect(reused.body.message).toContain('expired');
   });
 });

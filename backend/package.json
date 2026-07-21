@@ -23,6 +23,7 @@
     "local:identity:audit": "node src/scripts/audit-local-demo-identities.js",
     "qa:admin-browser": "node src/scripts/run-admin-browser-checks.js",
     "security:benchmark": "node src/scripts/benchmark-password-hashing.js",
+    "lint": "eslint . ../frontend/src ../frontend/public/service-worker.js",
     "test": "jest --runInBand",
     "test:coverage": "jest --runInBand --coverage --coverageReporters=text --coverageReporters=text-summary --coverageReporters=lcov",
     "test:watch": "jest --watch"
@@ -41,6 +42,8 @@
     "ws": "^8.21.1"
   },
   "devDependencies": {
+    "eslint": "^9.39.5",
+    "globals": "^16.5.0",
     "jest": "^29.7.0",
     "nodemon": "^3.1.7",
     "playwright": "^1.61.1",

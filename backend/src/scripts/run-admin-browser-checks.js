@@ -116,14 +116,6 @@ const capturePage = async (page, filename) => {
   });
 };
 
-const captureElement = async (page, locator, filename) => {
-  await assertNoPopulatedPasswordInput(page);
-  await locator.screenshot({
-    path: path.join(screenshotDirectory, filename),
-    scale: 'css'
-  });
-};
-
 const addVirtualAuthenticator = async (context, page) => {
   const cdp = await context.newCDPSession(page);
   await cdp.send('WebAuthn.enable');

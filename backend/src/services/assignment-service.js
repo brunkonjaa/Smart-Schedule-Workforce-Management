@@ -98,6 +98,10 @@ const getShiftHours = (shift) => {
   const start = new Date(`1970-01-01T${shift.start_time}Z`);
   const end = new Date(`1970-01-01T${shift.end_time}Z`);
 
+  if (end <= start) {
+    end.setUTCDate(end.getUTCDate() + 1);
+  }
+
   return roundHours((end.getTime() - start.getTime()) / (1000 * 60 * 60));
 };
 
@@ -304,7 +308,12 @@ const findAssignmentByShiftId = async (shiftId, client = null, options = {}) => 
   return result.rows[0] || null;
 };
 
-const findApprovedLeaveForShift = async (staffProfileId, shiftDate, client = null) => {
+const findApprovedLeaveForShift = async (staffProfileId, shift, client = null) => {
+  const shiftEndDate = new Date(`${shift.shift_date}T00:00:00Z`);
+  if (String(shift.end_time) <= String(shift.start_time)) {
+    shiftEndDate.setUTCDate(shiftEndDate.getUTCDate() + 1);
+  }
+
   const result = await executeQuery(
     client,
     `
@@ -312,11 +321,11 @@ const findApprovedLeaveForShift = async (staffProfileId, shiftDate, client = nul
       FROM leave_requests
       WHERE staff_profile_id = $1
         AND status = 'APPROVED'
-        AND start_date <= $2::date
+        AND start_date <= $3::date
         AND end_date >= $2::date
       LIMIT 1
     `,
-    [staffProfileId, shiftDate]
+    [staffProfileId, shift.shift_date, shiftEndDate.toISOString().slice(0, 10)]
   );
 
   return result.rows[0] || null;
@@ -335,28 +344,28 @@ const findSameDayTimeConflictAssignment = async (
       INNER JOIN shifts
         ON shifts.id = shift_assignments.shift_id
       WHERE shift_assignments.staff_profile_id = $1
-        AND shifts.shift_date = $2::date
-        AND shifts.start_time <= $3::time
-        AND shifts.end_time >= $4::time
+        AND (shifts.shift_date + shifts.start_time) <=
+          ($2::date + $4::time + CASE
+            WHEN $4::time <= $3::time THEN INTERVAL '1 day'
+            ELSE INTERVAL '0 day'
+          END)
+        AND (shifts.shift_date + shifts.end_time + CASE
+          WHEN shifts.end_time <= shifts.start_time THEN INTERVAL '1 day'
+          ELSE INTERVAL '0 day'
+        END) >= ($2::date + $3::time)
         AND shifts.id <> $5
       LIMIT 1
     `,
     [
       staffProfileId,
       shift.shift_date,
-      shift.end_time,
       shift.start_time,
+      shift.end_time,
       shift.id
     ]
   );
 
   return result.rows[0] || null;
-};
-
-const buildContractHoursWarnings = async (staffProfile, shift, client = null) => {
-  const weeklyHours = await getWeeklyHoursSummary(staffProfile, shift, client);
-
-  return buildContractHoursWarningsFromSummary(staffProfile, weeklyHours);
 };
 
 const getAssignmentTotalsForWeek = async (
@@ -373,7 +382,12 @@ const getAssignmentTotalsForWeek = async (
     client,
     `
       SELECT COALESCE(
-        SUM(EXTRACT(EPOCH FROM (shifts.end_time - shifts.start_time)) / 3600),
+        SUM(EXTRACT(EPOCH FROM (
+          (shifts.end_time - shifts.start_time) + CASE
+            WHEN shifts.end_time <= shifts.start_time THEN INTERVAL '24 hours'
+            ELSE INTERVAL '0 hours'
+          END
+        )) / 3600),
         0
       ) AS assigned_hours,
       COUNT(*)::int AS assigned_shift_count
@@ -486,7 +500,7 @@ const getAssignmentConflict = async (
 
   const approvedLeave = await findApprovedLeaveForShift(
     assignmentInput.staffProfileId,
-    shift.shift_date,
+    shift,
     client
   );
 
@@ -744,8 +758,12 @@ const createAssignment = async (assignmentInput, assignedByUserId) => {
   }
 };
 
-const updateAssignment = async (assignmentId, assignmentInput, assignedByUserId) => {
-  return withAssignmentTransaction(async (client) => {
+const updateAssignmentInTransaction = async (
+  client,
+  assignmentId,
+  assignmentInput,
+  assignedByUserId
+) => {
     const existingAssignment = await findAssignmentById(
       assignmentId,
       client,
@@ -824,6 +842,16 @@ const updateAssignment = async (assignmentId, assignmentInput, assignedByUserId)
       missingResource: null,
       warnings
     };
+};
+
+const updateAssignment = async (assignmentId, assignmentInput, assignedByUserId) => {
+  return withAssignmentTransaction((client) => {
+    return updateAssignmentInTransaction(
+      client,
+      assignmentId,
+      assignmentInput,
+      assignedByUserId
+    );
   });
 };
 
@@ -874,6 +902,7 @@ module.exports = {
   listAssignments,
   roundHours,
   updateAssignment,
+  updateAssignmentInTransaction,
   validateAssignmentInput,
   validateAssignmentUpdateInput
 };

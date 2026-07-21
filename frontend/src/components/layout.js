@@ -233,7 +233,7 @@ window.SmartSchedule.layout = (function createLayout() {
     `;
   }
 
-  function renderPageIntro(page, role) {
+  function renderPageIntro(page) {
     if (page.hideIntro) {
       return '';
     }

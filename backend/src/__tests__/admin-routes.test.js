@@ -4,8 +4,11 @@ const app = require('../app');
 const { closePool, query } = require('../config/db');
 const { mutationProtectionHeaderName } = require('../middleware/request-security');
 const {
+  acceptAdminInvitation,
   firstAdminEmail,
-  hashSingleUseToken
+  hashSingleUseToken,
+  revokeUserSessions,
+  setAdminAccountActive
 } = require('../services/admin-service');
 const { createPasswordHash } = require('../services/password-security-service');
 const { createSecurityEvent } = require('../services/security-event-service');
@@ -20,6 +23,7 @@ describe('administrator and submission-review routes', () => {
   const staffId = crypto.randomUUID();
   const managerProfileId = crypto.randomUUID();
   const staffProfileId = crypto.randomUUID();
+  const concurrentAdminId = crypto.randomUUID();
   const reviewerEmail = `niamhosullivan${runId}fake@gmail.com`;
   const secondReviewerEmail = `eimearmurphy${runId}fake@gmail.com`;
   const managerEmail = `maeveryan${runId}fake@gmail.com`;
@@ -28,6 +32,8 @@ describe('administrator and submission-review routes', () => {
   const acceptedEmail = `orlabyrne${runId}fake@gmail.com`;
   const expiredEmail = `siobhankelly${runId}fake@gmail.com`;
   const createdReviewerEmail = `roisinwalsh${runId}fake@gmail.com`;
+  const concurrentInvitationEmail = `concurrentinvite${runId}fake@gmail.com`;
+  const concurrentAdminEmail = `concurrentadmin${runId}fake@gmail.com`;
   const reviewerPassword = 'Reviewer route passphrase 123!';
   const secondReviewerPassword = 'Second reviewer passphrase 123!';
   const managerPassword = 'Manager route passphrase 123!';
@@ -132,8 +138,8 @@ describe('administrator and submission-review routes', () => {
     await query(
       `DELETE FROM admin_invitations
        WHERE invited_by_admin_user_id IN ($1, $2)
-          OR invited_email IN ($3, $4, $5)`,
-      [reviewerId, secondReviewerId, invitedEmail, acceptedEmail, expiredEmail]
+          OR invited_email IN ($3, $4, $5, $6)`,
+      [reviewerId, secondReviewerId, invitedEmail, acceptedEmail, expiredEmail, concurrentInvitationEmail]
     );
     await query('DELETE FROM staff_profiles WHERE id IN ($1, $2)', [
       managerProfileId,
@@ -141,18 +147,21 @@ describe('administrator and submission-review routes', () => {
     ]);
     await query(
       `DELETE FROM users
-       WHERE id IN ($1, $2, $3, $4)
-          OR email IN ($5, $6, $7, $8, $9)`,
+       WHERE id IN ($1, $2, $3, $4, $5)
+          OR email IN ($6, $7, $8, $9, $10, $11, $12)`,
       [
         reviewerId,
         secondReviewerId,
         managerId,
         staffId,
+        concurrentAdminId,
         firstAdminEmail,
         invitedEmail,
         acceptedEmail,
         expiredEmail,
-        createdReviewerEmail
+        createdReviewerEmail,
+        concurrentAdminEmail,
+        concurrentInvitationEmail
       ]
     );
     await closePool();
@@ -457,5 +466,95 @@ describe('administrator and submission-review routes', () => {
        ORDER BY created_at DESC LIMIT 1`
     );
     expect(result.rows[0].metadata).toEqual({ nested: { safeReason: 'TEST' } });
+  });
+
+  test('two simultaneous attempts can consume one Admin invitation only once', async () => {
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    await query(
+      `
+        INSERT INTO admin_invitations (
+          invited_email, display_name, token_hash,
+          invited_by_admin_user_id, expires_at, created_at
+        )
+        VALUES ($1, 'Concurrent Invite', $2, $3, NOW() + INTERVAL '20 minutes', NOW())
+      `,
+      [concurrentInvitationEmail, hashSingleUseToken(rawToken), reviewerId]
+    );
+
+    const results = await Promise.all([
+      acceptAdminInvitation({ password: 'Concurrent invitation passphrase 123!', token: rawToken }),
+      acceptAdminInvitation({ password: 'Concurrent invitation passphrase 123!', token: rawToken })
+    ]);
+
+    expect(results.filter((result) => result.valid)).toHaveLength(1);
+    expect(results.filter((result) => !result.valid)).toHaveLength(1);
+    expect((await query('SELECT id FROM users WHERE email = $1', [concurrentInvitationEmail])).rowCount).toBe(1);
+  });
+
+  test('simultaneous Admin disables leave one active non-review Admin', async () => {
+    await insertUser({
+      displayName: 'Concurrent Admin',
+      email: concurrentAdminEmail,
+      id: concurrentAdminId,
+      password: 'Concurrent admin passphrase 123!',
+      role: 'ADMIN'
+    });
+
+    const results = await Promise.allSettled([
+      setAdminAccountActive({
+        actorUserId: reviewerId,
+        isActive: false,
+        targetUserId: firstAdminId
+      }),
+      setAdminAccountActive({
+        actorUserId: reviewerId,
+        isActive: false,
+        targetUserId: concurrentAdminId
+      })
+    ]);
+
+    expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+    expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1);
+    expect(results.find((result) => result.status === 'rejected').reason.code).toBe('FINAL_ADMIN_REQUIRED');
+    const activeCount = await query(
+      `SELECT COUNT(*)::int AS count FROM users
+       WHERE role = 'ADMIN' AND is_active = TRUE AND is_submission_reviewer = FALSE`
+    );
+    expect(activeCount.rows[0].count).toBe(1);
+  });
+
+  test('Admin session reset rolls back if its required security event cannot be written', async () => {
+    const before = await query('SELECT session_version FROM users WHERE id = $1', [staffId]);
+    const triggerName = 'phase2_fail_admin_security_event';
+    const functionName = 'phase2_fail_admin_security_event_fn';
+
+    await query(`
+      CREATE OR REPLACE FUNCTION ${functionName}() RETURNS trigger AS $$
+      BEGIN
+        IF NEW.event_type = 'SESSIONS_REVOKED' AND NEW.target_user_id = '${staffId}'::uuid THEN
+          RAISE EXCEPTION 'phase 2 forced security-event failure';
+        END IF;
+        RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql
+    `);
+    await query(`
+      CREATE TRIGGER ${triggerName}
+      BEFORE INSERT ON security_events
+      FOR EACH ROW EXECUTE FUNCTION ${functionName}()
+    `);
+
+    try {
+      await expect(revokeUserSessions({
+        actorUserId: reviewerId,
+        targetUserId: staffId
+      })).rejects.toThrow('phase 2 forced security-event failure');
+    } finally {
+      await query(`DROP TRIGGER IF EXISTS ${triggerName} ON security_events`);
+      await query(`DROP FUNCTION IF EXISTS ${functionName}()`);
+    }
+
+    const after = await query('SELECT session_version FROM users WHERE id = $1', [staffId]);
+    expect(after.rows[0]).toEqual(before.rows[0]);
   });
 });

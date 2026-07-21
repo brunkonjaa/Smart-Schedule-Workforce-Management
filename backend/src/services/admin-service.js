@@ -590,6 +590,15 @@ const revokeUserSessions = async ({ actorUserId, targetUserId }) => {
       `,
       [targetUserId]
     );
+    await client.query(
+      `
+        UPDATE password_reset_requests
+        SET used_at = COALESCE(used_at, NOW())
+        WHERE user_id = $1
+          AND used_at IS NULL
+      `,
+      [targetUserId]
+    );
     await createSecurityEvent({
       actorUserId,
       client,

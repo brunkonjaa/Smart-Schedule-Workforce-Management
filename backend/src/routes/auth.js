@@ -507,6 +507,9 @@ router.post(
       });
     }
 
+    delete request.session.passkeyRegistrationChallenge;
+    await saveSession(request);
+
     try {
       let result;
       let authenticatedUser;
@@ -542,10 +545,7 @@ router.post(
         authenticatedUser = refreshedUser ? buildPublicUser(refreshedUser) : null;
       }
 
-      delete request.session.passkeyRegistrationChallenge;
-
       if (!result.verified || !authenticatedUser) {
-        await saveSession(request);
         return response.status(400).json({
           error: 'Passkey Registration Failed',
           message: 'The passkey could not be verified.'
@@ -568,8 +568,6 @@ router.post(
         user: authenticatedUser
       });
     } catch (error) {
-      delete request.session.passkeyRegistrationChallenge;
-      await saveSession(request);
       return response.status(400).json({
         error: 'Passkey Registration Failed',
         message: 'The passkey could not be verified.'
@@ -624,6 +622,9 @@ router.post(
         message: 'The passkey verification has expired. Start again.'
       });
     }
+
+    delete request.session.passkeyAuthenticationChallenge;
+    await saveSession(request);
 
     try {
       const result = await verifyAuthentication({

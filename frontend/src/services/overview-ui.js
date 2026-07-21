@@ -227,7 +227,7 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
     workspaceElement.appendChild(grid);
   };
 
-  const loadManagerDashboard = async (weekStart) => {
+  const loadManagerDashboard = async () => {
     const [staffResult, leaveResult, passwordResult, swapResult] = await Promise.all([
       apiClient.get('/api/v1/staff?status=ALL'),
       apiClient.get('/api/v1/leave-requests?status=ALL'),
@@ -370,7 +370,7 @@ window.SmartSchedule.overviewUi = (function createOverviewUi() {
       }
 
       if (sessionResult.user.role === 'MANAGER') {
-        const dashboard = await loadManagerDashboard(weekStart);
+        const dashboard = await loadManagerDashboard();
         if (isActiveRender(workspaceElement, renderToken)) {
           renderManagerDashboard(workspaceElement, weekStart, dashboard);
         }

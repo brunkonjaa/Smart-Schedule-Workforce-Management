@@ -24,6 +24,7 @@ const buildTestApp = () => {
 
   app.post('/test/login', (request, response, next) => {
     request.session.auth = {
+      absoluteExpiresAt: request.body.absoluteExpiresAt,
       sessionVersion: Number(request.body.sessionVersion || 1)
     };
     request.session.user = {
@@ -314,5 +315,24 @@ describe('auth middleware', () => {
       error: 'Authentication Required',
       message: 'You must be logged in to access this route.'
     });
+  });
+
+  test('invalidates an Admin session after its absolute expiry', async () => {
+    const agent = request.agent(app);
+    const loginResponse = await agent.post('/test/login').send({
+      absoluteExpiresAt: new Date(Date.now() - 1000).toISOString(),
+      email: activeEmail,
+      id: activeUserId,
+      role: 'ADMIN',
+      staffProfileId: activeStaffProfileId
+    });
+    expect(loginResponse.status).toBe(204);
+
+    const protectedResponse = await agent.get('/test/protected');
+    expect(protectedResponse.status).toBe(401);
+    expect(protectedResponse.body.message).toBe('Your session has expired.');
+    expect(protectedResponse.headers['set-cookie']).toEqual(
+      expect.arrayContaining([expect.stringContaining('smart_schedule.sid=;')])
+    );
   });
 });

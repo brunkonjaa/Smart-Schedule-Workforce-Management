@@ -7,7 +7,8 @@ const {
   decideSwapRequest,
   findSwapRequestById,
   listSwapRequests,
-  validateSwapInput
+  validateSwapInput,
+  withdrawSwapRequest
 } = require('../services/shift-swap-service');
 
 const router = express.Router();
@@ -15,8 +16,8 @@ const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}
 const asyncHandler = (handler) => (request, response, next) => Promise.resolve(handler(request, response, next)).catch(next);
 const sendValidationError = (response, details) => response.status(400).json({ details, error: 'Validation Failed', message: 'The shift swap request contains invalid fields.' });
 
-router.get('/', requireRole('STAFF', 'MANAGER'), asyncHandler(async (request, response) => {
-  return response.status(200).json({ requests: await listSwapRequests(request.authUser) });
+router.get('/', requireRole('STAFF', 'MANAGER'), asyncHandler(async (_request, response) => {
+  return response.status(200).json({ requests: await listSwapRequests() });
 }));
 
 router.get('/:swapId', requireRole('MANAGER'), asyncHandler(async (request, response) => {
@@ -68,6 +69,31 @@ router.post('/:swapId/accept', requireRole('STAFF'), requireMutationProtection, 
         : 'This swap request is no longer available.'
   });
   return response.status(200).json({ message: 'Swap request accepted and sent to the manager.', request: result.swap });
+}));
+
+router.delete('/:swapId', requireRole('STAFF'), requireMutationProtection, asyncHandler(async (request, response) => {
+  if (!uuidPattern.test(request.params.swapId)) {
+    return sendValidationError(response, ['swapId must be a valid UUID']);
+  }
+  const result = await withdrawSwapRequest({
+    requesterStaffProfileId: request.authUser.staffProfileId,
+    swapId: request.params.swapId
+  });
+  if (result.code === 'FORBIDDEN') {
+    return response.status(403).json({
+      code: result.code,
+      error: 'Swap Request Failed',
+      message: 'You can only withdraw your own swap request.'
+    });
+  }
+  if (result.code) {
+    return response.status(409).json({
+      code: result.code,
+      error: 'Swap Request Failed',
+      message: 'This swap request is no longer available.'
+    });
+  }
+  return response.status(204).send();
 }));
 
 router.put('/:swapId/approve', requireRole('MANAGER'), requireMutationProtection, asyncHandler(async (request, response) => {
