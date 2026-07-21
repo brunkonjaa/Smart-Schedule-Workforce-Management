@@ -205,6 +205,7 @@ module.exports = {
   acceptSwapRequest,
   createSwapRequest,
   decideSwapRequest,
+  findSwapRequestById: findSwap,
   listSwapRequests,
   validateSwapInput
 };

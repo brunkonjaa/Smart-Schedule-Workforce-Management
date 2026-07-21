@@ -13,6 +13,7 @@
   const assignmentsUi = shell.assignmentsUi;
   const rotaUi = shell.rotaUi;
   const chatUi = shell.chatUi;
+  const employeeSummaryUi = shell.employeeSummaryUi;
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
   if ('scrollRestoration' in window.history) {
@@ -84,23 +85,49 @@
   function resolveState() {
     const previousState = stateStore.get();
     const hashPage = currentHash();
+    const summaryRoute = employeeSummaryUi?.parseRoute();
     const resolvedRole = hashPage === 'reset-password'
       ? 'guest'
       : previousState.role;
     const rolePages = pagesForRole(resolvedRole);
     const fallbackPage = rolePages[0] || allPages.find((page) => page.id === 'login');
     const allowedPageIds = rolePages.map((page) => page.id);
+    const sourceContext = window.history.state?.smartScheduleSourceContext || null;
+    const summaryBasePage = summaryRoute
+      ? resolvedRole === 'manager'
+        ? summaryRoute.sourcePage
+        : resolvedRole === 'staff'
+          ? 'rota'
+          : 'login'
+      : null;
     const chosenPage = allowedPageIds.includes(hashPage)
       ? hashPage
+      : summaryBasePage && allowedPageIds.includes(summaryBasePage)
+        ? summaryBasePage
       : allowedPageIds.includes(previousState.page)
         ? previousState.page
         : fallbackPage.id;
 
     const resolvedState = nextState({
       page: chosenPage,
-      role: resolvedRole
+      role: resolvedRole,
+      rotaDepartment:
+        summaryRoute?.department ||
+        (chosenPage === 'rota' ? sourceContext?.department : null) ||
+        previousState.rotaDepartment ||
+        null,
+      rotaWeekStart:
+        summaryRoute?.weekStart ||
+        (chosenPage === 'rota' ? sourceContext?.weekStart : null) ||
+        previousState.rotaWeekStart ||
+        null
     });
-    if (chosenPage !== 'reset-password' && window.location.hash !== `#${chosenPage}`) {
+    if (
+      !summaryRoute &&
+      chosenPage !== 'reset-password' &&
+      window.location.hash !== `#${chosenPage}` &&
+      !window.location.hash.startsWith(`#${chosenPage}?`)
+    ) {
       window.location.hash = chosenPage;
     }
 
@@ -225,6 +252,7 @@
 
     if (rotaUi) {
       await rotaUi.mount({
+        initialDepartment: state.rotaDepartment,
         initialWeekStart: state.rotaWeekStart,
         page,
         renderToken,
@@ -233,7 +261,7 @@
       });
 
       if (state.rotaWeekStart) {
-        nextState({ rotaWeekStart: null });
+        nextState({ rotaDepartment: null, rotaWeekStart: null });
       }
     }
 
@@ -247,6 +275,12 @@
 
     if (chatUi) {
       await chatUi.sync();
+    }
+
+    if (employeeSummaryUi) {
+      await employeeSummaryUi.mount({
+        role: state.role
+      });
     }
   }
 
@@ -368,9 +402,15 @@
       window.SmartSchedule.apiClient
         .post('/api/v1/auth/logout', {})
         .then(() => {
-          suppressNextHashChange = true;
-          nextState({ page: 'login', role: 'guest' });
-          window.location.hash = 'login';
+          employeeSummaryUi?.clearProtectedState({ clearReturnRoute: true });
+          chatUi?.disconnect?.();
+          nextState({
+            loginFlash: { text: 'You have signed out.', tone: 'success' },
+            page: 'login',
+            role: 'guest',
+            summaryReturnRoute: null
+          });
+          window.history.replaceState(null, '', '#login');
           queueRender(true);
         })
         .catch(() => {

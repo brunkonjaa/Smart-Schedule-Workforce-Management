@@ -4,6 +4,7 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
   const apiClient = window.SmartSchedule.apiClient;
   const previewState = window.SmartSchedule.previewState;
   const uiHelpers = window.SmartSchedule.liveUiHelpers;
+  const employeeSummaryUi = window.SmartSchedule.employeeSummaryUi;
 
   const base64UrlToBytes = (value) => {
     const normalized = String(value || '').replace(/-/g, '+').replace(/_/g, '/');
@@ -283,15 +284,25 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
 
   const navigateToUserHome = (user) => {
     const nextRole = user.role === 'MANAGER' ? 'manager' : 'staff';
-    const nextPage = 'rota';
+    const state = previewState.get();
+    const returnRoute = state.summaryReturnRoute;
+    const summaryRoute = returnRoute
+      ? employeeSummaryUi.parseRoute(returnRoute)
+      : null;
+    const canReturnToSummary = nextRole === 'manager' && summaryRoute;
+    const nextPage = canReturnToSummary ? summaryRoute.sourcePage : 'rota';
 
     previewState.set({
-      ...previewState.get(),
+      ...state,
+      loginFlash: null,
       page: nextPage,
-      role: nextRole
+      role: nextRole,
+      summaryReturnRoute: null
     });
 
-    window.location.hash = nextPage;
+    window.location.hash = canReturnToSummary
+      ? returnRoute.replace(/^#/, '')
+      : nextPage;
   };
 
   const renderPasskeyLogin = (workspaceElement, renderToken, flashMessage = null) => {
@@ -559,9 +570,18 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
         logoutButton.disabled = true;
         logoutButton.textContent = 'Signing out...';
         await apiClient.post('/api/v1/auth/logout', {});
-        resetGuestState();
+        employeeSummaryUi.clearProtectedState({ clearReturnRoute: true });
+        window.SmartSchedule.chatUi?.disconnect?.();
+        previewState.set({
+          ...previewState.get(),
+          loginFlash: null,
+          page: 'login',
+          role: 'guest',
+          summaryReturnRoute: null
+        });
+        window.history.replaceState(null, '', '#login');
         renderSignedOutState(workspaceElement, {
-          text: 'Signed out.',
+          text: 'You have signed out.',
           tone: 'success'
         });
       } catch (error) {
@@ -780,14 +800,30 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
         return;
       }
 
+      const state = previewState.get();
+      if (
+        state.summaryReturnRoute &&
+        result.user.role === 'MANAGER' &&
+        employeeSummaryUi.parseRoute(state.summaryReturnRoute)
+      ) {
+        navigateToUserHome(result.user);
+        return;
+      }
+
       renderSignedInState(workspaceElement, result.user, null, renderToken);
     } catch (error) {
       if (!isActiveRender(workspaceElement, renderToken)) {
         return;
       }
 
+      const state = previewState.get();
+      const loginFlash = state.loginFlash || null;
       resetGuestState();
-      renderSignedOutState(workspaceElement, null);
+      previewState.set({
+        ...previewState.get(),
+        loginFlash: null
+      });
+      renderSignedOutState(workspaceElement, loginFlash);
     }
   };
 

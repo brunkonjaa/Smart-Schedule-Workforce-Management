@@ -3,6 +3,7 @@ window.SmartSchedule = window.SmartSchedule || {};
 window.SmartSchedule.rotaUi = (function createRotaUi() {
   const apiClient = window.SmartSchedule.apiClient;
   const uiHelpers = window.SmartSchedule.liveUiHelpers;
+  const employeeSummaryUi = window.SmartSchedule.employeeSummaryUi;
 
   const departments = ['BAR', 'FLOOR', 'KITCHEN', 'OTHER'];
   const defaultShiftTimesByDepartment = {
@@ -13,9 +14,11 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
   };
   const modalHostId = 'rota-modal-host';
 
-  const buildState = (initialWeekStart) => {
+  const buildState = (initialWeekStart, initialDepartment) => {
     return {
-      department: 'BAR',
+      department: departments.includes(String(initialDepartment || '').toUpperCase())
+        ? String(initialDepartment).toUpperCase()
+        : 'BAR',
       draft: null,
       draftLoading: false,
       draftProgress: 0,
@@ -34,6 +37,27 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
         ? initialWeekStart
         : uiHelpers.getCurrentWeekStart()
     };
+  };
+
+  const createStaffName = (state, row, { compact = false } = {}) => {
+    const name = compact ? getCompactStaffName(row.staffName) : row.staffName;
+
+    if (
+      state.sessionUser?.role === 'MANAGER' &&
+      row.staffProfileId &&
+      employeeSummaryUi
+    ) {
+      return employeeSummaryUi.createEmployeeLink({
+        className: 'rota-employee-summary-link',
+        department: state.department,
+        fullName: name,
+        source: 'rota',
+        staffProfileId: row.staffProfileId,
+        weekStart: state.weekStart
+      });
+    }
+
+    return uiHelpers.createElement('span', { text: name });
   };
 
   const isActiveRender = (workspaceElement, renderToken) => {
@@ -685,7 +709,9 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     table.appendChild(header);
     (state.rota?.rows || []).filter((row) => !row.systemRow).forEach((row) => {
       const tableRow = uiHelpers.createElement('tr');
-      tableRow.appendChild(uiHelpers.createElement('th', { text: row.staffName }));
+      const staffHeading = uiHelpers.createElement('th');
+      staffHeading.appendChild(createStaffName(state, row));
+      tableRow.appendChild(staffHeading);
       (state.rota?.days || []).forEach((day) => {
         const cell = uiHelpers.createElement('td');
         const existing = (row.days?.[day.date] || []).filter((entry) => entry.state === 'ASSIGNED' || entry.state === 'APPROVED_LEAVE');
@@ -860,9 +886,9 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       });
       const nameCell = uiHelpers.createElement('th', {
         className: 'rota-table-staff-name',
-        text: row.staffName,
         attributes: { scope: 'row' }
       });
+      nameCell.appendChild(createStaffName(state, row));
       tableRow.appendChild(nameCell);
 
       state.rota.days.forEach((day) => {
@@ -978,11 +1004,12 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
       const tableRow = uiHelpers.createElement('tr', {
         className: row.staffProfileId === state.sessionUser?.staffProfileId ? 'is-current' : ''
       });
-      tableRow.appendChild(uiHelpers.createElement('th', {
+      const mobileStaffHeading = uiHelpers.createElement('th', {
         className: 'rota-mobile-staff-name',
-        text: getCompactStaffName(row.staffName),
         attributes: { scope: 'row', title: row.staffName }
-      }));
+      });
+      mobileStaffHeading.appendChild(createStaffName(state, row, { compact: true }));
+      tableRow.appendChild(mobileStaffHeading);
       state.rota.days.forEach((day) => {
         const entries = getCellEntries(row, day.date);
         const cell = uiHelpers.createElement('td', {
@@ -1465,12 +1492,18 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     }
   };
 
-  const mount = async ({ page, workspaceElement, renderToken, initialWeekStart }) => {
+  const mount = async ({
+    page,
+    workspaceElement,
+    renderToken,
+    initialDepartment,
+    initialWeekStart
+  }) => {
     if (page.id !== 'rota') {
       return;
     }
 
-    const state = buildState(initialWeekStart);
+    const state = buildState(initialWeekStart, initialDepartment);
 
     const render = () => {
       if (!isActiveRender(workspaceElement, renderToken)) {

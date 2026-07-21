@@ -9,12 +9,14 @@ Smart Schedule uses PostgreSQL as the source of truth for identity, staff profil
 3. `leave_requests` - dates, reason, status, manager comment, decision actor/time
 4. `shifts` - date, start/end time, required role, status, notes
 5. `shift_assignments` - one staff profile on one shift and the assigning manager
-6. `audit_logs` - manager shift and assignment actions with JSON before/after state
+6. `audit_logs` - rota changes plus Employee Summary view, print-request and denied-access records with JSON before/after state
 7. `security_events` - security-related event records
 8. `password_reset_requests` - hashed reset token, expiry, use state, and request timestamps
 9. `shift_swap_requests` - source assignment, requester, optional target, acceptance and manager decision state
 
 `availability_entries` is historical. Migration `014_remove_weekly_availability.sql` removes that table because weekly availability submission was removed from the rota workflow.
+
+Migration `023_extend_audit_logs_for_employee_access.sql` keeps Employee Summary access in the same append-only table. It only extends the allowed action and entity check constraints. No new column or backfill was needed. The target staff profile uses `entity_id`, while the source and `SUCCESS` or `DENIED` result are retained in `after_state`.
 
 ## Design rules
 

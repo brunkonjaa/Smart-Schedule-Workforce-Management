@@ -14,7 +14,7 @@ The current build includes:
 
 1. plain HTML, CSS and JavaScript frontend
 2. Node.js and Express backend
-3. PostgreSQL with ordered migrations `001` to `022`
+3. PostgreSQL with ordered migrations `001` to `023`
 4. Neon for the hosted database and Render for the live app
 5. server-side sessions using `express-session` and `connect-pg-simple`
 6. bcrypt password checking, login rate limiting and a passkey second step when a manager has registered one
@@ -30,11 +30,12 @@ The current build includes:
 16. password reset requests and single-use reset links sent through Brevo on the hosted app
 17. a manager password-request page that does not expose passwords or reset tokens
 18. future shift swaps with target acceptance, manager approval, and a clearly marked demo workplace directions link
-19. a manager audit-log page for the shift and assignment changes recorded by the backend
+19. a manager audit-log page split into Rota activity and append-only Employee access records
 20. serializable assignment transactions and a staff-week lock so two requests cannot quietly save conflicting assignment results at the same time
 21. installable PWA files for supported phone browsers
 22. demo seed data with 24 Irish-named staff, filled weekday shifts and twelve previous weeks of rota history
 23. NodyChat with one `WORKPLACE` room, two-person `DIRECT` conversations, per-conversation unread state and session-authenticated WebSocket updates
+24. a manager-only Employee Summary opened from Rota, Staff, Time Off, Swap Requests and reliable Audit Log employee links
 
 Weekly availability submission was removed from the final workflow in migration `014_remove_weekly_availability.sql`. Staff should not have to fill in another weekly availability form just so the rota can be created. Approved leave, active status, role matching, shift overlap and weekly limits still stay in the assignment checks because those are the rules that stop an invalid rota being saved.
 
@@ -46,7 +47,9 @@ Nothing from this preview is saved straight away. The manager can check the sugg
 
 ## Current check
 
-The pushed accessibility-fix checkpoint is `4a67646a58982e58d542b9fbfba07c470f424b26`, committed on 20 July 2026 at 19:11:49 +01:00. It includes the WebSocket lifetime tests, backend coverage thresholds, PostgreSQL-backed GitHub Actions workflow and the hosted Lighthouse corrections. The local migrated run passes `91` tests across `14` suites, and the backend workflow is green for the pushed checkpoint. Screenshot evidence now reaches `147`, including the hosted staff/NodyChat flows, migrations `001` to `022`, actual 200% Chrome zoom, local and GitHub test results, validation feedback, the safe Audit Log print preview, Lighthouse results, 61 generated assignments saved to the hosted rota, an overlapping shift rejected in the manager interface and the live browser passkey-registration prompt.
+The pushed accessibility-fix checkpoint is `4a67646a58982e58d542b9fbfba07c470f424b26`, committed on 20 July 2026 at 19:11:49 +01:00. It includes the WebSocket lifetime tests, backend coverage thresholds, PostgreSQL-backed GitHub Actions workflow and the hosted Lighthouse corrections. The backend workflow is green for that pushed checkpoint.
+
+The Employee Summary work is local and not pushed yet. Migration `023` only extends the allowed `audit_logs` action and entity values, so no staff or rota rows had to be rewritten. The current local run passes `116` tests across `16` suites. Evidence now reaches `154`, covering the desktop and mobile summary, selected and later shift grouping, the Employee access log, the A4 print layout, the silent staff denial and the reduced desktop Rota width. I also checked the panel at desktop, tablet and mobile sizes, including focus containment, exact Staff-page scroll return, session expiry, deliberate Logout and the fixed 25-record access pages.
 
 The main code workflows and final report-supporting files are in place. The live manager/staff browser matrix passes at 1920 x 855, 1024 x 768 and 390 x 844, including invalid login, direct manager-route denial for staff, NodyChat focus/Escape and the rota modal focus trap. Chrome was also checked at a real 200% zoom level: the CSS viewport changed from 1920 x 855 to 960 x 427 and no page-level horizontal overflow appeared. A fresh hosted staff sign-in then loaded the rota, Time Off, swap, rota-history and NodyChat endpoints. The hosted login Lighthouse snapshot now passes Accessibility and SEO at 100 after the decoy inputs, heading order and meta description were corrected. Best Practices remains 96 because the public session check deliberately receives `401` when no user is signed in. The authenticated manager Rota snapshot passed every automated Accessibility and Best Practices check.
 
@@ -55,13 +58,13 @@ The main code workflows and final report-supporting files are in place. The live
 The backend is mounted under `/api/v1`:
 
 1. `/auth` for login, logout, current session, password change, password reset and passkeys
-2. `/staff` for manager staff management
+2. `/staff` for manager staff management and the protected Employee Summary/print-request routes
 3. `/leave-requests` for time off
 4. `/shifts` for manager shift records
 5. `/assignments` for manager assignment changes
 6. `/rota` for the weekly rota response
 7. `/shift-swaps` for staff swap requests and manager decisions
-8. `/audit-logs` for the manager audit-log page
+8. `/audit-logs` for manager Rota activity and paged Employee access records
 9. `/chat` for authenticated chat bootstrap, people, direct-conversation creation and message writes; live open/read/send updates use `/ws/chat`
 
 ## Local setup
@@ -110,7 +113,7 @@ Run from `backend/`:
 npm test
 ```
 
-The current local result is `14` passed suites and `91` passed tests in 20.142 seconds with the coverage thresholds active. This is the recorded run in screenshot `139`; the exact time changes slightly between runs. When Jest sets `NODE_ENV=test`, `backend/src/config/env.js` loads `local-evidence.env`, so the local suite uses `smart_schedule_local` instead of the hosted Neon database. An explicit CI `DATABASE_URL` still takes precedence. The test database needs the migrations through `022_create_private_chat_conversations.sql`, not only the older password-reset and swap migrations. `chat-routes.test.js` checks workplace enrolment, direct-room reuse, unread clearing, outsider denial/no insert and self-conversation rejection. `chat-ws.test.js` checks cross-origin and unauthenticated denial, authenticated history and closure of an existing connection after account deactivation.
+The current local result is `16` passed suites and `116` passed tests. Screenshot `139` is still the earlier coverage run, so I have not relabelled it as evidence for the new tests. When Jest sets `NODE_ENV=test`, `backend/src/config/env.js` loads `local-evidence.env`, so the local suite uses `smart_schedule_local` instead of the hosted Neon database. An explicit CI `DATABASE_URL` still takes precedence. The test database needs migrations through `023_extend_audit_logs_for_employee_access.sql`. `employee-summary-routes.test.js` covers the manager response, staff denial, retained inactive staff, week totals, 30-day limit, history limits, audit events, print requests and access pagination. `employee-summary-frontend-contract.test.js` checks the route, manager-only links, focus/session rules, responsive sizes and A4 exclusions. The existing chat HTTP and WebSocket tests still run in the same full suite.
 
 `npm run test:coverage` currently reports 72.99% statements, 57.63% branches, 81.67% functions and 73.61% lines. The enforced minimums and limitations are recorded in `docs/testing/backend_coverage.md`. `.github/workflows/backend-checks.yml` defines the same migration, coverage, test and production dependency-audit path for GitHub Actions.
 

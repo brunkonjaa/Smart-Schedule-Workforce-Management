@@ -1,5 +1,9 @@
 const express = require('express');
-const { requireRole } = require('../middleware/auth');
+const {
+  requireAuth,
+  requireRole,
+  sendForbidden
+} = require('../middleware/auth');
 const { requireMutationProtection } = require('../middleware/request-security');
 const {
   buildListFilters,
@@ -12,6 +16,15 @@ const {
   listStaff
 } = require('../services/staff-service');
 const { createSecurityEvent } = require('../services/security-event-service');
+const {
+  createEmployeeAccessEvent
+} = require('../services/audit-log-service');
+const {
+  buildEmployeeSummaryFilters,
+  findEmployeeSummaryProfile,
+  getEmployeeSummary,
+  normalizeSource
+} = require('../services/employee-summary-service');
 
 const router = express.Router();
 
@@ -51,6 +64,39 @@ const validateStaffId = (staffId) => {
   return uuidPattern.test(String(staffId || ''));
 };
 
+const getRecordedSource = (source) => {
+  return source === 'DIRECT' ? null : source;
+};
+
+const logDeniedSummaryAccessSafely = async (request) => {
+  if (!validateStaffId(request.params.staffId)) {
+    return;
+  }
+
+  try {
+    const source = normalizeSource(request.query?.source || request.body?.source);
+    await createEmployeeAccessEvent({
+      action: 'EMPLOYEE_SUMMARY_ACCESS_DENIED',
+      actorUserId: request.authUser.id,
+      result: 'DENIED',
+      source: source ? getRecordedSource(source) : null,
+      targetStaffProfileId: request.params.staffId
+    });
+  } catch (error) {
+    // Authorization must still return 403 if the append-only log is unavailable.
+  }
+};
+
+const requireManagerForSummary = async (request, response) => {
+  if (request.authUser.role === 'MANAGER') {
+    return true;
+  }
+
+  await logDeniedSummaryAccessSafely(request);
+  sendForbidden(response);
+  return false;
+};
+
 router.get(
   '/',
   requireRole('MANAGER'),
@@ -66,6 +112,97 @@ router.get(
     return response.status(200).json({
       staff
     });
+  })
+);
+
+router.get(
+  '/:staffId/summary',
+  requireAuth,
+  asyncHandler(async (request, response) => {
+    if (!(await requireManagerForSummary(request, response))) {
+      return;
+    }
+
+    if (!validateStaffId(request.params.staffId)) {
+      return sendValidationError(response, ['staffId must be a valid UUID']);
+    }
+
+    const { details, filters } = buildEmployeeSummaryFilters(request.query);
+
+    if (details.length > 0) {
+      return sendValidationError(response, details);
+    }
+
+    const summary = await getEmployeeSummary(request.params.staffId, filters);
+
+    if (!summary) {
+      return response.status(404).json({
+        error: 'Not Found',
+        message: 'This employee record is no longer available.'
+      });
+    }
+
+    await createEmployeeAccessEvent({
+      action: 'EMPLOYEE_SUMMARY_VIEWED',
+      actorUserId: request.authUser.id,
+      result: 'SUCCESS',
+      source: getRecordedSource(filters.source),
+      targetStaffProfileId: request.params.staffId
+    });
+
+    return response.status(200).json({ summary });
+  })
+);
+
+router.post(
+  '/:staffId/summary/print-request',
+  requireAuth,
+  requireMutationProtection,
+  asyncHandler(async (request, response) => {
+    if (!(await requireManagerForSummary(request, response))) {
+      return;
+    }
+
+    if (!validateStaffId(request.params.staffId)) {
+      return sendValidationError(response, ['staffId must be a valid UUID']);
+    }
+
+    const unexpectedFields = Object.keys(request.body || {}).filter((fieldName) => {
+      return fieldName !== 'source';
+    });
+    const source = normalizeSource(request.body?.source);
+    const details = [];
+
+    if (unexpectedFields.length > 0) {
+      details.push(`unsupported fields: ${unexpectedFields.join(', ')}`);
+    }
+
+    if (!source) {
+      details.push('source must be a valid Smart Schedule page');
+    }
+
+    if (details.length > 0) {
+      return sendValidationError(response, details);
+    }
+
+    const employee = await findEmployeeSummaryProfile(request.params.staffId);
+
+    if (!employee) {
+      return response.status(404).json({
+        error: 'Not Found',
+        message: 'This employee record is no longer available.'
+      });
+    }
+
+    await createEmployeeAccessEvent({
+      action: 'EMPLOYEE_SUMMARY_PRINT_REQUESTED',
+      actorUserId: request.authUser.id,
+      result: 'SUCCESS',
+      source: getRecordedSource(source),
+      targetStaffProfileId: request.params.staffId
+    });
+
+    return response.status(204).send();
   })
 );
 

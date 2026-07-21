@@ -457,5 +457,24 @@ window.SmartSchedule.chatUi = (function createChatUi() {
     }
   };
 
-  return { sync };
+  const disconnect = () => {
+    window.clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+    currentUser = null;
+    isOpen = false;
+    messages = [];
+    conversations = [];
+    people = [];
+    activeConversationId = null;
+    unreadCount = 0;
+    if (socket) socket.close();
+    socket = null;
+    if (panel) {
+      panel.hidden = true;
+      panel.classList.add('is-collapsed');
+    }
+    updateLauncher();
+  };
+
+  return { disconnect, sync };
 })();

@@ -3,6 +3,7 @@ window.SmartSchedule = window.SmartSchedule || {};
 window.SmartSchedule.auditLogsUi = (function createAuditLogsUi() {
   const apiClient = window.SmartSchedule.apiClient;
   const helpers = window.SmartSchedule.liveUiHelpers;
+  const employeeSummaryUi = window.SmartSchedule.employeeSummaryUi;
 
   const formatDateTime = (value) => {
     if (!value) return 'Unknown time';
@@ -24,7 +25,20 @@ window.SmartSchedule.auditLogsUi = (function createAuditLogsUi() {
     const date = new Date(`${value}T00:00:00Z`);
     return Number.isNaN(date.getTime())
       ? value
-      : date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', timeZone: 'UTC', year: 'numeric' });
+      : date.toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: '2-digit',
+          timeZone: 'UTC',
+          year: 'numeric'
+        });
+  };
+
+  const getWeekStart = (dateValue) => {
+    if (!dateValue) return null;
+    const date = new Date(`${dateValue}T00:00:00Z`);
+    const offset = (date.getUTCDay() || 7) - 1;
+    date.setUTCDate(date.getUTCDate() - offset);
+    return date.toISOString().slice(0, 10);
   };
 
   const getState = (log) => log.afterState || log.beforeState || {};
@@ -51,10 +65,10 @@ window.SmartSchedule.auditLogsUi = (function createAuditLogsUi() {
         return 'Assigned staff member';
       case 'ASSIGNMENT_UPDATED':
         return 'Changed assignment';
-    case 'ASSIGNMENT_DELETED':
-      return 'Removed assignment';
-    case 'SHIFT_CREATED':
-      return `Created ${getState(log).requiredRole || 'work'} shift`;
+      case 'ASSIGNMENT_DELETED':
+        return 'Removed assignment';
+      case 'SHIFT_CREATED':
+        return `Created ${getState(log).requiredRole || 'work'} shift`;
       case 'SHIFT_UPDATED':
         return 'Changed shift time';
       case 'SHIFT_DELETED':
@@ -64,40 +78,142 @@ window.SmartSchedule.auditLogsUi = (function createAuditLogsUi() {
     }
   };
 
-  const renderLogs = (workspaceElement, logs) => {
-    workspaceElement.textContent = '';
-    const grid = helpers.createElement('div', { className: 'workspace-grid' });
+  const getAccessAction = (action) => ({
+    EMPLOYEE_SUMMARY_ACCESS_DENIED: 'Denied Employee Summary access',
+    EMPLOYEE_SUMMARY_PRINT_REQUESTED: 'Requested Employee Summary print',
+    EMPLOYEE_SUMMARY_VIEWED: 'Viewed Employee Summary'
+  }[action] || action);
+
+  const renderTabs = (state, actions) => {
+    const tabs = helpers.createElement('div', {
+      className: 'audit-log-tabs',
+      attributes: { 'aria-label': 'Audit Log sections', role: 'tablist' }
+    });
+    [
+      ['rota', 'Rota activity'],
+      ['employee', 'Employee access']
+    ].forEach(([value, label]) => {
+      const active = state.tab === value;
+      const button = helpers.createElement('button', {
+        className: `audit-log-tab${active ? ' is-active' : ''}`,
+        text: label,
+        attributes: {
+          'aria-selected': String(active),
+          role: 'tab',
+          type: 'button'
+        }
+      });
+      button.addEventListener('click', () => actions.selectTab(value));
+      tabs.appendChild(button);
+    });
+    return tabs;
+  };
+
+  const renderRotaActivity = (logs) => {
     const panel = helpers.createElement('section', {
       className: 'content-panel content-panel--span-16 audit-log-panel'
     });
     panel.appendChild(helpers.createPanelHeading(
-      'Recorded changes',
-      'Only manager actions recorded by the backend are shown here.'
+      'Rota activity',
+      'The existing shift and assignment changes remain in this section.'
     ));
 
     if (logs.length === 0) {
       panel.appendChild(helpers.createElement('p', {
         className: 'panel-copy',
-        text: 'No audit records have been created yet.'
+        text: 'No rota activity has been recorded yet.'
+      }));
+      return panel;
+    }
+
+    const tableWrap = helpers.createElement('div', { className: 'table-wrap' });
+    const table = helpers.createElement('table', {
+      className: 'audit-log-table audit-log-table--rota'
+    });
+    const head = helpers.createElement('thead');
+    const headRow = helpers.createElement('tr');
+    ['When', 'Change', 'Manager', 'Staff member', 'Shift'].forEach((label) => {
+      headRow.appendChild(helpers.createElement('th', { text: label }));
+    });
+    head.appendChild(headRow);
+    table.appendChild(head);
+    const body = helpers.createElement('tbody');
+    logs.forEach((log) => {
+      const state = getState(log);
+      const row = helpers.createElement('tr');
+      row.appendChild(helpers.createTableCell('When', formatDateTime(log.createdAt)));
+      row.appendChild(helpers.createTableCell('Change', getReadableChange(log)));
+      row.appendChild(helpers.createTableCell(
+        'Manager',
+        log.actorName || log.actorEmail || 'Manager account'
+      ));
+      const staffCell = helpers.createElement('td', {
+        attributes: { 'data-label': 'Staff member' }
+      });
+      if (state.staffProfileId) {
+        staffCell.appendChild(employeeSummaryUi.createEmployeeLink({
+          fullName: getStaffName(state),
+          source: 'audit-log',
+          staffProfileId: state.staffProfileId,
+          weekStart: getWeekStart(state.shiftDate)
+        }));
+      } else {
+        staffCell.textContent = getStaffName(state);
+      }
+      row.appendChild(staffCell);
+      row.appendChild(helpers.createTableCell('Shift', getReadableShift(state)));
+      body.appendChild(row);
+    });
+    table.appendChild(body);
+    tableWrap.appendChild(table);
+    panel.appendChild(tableWrap);
+    return panel;
+  };
+
+  const renderEmployeeAccess = (state, actions) => {
+    const panel = helpers.createElement('section', {
+      className: 'content-panel content-panel--span-16 audit-log-panel'
+    });
+    panel.appendChild(helpers.createPanelHeading(
+      'Employee access',
+      'View, print-request and denied access events are append-only. Employee names here are ordinary text.'
+    ));
+
+    if (state.employeeLogs.length === 0) {
+      panel.appendChild(helpers.createElement('p', {
+        className: 'panel-copy',
+        text: 'No Employee Summary access has been recorded yet.'
       }));
     } else {
       const tableWrap = helpers.createElement('div', { className: 'table-wrap' });
-      const table = helpers.createElement('table', { className: 'audit-log-table' });
+      const table = helpers.createElement('table', {
+        className: 'audit-log-table audit-log-table--employee-access'
+      });
       const head = helpers.createElement('thead');
       const headRow = helpers.createElement('tr');
-      ['When', 'Change', 'Manager', 'Staff member', 'Shift'].forEach((label) => {
+      ['When', 'Action', 'Account', 'Employee', 'Result', 'Source'].forEach((label) => {
         headRow.appendChild(helpers.createElement('th', { text: label }));
       });
       head.appendChild(headRow);
       table.appendChild(head);
       const body = helpers.createElement('tbody');
-      logs.forEach((log) => {
+      state.employeeLogs.forEach((log) => {
         const row = helpers.createElement('tr');
         row.appendChild(helpers.createTableCell('When', formatDateTime(log.createdAt)));
-        row.appendChild(helpers.createTableCell('Change', getReadableChange(log)));
-        row.appendChild(helpers.createTableCell('Manager', log.actorName || log.actorEmail || 'Manager account'));
-        row.appendChild(helpers.createTableCell('Staff member', getStaffName(getState(log))));
-        row.appendChild(helpers.createTableCell('Shift', getReadableShift(getState(log))));
+        row.appendChild(helpers.createTableCell('Action', getAccessAction(log.action)));
+        row.appendChild(helpers.createTableCell(
+          'Account',
+          log.actorName || log.actorEmail || 'Authenticated account'
+        ));
+        row.appendChild(helpers.createTableCell(
+          'Employee',
+          log.targetEmployeeName || 'Employee record unavailable'
+        ));
+        row.appendChild(helpers.createTableCell('Result', helpers.formatStatus(log.result)));
+        row.appendChild(helpers.createTableCell(
+          'Source',
+          log.source ? helpers.formatRole(log.source) : 'Direct address'
+        ));
         body.appendChild(row);
       });
       table.appendChild(body);
@@ -105,35 +221,145 @@ window.SmartSchedule.auditLogsUi = (function createAuditLogsUi() {
       panel.appendChild(tableWrap);
     }
 
-    grid.appendChild(panel);
-    workspaceElement.appendChild(grid);
+    const pagination = helpers.createElement('nav', {
+      className: 'audit-log-pagination',
+      attributes: { 'aria-label': 'Employee access pages' }
+    });
+    const previous = helpers.createElement('button', {
+      className: 'action-button button-ghost',
+      text: 'Previous',
+      attributes: {
+        disabled: !state.pagination.hasPrevious,
+        type: 'button'
+      }
+    });
+    previous.addEventListener('click', () => actions.loadEmployeePage(state.pagination.page - 1));
+    const pageText = helpers.createElement('span', {
+      text: `Page ${state.pagination.page} of ${state.pagination.totalPages}`
+    });
+    const next = helpers.createElement('button', {
+      className: 'action-button button-ghost',
+      text: 'Next',
+      attributes: {
+        disabled: !state.pagination.hasNext,
+        type: 'button'
+      }
+    });
+    next.addEventListener('click', () => actions.loadEmployeePage(state.pagination.page + 1));
+    pagination.append(previous, pageText, next);
+    panel.appendChild(pagination);
+    return panel;
   };
 
   const mount = async ({ page, workspaceElement }) => {
     if (page.id !== 'audit-logs') return;
 
-      helpers.renderIntroMetrics([
-        { label: 'Audit log', value: 'Loading...', tone: 'accent' },
-      { label: 'Access', value: 'Manager', tone: 'neutral' }
-    ]);
+    const state = {
+      employeeLogs: [],
+      loading: true,
+      pagination: {
+        hasNext: false,
+        hasPrevious: false,
+        page: 1,
+        pageSize: 25,
+        total: 0,
+        totalPages: 1
+      },
+      rotaLogs: [],
+      tab: 'rota'
+    };
 
-    try {
-      const result = await apiClient.get('/api/v1/audit-logs?limit=100');
+    const render = () => {
+      workspaceElement.textContent = '';
       helpers.renderIntroMetrics([
-        { label: 'Audit log', value: String(result.logs.length), tone: 'accent' },
+        {
+          label: state.tab === 'rota' ? 'Rota activity' : 'Employee access',
+          value: state.loading
+            ? 'Loading...'
+            : String(state.tab === 'rota' ? state.rotaLogs.length : state.pagination.total),
+          tone: 'accent'
+        },
         { label: 'Access', value: 'Manager', tone: 'neutral' }
       ]);
-      renderLogs(workspaceElement, result.logs);
-    } catch (error) {
-      workspaceElement.textContent = '';
-      const grid = helpers.createElement('div', { className: 'workspace-grid' });
-      grid.appendChild(helpers.createEmptyPanel(
-        'Audit log could not load',
-        helpers.getErrorFeedback(error, 'Try again after signing in as a manager.').text,
-        'content-panel--span-16'
-      ));
+      const grid = helpers.createElement('div', {
+        className: 'workspace-grid workspace-grid--audit-log'
+      });
+      const tabPanel = helpers.createElement('section', {
+        className: 'content-panel content-panel--span-16 audit-log-tabs-panel'
+      });
+      tabPanel.appendChild(renderTabs(state, actions));
+      grid.appendChild(tabPanel);
+
+      if (state.loading) {
+        grid.appendChild(helpers.createEmptyPanel(
+          'Loading Audit Log',
+          'Loading protected manager records.',
+          'content-panel--span-16'
+        ));
+      } else {
+        grid.appendChild(
+          state.tab === 'rota'
+            ? renderRotaActivity(state.rotaLogs)
+            : renderEmployeeAccess(state, actions)
+        );
+      }
       workspaceElement.appendChild(grid);
-    }
+    };
+
+    const loadRota = async () => {
+      state.loading = true;
+      render();
+      try {
+        const result = await apiClient.get('/api/v1/audit-logs?limit=100');
+        state.rotaLogs = result.logs;
+        state.loading = false;
+        render();
+      } catch (error) {
+        state.loading = false;
+        workspaceElement.textContent = '';
+        const grid = helpers.createElement('div', {
+          className: 'workspace-grid workspace-grid--audit-log'
+        });
+        grid.appendChild(helpers.createEmptyPanel(
+          'Audit Log could not load',
+          helpers.getErrorFeedback(error, 'Try again after signing in as a manager.').text,
+          'content-panel--span-16'
+        ));
+        workspaceElement.appendChild(grid);
+      }
+    };
+
+    const loadEmployeePage = async (requestedPage) => {
+      state.loading = true;
+      render();
+      try {
+        const result = await apiClient.get(
+          `/api/v1/audit-logs/employee-access?page=${requestedPage}`
+        );
+        state.employeeLogs = result.logs;
+        state.pagination = result.pagination;
+        state.loading = false;
+        render();
+      } catch (error) {
+        state.loading = false;
+        render();
+      }
+    };
+
+    const actions = {
+      loadEmployeePage,
+      selectTab: async (tab) => {
+        if (tab === state.tab) return;
+        state.tab = tab;
+        if (tab === 'employee') {
+          await loadEmployeePage(1);
+        } else {
+          await loadRota();
+        }
+      }
+    };
+
+    await loadRota();
   };
 
   return { mount };

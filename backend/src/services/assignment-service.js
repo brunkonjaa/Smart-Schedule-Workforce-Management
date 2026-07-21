@@ -359,8 +359,11 @@ const buildContractHoursWarnings = async (staffProfile, shift, client = null) =>
   return buildContractHoursWarningsFromSummary(staffProfile, weeklyHours);
 };
 
-const getWeeklyHoursSummary = async (staffProfile, shift, client = null) => {
-  const { weekStart } = getDateDetails(shift.shift_date);
+const getAssignmentTotalsForWeek = async (
+  staffProfileId,
+  weekStart,
+  { client = null, excludeShiftId = null } = {}
+) => {
   const weekStartDate = new Date(`${weekStart}T00:00:00Z`);
   const weekEndDate = new Date(weekStartDate.getTime());
   weekEndDate.setUTCDate(weekEndDate.getUTCDate() + 6);
@@ -379,13 +382,29 @@ const getWeeklyHoursSummary = async (staffProfile, shift, client = null) => {
         ON shifts.id = shift_assignments.shift_id
       WHERE shift_assignments.staff_profile_id = $1
         AND shifts.shift_date BETWEEN $2::date AND $3::date
-        AND shifts.id <> $4
+        AND shifts.status <> 'CANCELLED'
+        AND ($4::uuid IS NULL OR shifts.id <> $4::uuid)
     `,
-    [staffProfile.id, weekStart, weekEnd, shift.id]
+    [staffProfileId, weekStart, weekEnd, excludeShiftId]
   );
 
-  const assignedHoursBefore = roundHours(result.rows[0]?.assigned_hours);
-  const assignedShiftCountBefore = Number(result.rows[0]?.assigned_shift_count || 0);
+  return {
+    assignedHours: roundHours(result.rows[0]?.assigned_hours),
+    assignedShiftCount: Number(result.rows[0]?.assigned_shift_count || 0),
+    weekEnd,
+    weekStart
+  };
+};
+
+const getWeeklyHoursSummary = async (staffProfile, shift, client = null) => {
+  const { weekStart } = getDateDetails(shift.shift_date);
+  const totals = await getAssignmentTotalsForWeek(staffProfile.id, weekStart, {
+    client,
+    excludeShiftId: shift.id
+  });
+
+  const assignedHoursBefore = totals.assignedHours;
+  const assignedShiftCountBefore = totals.assignedShiftCount;
   const shiftHours = getShiftHours(shift);
   const projectedHours = roundHours(assignedHoursBefore + shiftHours);
   const contractHours = roundHours(staffProfile.contract_hours);
@@ -848,6 +867,7 @@ module.exports = {
   findAssignmentByShiftId,
   findShiftForAssignment,
   findStaffProfileForAssignment,
+  getAssignmentTotalsForWeek,
   getDateDetails,
   getShiftHours,
   getWeeklyHoursSummary,

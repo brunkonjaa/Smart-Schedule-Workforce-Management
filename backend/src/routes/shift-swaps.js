@@ -5,6 +5,7 @@ const {
   acceptSwapRequest,
   createSwapRequest,
   decideSwapRequest,
+  findSwapRequestById,
   listSwapRequests,
   validateSwapInput
 } = require('../services/shift-swap-service');
@@ -16,6 +17,22 @@ const sendValidationError = (response, details) => response.status(400).json({ d
 
 router.get('/', requireRole('STAFF', 'MANAGER'), asyncHandler(async (request, response) => {
   return response.status(200).json({ requests: await listSwapRequests(request.authUser) });
+}));
+
+router.get('/:swapId', requireRole('MANAGER'), asyncHandler(async (request, response) => {
+  if (!uuidPattern.test(request.params.swapId)) {
+    return sendValidationError(response, ['swapId must be a valid UUID']);
+  }
+
+  const swapRequest = await findSwapRequestById(request.params.swapId);
+  if (!swapRequest) {
+    return response.status(404).json({
+      error: 'Not Found',
+      message: 'The requested swap record could not be found.'
+    });
+  }
+
+  return response.status(200).json({ request: swapRequest });
 }));
 
 router.post('/', requireRole('STAFF'), requireMutationProtection, asyncHandler(async (request, response) => {

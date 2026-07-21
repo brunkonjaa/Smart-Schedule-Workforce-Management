@@ -20,12 +20,21 @@ This file follows the migration order that is actually in `database/migrations/`
 14. `014_remove_weekly_availability.sql`
 15. `015_normalize_seed_staff_emails.sql`
 16. `016_normalize_seed_staff_fake_gmail.sql`
+17. `017_add_bruno_demo_profile.sql`
+18. `018_create_user_passkeys_schema.sql`
+19. `019_remove_placeholder_staff.sql`
+20. `020_create_chat_messages_schema.sql`
+21. `021_create_chat_read_states_schema.sql`
+22. `022_create_private_chat_conversations.sql`
+23. `023_extend_audit_logs_for_employee_access.sql`
 
 ## Why this order was used
 
 First I needed the migration runner and the `users` table. The `staff_profiles` table depends on that identity row. Leave and shifts came next because assignment checks need both approved leave and real shift times. `shift_assignments` then gives the manager workflow somewhere to save the result.
 
-After that, `OTHER` was added for the Kitchen Porter rota tab, audit rows were added for manager shift and assignment changes, and the security migrations added password-change/reset support and security events. The swap table came after the assignment table because a swap is attached to an existing assignment. Migration `014` retires weekly availability because the final workflow uses leave and shift swaps instead of a new availability submission every week. Migration `015` changes the three starter staff emails to match their names, and migration `016` makes those accounts visibly fake with `firstname...fake@gmail.com` addresses.
+After that, `OTHER` was added for the Kitchen Porter rota tab, audit rows were added for manager shift and assignment changes, and the security migrations added password-change/reset support and security events. The swap table came after the assignment table because a swap is attached to an existing assignment. Migration `014` retires weekly availability because the final workflow uses leave and shift swaps instead of a new availability submission every week. Migrations `015` to `019` clean up the evidence accounts and add passkeys. Migrations `020` to `022` build NodyChat in stages, first messages, then read state, and lastly workplace/direct conversation membership.
+
+Migration `023` came after the Audit Log and staff profile structures were already stable. I kept it narrow because Employee Summary access only needed three new allowed action values and the `STAFF_PROFILE` entity type. The existing `actor_user_id`, `entity_id`, `after_state` and timestamp fields were already enough, so adding columns or backfilling older rota events would have created risk without adding useful evidence.
 
 ## Current database rules
 

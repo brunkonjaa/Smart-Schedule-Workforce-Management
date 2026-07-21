@@ -26,6 +26,7 @@ The migrations in this folder are ordered PostgreSQL changes. Do not renumber an
 20. `020_create_chat_messages_schema.sql`
 21. `021_create_chat_read_states_schema.sql`
 22. `022_create_private_chat_conversations.sql` - adds `WORKPLACE` and `DIRECT` conversations, participants, conversation links on messages, and per-user/per-conversation read state
+23. `023_extend_audit_logs_for_employee_access.sql` - extends the existing Audit Log checks for Employee Summary view, print-request and denied-access events using the `STAFF_PROFILE` entity type
 
 ## Running them
 
@@ -43,4 +44,4 @@ npm run local:evidence:check
 npm run local:evidence:migrate
 ```
 
-The runner writes applied filenames to `schema_migrations`. Keep seed data in scripts when it needs to be reset or regenerated. The demo rota is created by `seed-demo-history.js`, while `seed-staff-history.js` adds the twelve previous worked weeks used by the staff overview example.
+The runner writes applied filenames to `schema_migrations`. Migration `023` changes check constraints only. It does not add columns or rewrite existing audit rows, which is why the Employee access work could stay on the append-only `audit_logs` table. Keep seed data in scripts when it needs to be reset or regenerated. The demo rota is created by `seed-demo-history.js`, while `seed-staff-history.js` adds the twelve previous worked weeks used by the staff overview example.

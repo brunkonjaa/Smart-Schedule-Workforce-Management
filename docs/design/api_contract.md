@@ -228,6 +228,36 @@ Update a staff profile. Manager only. Live now.
 Current success:
 `200`
 
+### `GET /api/v1/staff/{staffId}/summary`
+
+Purpose:
+Return the manager-only Employee Summary. This route is live now and its response uses `Cache-Control: no-store`.
+
+Current query parameters:
+
+1. `weekStart` is optional. When supplied it must be a Monday in `YYYY-MM-DD` form. The current calendar week is used otherwise.
+2. `source` is optional and defaults to `direct`. The accepted values are `direct`, `rota`, `staff`, `time-off`, `swap-requests` and `audit-log`.
+3. Extra query fields are rejected instead of being ignored.
+
+The response has one `summary` object. It contains the approved employee identity/status fields, selected/current/previous week hours, selected-week assignments, later assignments through 30 calendar days, Time Off, Swap Requests and up to ten deleted or cancelled assignments. Cancelled and deleted hours stay separate from active hours. Time Off reasons and swap reasons are included for the on-screen manager view, but the print stylesheet excludes them.
+
+An unauthenticated request returns `401`. An authenticated staff request returns `403` and writes `Denied Employee Summary access` before any employee record is returned. A successful manager request writes `Viewed Employee Summary`. A missing retained staff record returns `404`.
+
+### `POST /api/v1/staff/{staffId}/summary/print-request`
+
+Purpose:
+Record `Requested Employee Summary print` before the frontend opens the browser print dialog. Manager only and mutation-header protected.
+
+Current request shape:
+
+```json
+{
+  "source": "staff"
+}
+```
+
+The route returns `204` only after the append-only access record is saved. If this request fails, the frontend keeps the print dialog closed and gives the manager a Try Again control. The event proves that print was requested, not that paper or a PDF was produced.
+
 ## Leave Request Routes
 
 ### `GET /api/v1/leave-requests`
@@ -399,6 +429,11 @@ Assignment create, update, and delete actions write to `audit_logs`. Managers ca
 Purpose:
 List active future swap requests for the shared staff and manager request page.
 
+### `GET /api/v1/shift-swaps/{swapId}`
+
+Purpose:
+Return one Swap Request to a manager. The completed-history link in Employee Summary uses this route to open the existing Swap Requests record view. Staff cannot use the route.
+
 ### `POST /api/v1/shift-swaps`
 
 Purpose:
@@ -451,6 +486,26 @@ Current behavior:
 4. staff responses omit manager-only shift note fields
 5. `Populate next week` builds a client-side draft from the current weekly pattern and saves only after manager approval
 6. state-changing rota actions still go through manager-only shift and assignment routes
+
+## Audit Log Routes
+
+### `GET /api/v1/audit-logs`
+
+Purpose:
+Return manager Rota activity. The route now keeps the existing shift and assignment actions separate from employee access events. `limit` is optional and is clamped to 1-200 records.
+
+### `GET /api/v1/audit-logs/employee-access`
+
+Purpose:
+Return the append-only Employee access subpage. Manager only.
+
+Current query parameters:
+
+1. `page` defaults to `1` and must be a positive whole number.
+2. page size is fixed at `25` in the backend.
+3. requesting a page beyond `totalPages` returns `400`.
+
+The response returns `logs` plus `pagination`. Each record has the action, actor name/email, target employee ID/name, source, result and creation time. The frontend deliberately renders employee names as ordinary text on this subpage. This stops an access-history row from becoming another route into Employee Summary.
 
 ## NodyChat Routes And WebSocket
 

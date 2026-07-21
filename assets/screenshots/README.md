@@ -193,6 +193,13 @@ Examples:
 - `145` hosted manager Rota confirmation after 61 generated next-week assignments were approved and saved
 - `146` hosted manager assignment dialog rejecting a shift that overlaps or touches an existing shift
 - `147` hosted manager passkey registration reaching the browser-managed WebAuthn confirmation prompt
+- `148` local desktop Employee Summary opened over the manager Staff page with the source page dimmed and inactive
+- `149` cropped local proof that the selected rota week is kept separate from Later upcoming shifts
+- `150` local 390 x 844 Employee Summary with visible Back, Print summary and Close controls and internal scrolling
+- `151` rendered A4 Employee Summary page with the decorative app background and screen-only contact fields removed
+- `152` cropped Employee access Audit Log with the Rota-style tabs stacked above the narrower table, including all six record columns
+- `153` local staff denial result returned to the read-only Rota with no Employee Summary panel, email, phone or manager-only employee links
+- `154` cropped local manager Rota workspace after the desktop width was reduced from the full app-shell width to 1560 pixels
 
 ## Practical Reminder
 

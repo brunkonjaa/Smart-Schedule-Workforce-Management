@@ -3,6 +3,7 @@ window.SmartSchedule = window.SmartSchedule || {};
 window.SmartSchedule.leaveUi = (function createLeaveUi() {
   const apiClient = window.SmartSchedule.apiClient;
   const uiHelpers = window.SmartSchedule.liveUiHelpers;
+  const employeeSummaryUi = window.SmartSchedule.employeeSummaryUi;
 
   const buildState = () => {
     return {
@@ -141,7 +142,15 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
       });
 
       if (state.sessionUser.role === 'MANAGER') {
-        row.appendChild(uiHelpers.createTableCell('Staff', record.fullName || 'Unknown staff'));
+        const staffCell = uiHelpers.createElement('td', {
+          attributes: { 'data-label': 'Staff' }
+        });
+        staffCell.appendChild(employeeSummaryUi.createEmployeeLink({
+          fullName: record.fullName || 'Unknown staff',
+          source: 'time-off',
+          staffProfileId: record.staffProfileId
+        }));
+        row.appendChild(staffCell);
       }
 
       row.appendChild(
@@ -447,6 +456,9 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
     }
 
     const state = buildState();
+    state.selectedLeaveRequestId = new URLSearchParams(
+      window.location.hash.split('?')[1] || ''
+    ).get('record');
 
     const render = () => {
       if (!isActiveRender(workspaceElement, renderToken)) {

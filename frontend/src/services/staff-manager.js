@@ -3,6 +3,7 @@ window.SmartSchedule = window.SmartSchedule || {};
 window.SmartSchedule.staffManager = (function createStaffManager() {
   const apiClient = window.SmartSchedule.apiClient;
   const uiHelpers = window.SmartSchedule.liveUiHelpers;
+  const employeeSummaryUi = window.SmartSchedule.employeeSummaryUi;
   const staffRoles = ['FLOOR', 'BAR', 'KITCHEN', 'OTHER'];
   const statusOptions = [
     { label: 'Active only', value: 'ACTIVE' },
@@ -324,7 +325,13 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
         row.setAttribute('aria-current', 'true');
       }
 
-      row.appendChild(createElement('td', { text: record.fullName, attributes: { 'data-label': 'Name' } }));
+      const nameCell = createElement('td', { attributes: { 'data-label': 'Name' } });
+      nameCell.appendChild(employeeSummaryUi.createEmployeeLink({
+        fullName: record.fullName,
+        source: 'staff',
+        staffProfileId: record.id
+      }));
+      row.appendChild(nameCell);
       row.appendChild(createElement('td', { text: record.email, attributes: { 'data-label': 'Email' } }));
       row.appendChild(
         createElement('td', {
@@ -362,7 +369,7 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
       };
 
       row.addEventListener('click', (event) => {
-        if (event.target.closest('button')) {
+        if (event.target.closest('button, a')) {
           return;
         }
 
@@ -707,6 +714,14 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
     }
 
     const state = buildState();
+    const requestedRecordId = new URLSearchParams(
+      window.location.hash.split('?')[1] || ''
+    ).get('record');
+
+    if (requestedRecordId) {
+      state.filters.status = 'ALL';
+      state.selectedStaffId = requestedRecordId;
+    }
 
     const render = () => {
       if (!isActiveRender(workspaceElement, renderToken)) {

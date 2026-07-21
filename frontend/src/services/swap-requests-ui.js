@@ -3,6 +3,7 @@ window.SmartSchedule = window.SmartSchedule || {};
 window.SmartSchedule.swapRequestsUi = (function createSwapRequestsUi() {
   const apiClient = window.SmartSchedule.apiClient;
   const uiHelpers = window.SmartSchedule.liveUiHelpers;
+  const employeeSummaryUi = window.SmartSchedule.employeeSummaryUi;
 
   const workplaceLocation = Object.freeze({
     name: 'Demo workplace',
@@ -26,6 +27,13 @@ window.SmartSchedule.swapRequestsUi = (function createSwapRequestsUi() {
     const date = new Date(`${request.shiftDate}T00:00:00Z`);
     const day = date.toLocaleDateString('en-GB', { weekday: 'short', timeZone: 'UTC' });
     return `${day} ${request.shiftDate} · ${request.shiftStartTime.slice(0, 5)}-${request.shiftEndTime.slice(0, 5)}`;
+  };
+
+  const getWeekStart = (dateValue) => {
+    const date = new Date(`${dateValue}T00:00:00Z`);
+    const offset = (date.getUTCDay() || 7) - 1;
+    date.setUTCDate(date.getUTCDate() - offset);
+    return date.toISOString().slice(0, 10);
   };
 
   const createAction = (label, tone, onClick) => {
@@ -145,15 +153,29 @@ window.SmartSchedule.swapRequestsUi = (function createSwapRequestsUi() {
     card.appendChild(heading);
 
     const details = uiHelpers.createElement('dl', { className: 'swap-request-details' });
-    [['Requested by', request.requesterName], ['For', request.targetName || 'Anyone eligible'], ['Reason', request.reason || 'No reason added']]
-      .forEach(([label, value]) => {
-        details.appendChild(uiHelpers.createElement('dt', { text: label }));
-        details.appendChild(uiHelpers.createElement('dd', { text: value }));
-      });
+    [
+      ['Requested by', request.requesterName, request.requesterStaffProfileId],
+      ['For', request.targetName || 'Anyone eligible', request.targetStaffProfileId],
+      ['Reason', request.reason || 'No reason added', null]
+    ].forEach(([label, value, staffProfileId]) => {
+      details.appendChild(uiHelpers.createElement('dt', { text: label }));
+      const valueElement = uiHelpers.createElement('dd');
+      if (sessionUser.role === 'MANAGER' && staffProfileId) {
+        valueElement.appendChild(employeeSummaryUi.createEmployeeLink({
+          fullName: value,
+          source: 'swap-requests',
+          staffProfileId,
+          weekStart: getWeekStart(request.shiftDate)
+        }));
+      } else {
+        valueElement.textContent = value;
+      }
+      details.appendChild(valueElement);
+    });
     card.appendChild(details);
 
     const actionsRow = uiHelpers.createElement('div', { className: 'actions-row' });
-    if (sessionUser.role === 'MANAGER') {
+    if (sessionUser.role === 'MANAGER' && ['PENDING', 'ACCEPTED'].includes(request.status)) {
       if (request.status === 'ACCEPTED') {
         actionsRow.appendChild(createAction('Approve swap', 'primary', () => actions.decide(request, 'approve')));
       }
@@ -226,8 +248,39 @@ window.SmartSchedule.swapRequestsUi = (function createSwapRequestsUi() {
 
     let sessionUser;
     let requests = [];
+    let linkedRequest = null;
     let flash = null;
     let loading = true;
+    const requestedRecordId = new URLSearchParams(
+      window.location.hash.split('?')[1] || ''
+    ).get('record');
+
+    const actions = {
+      accept: async (request, allowIneligible = false) => {
+        try {
+          await apiClient.post(`/api/v1/shift-swaps/${request.id}/accept`, { allowIneligible });
+          await load('Swap accepted and sent to the manager.', 'success');
+        } catch (error) {
+          if (!allowIneligible && error.payload?.code === 'TARGET_INELIGIBLE') {
+            showEligibilityWarning(request, () => actions.accept(request, true));
+            return;
+          }
+          const feedback = uiHelpers.getErrorFeedback(error, 'The swap was not accepted. Reload the requests and try again.');
+          flash = { text: feedback.text, tone: 'error', details: feedback.details };
+          render();
+        }
+      },
+      decide: async (request, decision) => {
+        try {
+          await apiClient.put(`/api/v1/shift-swaps/${request.id}/${decision}`, {});
+          await load(`Swap ${decision === 'approve' ? 'approved' : 'rejected'}.`, 'success');
+        } catch (error) {
+          const feedback = uiHelpers.getErrorFeedback(error, 'The manager decision was not saved. Reload the requests and try again.');
+          flash = { text: feedback.text, tone: 'error', details: feedback.details };
+          render();
+        }
+      }
+    };
 
     const render = () => {
       if (!isActiveRender(workspaceElement, renderToken)) return;
@@ -255,6 +308,18 @@ window.SmartSchedule.swapRequestsUi = (function createSwapRequestsUi() {
       );
       mainColumn.appendChild(guidePanel);
 
+      if (linkedRequest) {
+        const linkedPanel = uiHelpers.createElement('section', {
+          className: 'content-panel swap-requests-panel'
+        });
+        linkedPanel.appendChild(uiHelpers.createPanelHeading(
+          'Linked swap request',
+          'This is the existing record opened from Employee Summary.'
+        ));
+        linkedPanel.appendChild(renderRequestCard(linkedRequest, sessionUser, actions));
+        mainColumn.appendChild(linkedPanel);
+      }
+
       const panel = uiHelpers.createElement('section', { className: 'content-panel swap-requests-panel' });
       panel.appendChild(uiHelpers.createPanelHeading(
         'Active swap requests',
@@ -266,32 +331,6 @@ window.SmartSchedule.swapRequestsUi = (function createSwapRequestsUi() {
       } else if (requests.length === 0) {
         list.appendChild(uiHelpers.createElement('p', { className: 'panel-copy', text: 'No active swap requests.' }));
       } else {
-        const actions = {
-          accept: async (request, allowIneligible = false) => {
-            try {
-              await apiClient.post(`/api/v1/shift-swaps/${request.id}/accept`, { allowIneligible });
-              await load('Swap accepted and sent to the manager.', 'success');
-            } catch (error) {
-              if (!allowIneligible && error.payload?.code === 'TARGET_INELIGIBLE') {
-                showEligibilityWarning(request, () => actions.accept(request, true));
-                return;
-              }
-              const feedback = uiHelpers.getErrorFeedback(error, 'The swap was not accepted. Reload the requests and try again.');
-              flash = { text: feedback.text, tone: 'error', details: feedback.details };
-              render();
-            }
-          },
-          decide: async (request, decision) => {
-            try {
-              await apiClient.put(`/api/v1/shift-swaps/${request.id}/${decision}`, {});
-              await load(`Swap ${decision === 'approve' ? 'approved' : 'rejected'}.`, 'success');
-            } catch (error) {
-              const feedback = uiHelpers.getErrorFeedback(error, 'The manager decision was not saved. Reload the requests and try again.');
-              flash = { text: feedback.text, tone: 'error', details: feedback.details };
-              render();
-            }
-          }
-        };
         requests.forEach((request) => list.appendChild(renderRequestCard(request, sessionUser, actions)));
       }
       panel.appendChild(list);
@@ -308,6 +347,14 @@ window.SmartSchedule.swapRequestsUi = (function createSwapRequestsUi() {
         const result = await apiClient.get('/api/v1/shift-swaps');
         if (!isActiveRender(workspaceElement, renderToken)) return;
         requests = result.requests;
+        if (requestedRecordId && sessionUser?.role === 'MANAGER') {
+          try {
+            const linkedResult = await apiClient.get(`/api/v1/shift-swaps/${requestedRecordId}`);
+            linkedRequest = linkedResult.request;
+          } catch (error) {
+            linkedRequest = null;
+          }
+        }
         loading = false;
         render();
       } catch (error) {

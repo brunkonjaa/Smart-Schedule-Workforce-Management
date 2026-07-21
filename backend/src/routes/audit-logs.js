@@ -1,12 +1,46 @@
 const express = require('express');
 const { requireRole } = require('../middleware/auth');
-const { listAuditLogs } = require('../services/audit-log-service');
+const {
+  listAuditLogs,
+  listEmployeeAccessLogs
+} = require('../services/audit-log-service');
 
 const router = express.Router();
 
 const asyncHandler = (handler) => (request, response, next) => {
   Promise.resolve(handler(request, response, next)).catch(next);
 };
+
+router.get(
+  '/employee-access',
+  requireRole('MANAGER'),
+  asyncHandler(async (request, response) => {
+    const rawPage = Number(request.query.page || 1);
+
+    if (!Number.isInteger(rawPage) || rawPage < 1) {
+      return response.status(400).json({
+        details: ['page must be a whole number greater than 0'],
+        error: 'Validation Failed',
+        message: 'The Employee access request contains invalid fields.'
+      });
+    }
+
+    const result = await listEmployeeAccessLogs({
+      page: rawPage,
+      pageSize: 25
+    });
+
+    if (rawPage > result.pagination.totalPages) {
+      return response.status(400).json({
+        details: ['page is beyond the available Employee access records'],
+        error: 'Validation Failed',
+        message: 'The Employee access request contains invalid fields.'
+      });
+    }
+
+    return response.status(200).json(result);
+  })
+);
 
 router.get(
   '/',
