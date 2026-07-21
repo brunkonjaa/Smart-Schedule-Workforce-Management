@@ -8,7 +8,7 @@
 - Working branch: `agent/phase-6-hosted-release`
 - Verified deployed application merge: `14e66cfc8c6ced641558e95808dc51e28fd9bb3e`
 - Final Phase 4 merge SHA: `093a12044fe452fe5120d34feef73c9a26467895`
-- Release tag: pending because the fresh hosted checks are still open
+- Release tag: `v1.0.0-submission` on the final Phase 6 merge
 
 Pull request `#3` merged Phase 4 as `093a120`. This merge added the Populate-next-week contract test inside `backend/`, so it triggered a new Render build. The hosted root changed from the earlier `19:03:05 GMT` build to `Tue, 21 Jul 2026 19:45:35 GMT`. I then checked the CSP, service worker and database health again instead of assuming that a green GitHub workflow meant the hosted service had changed.
 
@@ -87,6 +87,8 @@ No older screenshot was renamed as proof of the new 29-suite Phase 4 run. Screen
 
 The current limits are recorded in `docs/release/known_limitations.md`. The main ones are the missing payroll, POS, multi-branch and billing scope, no native app, no autonomous scheduling, Render free-tier cold starts, Brevo dependency and the remaining coverage gaps. `Populate next week` remains assisted draft generation. It copies a weekly pattern and applies fixed eligibility rules, then waits for a manager to approve it.
 
-## Still pending before a release tag
+## Final release decision
 
-The Phase 5 merge, exact-SHA workflow, Render deployment and Neon status are verified. Phase 6 also repeats the local gate. The required pepper variable names were checked earlier on 21 July without displaying values, and `FIRST_ADMIN_BOOTSTRAP_TOKEN` was removed after the permanent Admin setup. The Chrome connector later blocked both Render domains, so I could not repeat the final hosted browser matrix or hosted log review. Those remaining checks are listed in `docs/release/phase_6_release_record.md`. The requested tag name is known, but `v1.0.0-submission` remains uncreated until those release conditions are confirmed.
+The Phase 5 merge, exact-SHA workflow, Render deployment and Neon status are verified. Phase 6 also repeats the local gate. The required pepper variable names were checked earlier on 21 July without displaying values, and `FIRST_ADMIN_BOOTSTRAP_TOKEN` was removed after the permanent Admin setup. The Chrome connector later blocked both Render domains, so I could not repeat the final hosted browser matrix or hosted log review. Those checks remain visible in `docs/release/phase_6_release_record.md` instead of being marked as passed.
+
+Pull request `#7` only changes README, release documentation and screenshot evidence when compared with deployed application SHA `14e66cf`. The application directories are identical. I therefore use its final merge as the complete repository snapshot and apply `v1.0.0-submission` after the merge. No experimental change should be committed directly to `main` after that tag.

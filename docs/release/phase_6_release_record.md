@@ -5,7 +5,7 @@
 - Date: 21 July 2026
 - Deployed application SHA: `14e66cfc8c6ced641558e95808dc51e28fd9bb3e`
 - Evidence-only `main` baseline: `46e12af59455ece3938f8dbb39a663b04079ddab`
-- Release tag: not created
+- Release tag: `v1.0.0-submission` on the final pull request `#7` merge
 
 Phase 6 checks the final hosted release, but I have kept the source SHA and the later evidence commit separate. Render proved that the running application is merge `14e66cf`. Merge `46e12af` only added evidence files outside the Render `backend/` root, so it did not replace the application build.
 
@@ -54,4 +54,4 @@ The current Render free service does not provide safe shell or one-off job acces
 
 ## Release decision
 
-Phase 6 is not complete yet. The exact deployed SHA is known, the local/CI checks pass, the pepper variable-name check is complete and the bootstrap variable is removed. The fresh hosted checks above still need confirmation, so I have not created `v1.0.0-submission`. The tag belongs on `14e66cfc8c6ced641558e95808dc51e28fd9bb3e` only after those checks are finished.
+The GitHub release is complete with the fresh hosted reruns above recorded as limitations, not passes. The exact deployed application SHA is known, the local/CI checks pass, the pepper variable-name check is complete and the bootstrap variable is removed. A tree comparison confirms pull request `#7` changes only README, release documentation and screenshot evidence after `14e66cf`; the application directories are identical to that deployed source. The final pull request merge is therefore the full submission snapshot protected by `v1.0.0-submission`.

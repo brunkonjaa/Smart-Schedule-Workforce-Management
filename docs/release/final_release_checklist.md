@@ -61,6 +61,6 @@ This is the last checklist before a Smart Schedule release tag. A checked item m
 - [x] Final merge SHA recorded after the merge exists.
 - [x] Live service rechecked after the backend-triggered Render deployment.
 - [x] Phase 5 exact source checkpoint passed locally, in GitHub Actions and on Render with connected Neon health.
-- [ ] Release tag created and pushed.
+- [x] `v1.0.0-submission` created on the final Phase 6 merge and pushed after pull request `#7` merged.
 
-The tag should not be created just to make this checklist look complete. The Render bootstrap variable has been removed, but the remaining hosted checks above still need confirmation.
+The Render bootstrap variable has been removed. The final tag does not turn the unchecked hosted reruns into passes; they remain visible release limitations. A tree comparison also confirms the final Phase 6 merge does not change `backend/`, `frontend/`, `database/`, `infra/`, `.github/` or `eslint.config.js` from deployed application SHA `14e66cf`.
