@@ -229,6 +229,7 @@ Examples:
 - `190` Phase 5 pull-request workflow showing exact source commit `a0303bc`, run `29864595561`, all required steps passed in 66 seconds, 30 suites and 243 tests, and the `backend-coverage` artifact
 - `191` Phase 5 final deployment showing merged SHA `14e66cf` passed the main workflow and exactly matched Render, with Neon 27/27 applied, the public Edge login check passing and all 21 JavaScript/CSS responses matching the commit
 - `192` Phase 6 local release gate showing 30 passing suites, 243 passing tests, migrations `001` to `027`, final coverage, Argon2id timing and memory, zero production dependency vulnerabilities and a clean repository/history secret review
+- `193` Phase 6 draft pull request showing exact source commit `b5a6206`, passed GitHub Actions run `29867189927`, coverage artifact upload and the deliberate decision not to create the submission tag before the remaining hosted checks
 
 ## Phase 4 and Phase 5 index review
 

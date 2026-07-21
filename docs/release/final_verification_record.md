@@ -45,6 +45,7 @@ All npm commands were run from `backend/`.
 | Phase 6 `npm run security:benchmark` | Four hashes 56.8 ms, four verifies 61.1 ms and 77 MiB observed peak RSS increase |
 | Phase 6 `npm audit --omit=dev` | Zero known production vulnerabilities |
 | Phase 6 `npm run security:repo-review` | No high-confidence secret in tracked files or Git patch history |
+| `gh run view 29867189927` | Phase 6 draft PR source commit `b5a6206` passed in one minute and uploaded `backend-coverage` |
 | Hosted header, service-worker and health requests | Exact Render WebSocket CSP origin, `smart-schedule-static-v12` and connected database health returned |
 | Hosted fake staff login, `/me` and logout | `200`, `200` and `204`; cookie value omitted |
 
@@ -77,6 +78,7 @@ The global thresholds in `backend/jest.config.js` are 70% statements, 55% branch
 - `190`: exact Phase 5 source-commit pull-request workflow and artifact;
 - `191`: exact merged Render SHA, Neon migration status, login and frontend content check;
 - `192`: Phase 6 local release gate, including 30 suites, 243 tests, migrations, Argon2id, audit and secret review;
+- `193`: Phase 6 draft PR `#7`, exact source commit and passed workflow, with the release tag deliberately absent;
 - GitHub Actions run `29864800275`: successful merged Phase 5 application run.
 
 No older screenshot was renamed as proof of the new 29-suite Phase 4 run. Screenshot `186` was captured from the exact rerun after the new Populate-next-week test was added.

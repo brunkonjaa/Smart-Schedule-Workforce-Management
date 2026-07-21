@@ -26,6 +26,8 @@ Coverage finished at 77.43% statements, 62.65% branches, 86.75% functions and 78
 
 GitHub Actions run `29864800275` is still the exact workflow for deployed merge `14e66cf`. It passed 30 suites and 243 tests, measured the same Argon2id parameters at 19,456 KiB, time cost 2 and parallelism 1, and returned zero production dependency vulnerabilities.
 
+Draft pull request `#7` then ran the same workflow against Phase 6 source commit `b5a6206f7e1d190231f48f6dab03c1ef5a24188b`. Run `29867189927` passed in one minute and uploaded the coverage artifact. Screenshot `193` records the pull request, commit, workflow result and the deliberate no-tag decision.
+
 ## Hosted evidence already tied to the SHA
 
 Screenshot `191` records `/health.releaseCommit` matching the full `14e66cf` merge, Neon migrations `001` through `027`, the public sign-in page and all 21 JavaScript/CSS responses matching the same source.

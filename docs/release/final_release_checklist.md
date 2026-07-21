@@ -24,6 +24,7 @@ This is the last checklist before a Smart Schedule release tag. A checked item m
 - [x] Phase 5 merge `14e66cf` passed `main` run `29864800275`.
 - [x] Both Phase 5 workflows uploaded the `backend-coverage` artifact.
 - [x] Phase 6 local gate passed lint, migrations, coverage, Argon2id measurement, production audit and repository/history secret review in screenshot `192`.
+- [x] Phase 6 draft PR source commit `b5a6206` passed run `29867189927` with the coverage artifact uploaded.
 
 ## Hosted checks
 
