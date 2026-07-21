@@ -6,7 +6,7 @@ const { closePool, isLocalDatabaseUrl, pool } = require('../config/db');
 
 const demoDomain = 'gmail.com';
 const legacyDemoDomain = 'demo.smart-schedule.test';
-const demoPassword = 'DemoStaffPass123!';
+const demoPassword = process.env.DEMO_STAFF_PASSWORD || crypto.randomBytes(32).toString('base64url');
 const hashRounds = 12;
 const roles = ['BAR', 'FLOOR', 'KITCHEN', 'OTHER'];
 const currentWeekOffset = 0;
@@ -16,7 +16,7 @@ const staffCount = 24;
 const activeStaffCount = 24;
 const resetDemoSeed = process.argv.includes('--reset') || process.env.SMART_SCHEDULE_RESET_DEMO_SEED === 'true';
 
-const fakeFullNames = [
+const irishStaffNames = [
   "Aoife O'Sullivan",
   'Cian Murphy',
   'Niamh Byrne',
@@ -81,7 +81,7 @@ const compactSlugify = (value) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
 
 const buildDemoEmail = (fullName) => `${compactSlugify(fullName)}fake@${demoDomain}`;
 
-const getDemoEmailList = () => fakeFullNames.map(buildDemoEmail);
+const getDemoEmailList = () => irishStaffNames.map(buildDemoEmail);
 
 const hasSameDayTimeConflict = (left, right) => {
   return left.startTime < right.endTime && left.endTime > right.startTime;
@@ -122,7 +122,7 @@ const buildStaff = () => {
   const currentWeekStart = getCurrentWeekStart();
 
   return Array.from({ length: staffCount }, (_, index) => {
-    const fullName = fakeFullNames[index];
+    const fullName = irishStaffNames[index];
     const isActive = index < activeStaffCount;
     const role = rolePlan[index];
     const startOffset = isActive ? -90 + (index % 40) : -104 + (index % 20);
@@ -169,7 +169,7 @@ const buildLeaveRequests = (staff, managerUserId) => {
         decidedByUserId: managerUserId,
         endDate: addDays(startDate, index % 2),
         id: crypto.randomUUID(),
-        reason: 'Demo annual leave for rota testing',
+        reason: 'Annual leave',
         staffProfileId: staffMember.id,
         startDate
       };
@@ -257,7 +257,7 @@ const buildRotaRows = (staff, leaveRequests, managerUserId) => {
           shifts.push({
             endTime: shiftWindow.endTime,
             id: shiftId,
-            notes: `Demo ${role.toLowerCase()} rota history`,
+            notes: `Weekly rota - ${role.toLowerCase()}`,
             requiredRole: role,
             shiftDate,
             startTime: shiftWindow.startTime
@@ -324,7 +324,7 @@ const getExistingDemoUserCount = async (client) => {
 const deleteExistingDemoData = async (client) => {
   const demoStaffResult = await client.query(
     `
-      SELECT staff_profiles.id
+      SELECT staff_profiles.id, users.id AS user_id
       FROM staff_profiles
       INNER JOIN users
         ON users.id = staff_profiles.user_id
@@ -334,6 +334,34 @@ const deleteExistingDemoData = async (client) => {
     [`%@${legacyDemoDomain}`, getDemoEmailList()]
   );
   const demoStaffProfileIds = demoStaffResult.rows.map((row) => row.id);
+  const demoUserIds = demoStaffResult.rows.map((row) => row.user_id);
+
+  if (demoUserIds.length > 0) {
+    const directConversationResult = await client.query(
+      `
+        SELECT DISTINCT conversations.id
+        FROM chat_conversations AS conversations
+        INNER JOIN chat_conversation_participants AS participants
+          ON participants.conversation_id = conversations.id
+        WHERE conversations.kind = 'DIRECT'
+          AND participants.user_id = ANY($1::uuid[])
+      `,
+      [demoUserIds]
+    );
+    const directConversationIds = directConversationResult.rows.map((row) => row.id);
+
+    if (directConversationIds.length > 0) {
+      await client.query(
+        'DELETE FROM chat_conversations WHERE id = ANY($1::uuid[])',
+        [directConversationIds]
+      );
+    }
+
+    await client.query(
+      'DELETE FROM chat_messages WHERE sender_user_id = ANY($1::uuid[])',
+      [demoUserIds]
+    );
+  }
 
   if (demoStaffProfileIds.length > 0) {
     await client.query(
@@ -363,6 +391,7 @@ const deleteExistingDemoData = async (client) => {
     `
       DELETE FROM shifts
       WHERE notes LIKE 'Demo % rota history'
+         OR notes LIKE 'Weekly rota - %'
     `
   );
   await client.query(
@@ -450,7 +479,7 @@ const run = async () => {
       if (!resetDemoSeed) {
         await client.query('ROLLBACK');
         console.log('Demo history already exists. No records added.');
-        console.log('Run this script with --reset to rebuild the fake demo rota data.');
+        console.log('Run this script with --reset to rebuild the rota data.');
         return;
       }
 
@@ -523,7 +552,7 @@ const run = async () => {
         decided_by_user_id: leaveRequest.decidedByUserId,
         end_date: leaveRequest.endDate,
         id: leaveRequest.id,
-        manager_comment: 'Approved for demo rota testing',
+        manager_comment: 'Approved',
         reason: leaveRequest.reason,
         staff_profile_id: leaveRequest.staffProfileId,
         start_date: leaveRequest.startDate,
@@ -566,7 +595,7 @@ const run = async () => {
     console.log(`Historical and current shifts added: ${shifts.length}`);
     console.log(`Assignments added: ${assignments.length}`);
     console.log(`Approved leave records added: ${leaveRequests.length}`);
-    console.log(`Demo staff password: ${demoPassword}`);
+    console.log('Demo staff credentials were prepared without printing the password.');
     console.log(`Demo email domain: ${demoDomain}`);
   } catch (error) {
     if (client) {

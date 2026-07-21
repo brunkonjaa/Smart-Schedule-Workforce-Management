@@ -1,5 +1,33 @@
 const { query } = require('../config/db');
 
+const sensitiveMetadataNamePattern =
+  /(password|passcode|pepper|token|secret|session|cookie|credential|hmac|hash)/i;
+
+const sanitizeMetadata = (value, depth = 0) => {
+  if (depth > 4 || value === null || typeof value === 'undefined') {
+    return value ?? null;
+  }
+
+  if (Array.isArray(value)) {
+    return value.slice(0, 25).map((entry) => sanitizeMetadata(entry, depth + 1));
+  }
+
+  if (typeof value !== 'object') {
+    if (typeof value === 'string') {
+      return value.slice(0, 500);
+    }
+
+    return value;
+  }
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([key]) => !sensitiveMetadataNamePattern.test(key))
+      .slice(0, 40)
+      .map(([key, entry]) => [key, sanitizeMetadata(entry, depth + 1)])
+  );
+};
+
 const createSecurityEvent = async ({
   actorUserId = null,
   client = null,
@@ -33,11 +61,12 @@ const createSecurityEvent = async ({
       eventType,
       outcome,
       ipAddress,
-      metadata ? JSON.stringify(metadata) : null
+      metadata ? JSON.stringify(sanitizeMetadata(metadata)) : null
     ]
   );
 };
 
 module.exports = {
-  createSecurityEvent
+  createSecurityEvent,
+  sanitizeMetadata
 };

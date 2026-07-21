@@ -23,6 +23,9 @@ const buildTestApp = () => {
   );
 
   app.post('/test/login', (request, response, next) => {
+    request.session.auth = {
+      sessionVersion: Number(request.body.sessionVersion || 1)
+    };
     request.session.user = {
       email: request.body.email,
       id: request.body.id,
@@ -75,9 +78,9 @@ describe('auth middleware', () => {
   const staffUserProfileId = crypto.randomUUID();
   const inactiveStaffProfileId = crypto.randomUUID();
   const passwordHashValue = 'SmartScheduleTest123!';
-  const activeEmail = `middleware-active-${Date.now()}@example.com`;
-  const staffEmail = `middleware-staff-${Date.now()}@example.com`;
-  const inactiveEmail = `middleware-inactive-${Date.now()}@example.com`;
+  const activeEmail = `maevekelly${Date.now()}fake@gmail.com`;
+  const staffEmail = `padraignolan${Date.now()}fake@gmail.com`;
+  const inactiveEmail = `cormacflynn${Date.now()}fake@gmail.com`;
 
   beforeAll(async () => {
     const passwordHash = await bcrypt.hash(passwordHashValue, 10);
@@ -119,7 +122,7 @@ describe('auth middleware', () => {
           created_at,
           updated_at
         )
-        VALUES ($1, $2, 'Middleware Staff User', 'BAR', 30.00, '0856666666', TRUE, NOW(), NOW())
+        VALUES ($1, $2, 'Padraig Nolan', 'BAR', 30.00, '0856666666', TRUE, NOW(), NOW())
       `,
       [staffUserProfileId, staffUserId]
     );
@@ -137,7 +140,7 @@ describe('auth middleware', () => {
           created_at,
           updated_at
         )
-        VALUES ($1, $2, 'Middleware Active User', 'FLOOR', 40.00, '0858888888', TRUE, NOW(), NOW())
+        VALUES ($1, $2, 'Maeve Kelly', 'FLOOR', 40.00, '0858888888', TRUE, NOW(), NOW())
       `,
       [activeStaffProfileId, activeUserId]
     );
@@ -155,7 +158,7 @@ describe('auth middleware', () => {
           created_at,
           updated_at
         )
-        VALUES ($1, $2, 'Middleware Inactive User', 'BAR', 20.00, '0857777777', TRUE, NOW(), NOW())
+        VALUES ($1, $2, 'Cormac Flynn', 'BAR', 20.00, '0857777777', TRUE, NOW(), NOW())
       `,
       [inactiveStaffProfileId, inactiveUserId]
     );
@@ -203,7 +206,7 @@ describe('auth middleware', () => {
     expect(protectedResponse.body).toEqual({
       user: {
         email: activeEmail,
-        fullName: 'Middleware Active User',
+        fullName: 'Maeve Kelly',
         id: activeUserId,
         mustChangePassword: false,
         primaryRole: 'FLOOR',
@@ -262,7 +265,7 @@ describe('auth middleware', () => {
     expect(protectedResponse.body).toEqual({
       user: {
         email: activeEmail,
-        fullName: 'Middleware Active User',
+        fullName: 'Maeve Kelly',
         id: activeUserId,
         mustChangePassword: false,
         primaryRole: 'FLOOR',

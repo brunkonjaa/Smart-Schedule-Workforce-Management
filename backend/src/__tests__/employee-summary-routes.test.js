@@ -31,10 +31,10 @@ describe('Employee Summary routes', () => {
   const inactiveProfileId = crypto.randomUUID();
   const otherUserId = crypto.randomUUID();
   const otherProfileId = crypto.randomUUID();
-  const managerEmail = `summary-manager-${Date.now()}@example.com`;
-  const staffEmail = `summary-staff-${Date.now()}@example.com`;
-  const inactiveEmail = `summary-inactive-${Date.now()}@example.com`;
-  const otherEmail = `summary-other-${Date.now()}@example.com`;
+  const managerEmail = `maeveobrien${Date.now()}fake@gmail.com`;
+  const staffEmail = `aoifebrennan${Date.now()}fake@gmail.com`;
+  const inactiveEmail = `seamusdoyle${Date.now()}fake@gmail.com`;
+  const otherEmail = `orlakelly${Date.now()}fake@gmail.com`;
   const managerPassword = 'SummaryManager123!';
   const staffPassword = 'SummaryStaff123!';
   const currentDate = new Date().toISOString().slice(0, 10);
@@ -118,10 +118,10 @@ describe('Employee Summary routes', () => {
           is_active, created_at, updated_at
         )
         VALUES
-          ($1, $2, 'Summary Manager', 'FLOOR', 40, '0857000001', TRUE, NOW(), NOW()),
-          ($3, $4, 'Summary Employee', 'BAR', 32, '0857000002', TRUE, '2025-09-15', NOW()),
-          ($5, $6, 'Retained Inactive Employee', 'KITCHEN', 20, NULL, FALSE, '2024-11-04', NOW()),
-          ($7, $8, 'Other Employee', 'BAR', 24, '0857000004', TRUE, NOW(), NOW())
+          ($1, $2, 'Maeve O''Brien', 'FLOOR', 40, '0857000001', TRUE, NOW(), NOW()),
+          ($3, $4, 'Aoife Brennan', 'BAR', 32, '0857000002', TRUE, '2025-09-15', NOW()),
+          ($5, $6, 'Seamus Doyle', 'KITCHEN', 20, NULL, FALSE, '2024-11-04', NOW()),
+          ($7, $8, 'Orla Kelly', 'BAR', 24, '0857000004', TRUE, NOW(), NOW())
       `,
       [
         managerProfileId,
@@ -435,7 +435,7 @@ describe('Employee Summary routes', () => {
       email: staffEmail,
       employmentStartDate: '2025-09-15',
       employmentStatus: 'ACTIVE',
-      fullName: 'Summary Employee',
+      fullName: 'Aoife Brennan',
       id: staffProfileId,
       phone: '0857000002',
       role: 'STAFF'
@@ -515,7 +515,7 @@ describe('Employee Summary routes', () => {
     expect(swapRequests.waitingOrActive[0]).toEqual(
       expect.objectContaining({
         department: 'BAR',
-        otherEmployee: 'Other Employee'
+        otherEmployee: 'Orla Kelly'
       })
     );
   });
@@ -547,7 +547,7 @@ describe('Employee Summary routes', () => {
       expect.objectContaining({
         accountStatus: 'INACTIVE',
         employmentStatus: 'INACTIVE',
-        fullName: 'Retained Inactive Employee'
+        fullName: 'Seamus Doyle'
       })
     );
   });

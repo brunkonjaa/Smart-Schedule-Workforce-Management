@@ -23,4 +23,4 @@ The rota and chat requests have the widest first/slow response, but every record
 2. start the app with `npm run local:evidence:start`
 3. run `node scripts/measure_local_performance.js` from the repo root
 
-The script uses only the deterministic evidence manager and does not print the password or session cookie in its results.
+The script signs in as Maeve O'Connor and does not print credentials or session data in its results.

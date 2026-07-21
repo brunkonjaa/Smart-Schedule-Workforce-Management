@@ -62,6 +62,38 @@ window.SmartSchedule.pageConfig = {
       blocks: []
     },
     {
+      id: 'activate-admin',
+      label: 'Activate administrator',
+      audience: 'guest',
+      eyebrow: 'Administrator invitation',
+      title: 'Set up administrator account',
+      summary: 'Choose a password, then register a passkey to activate the account.',
+      context: 'The invitation works once and expires after a short time.',
+      compactIntro: true,
+      metrics: [
+        { label: 'Invitation', value: 'One use', tone: 'accent' },
+        { label: 'Password', value: '15+ characters', tone: 'neutral' },
+        { label: 'Passkey', value: 'Required', tone: 'neutral' }
+      ],
+      blocks: []
+    },
+    {
+      id: 'admin',
+      label: 'Admin',
+      audience: 'admin',
+      eyebrow: 'Account security',
+      title: 'Administration',
+      summary: 'Manage administrator accounts, invitations, passkeys and recent security events.',
+      context: 'Administrator access is separate from rota and employee-record access.',
+      compactIntro: true,
+      metrics: [
+        { label: 'Access', value: 'Administrator', tone: 'accent' },
+        { label: 'Scope', value: 'Accounts', tone: 'neutral' },
+        { label: 'Events', value: 'Security', tone: 'neutral' }
+      ],
+      blocks: []
+    },
+    {
       id: 'audit-logs',
       label: 'Audit log',
       audience: 'manager',

@@ -38,8 +38,8 @@ Current request:
 
 ```json
 {
-  "email": "manager@example.com",
-  "password": "ManagerPass123!"
+  "email": "maeveoconnorfake@gmail.com",
+  "password": "<submitted password>"
 }
 ```
 
@@ -50,7 +50,7 @@ Current success `200`:
   "message": "Login successful.",
   "user": {
     "id": "uuid",
-    "email": "manager@example.com",
+    "email": "maeveoconnorfake@gmail.com",
     "role": "MANAGER",
     "staffProfileId": "uuid"
   }
@@ -89,7 +89,7 @@ Current success `200`:
 {
   "user": {
     "id": "uuid",
-    "email": "manager@example.com",
+    "email": "maeveoconnorfake@gmail.com",
     "role": "MANAGER",
     "staffProfileId": "uuid"
   }
@@ -122,8 +122,8 @@ Current request:
 
 ```json
 {
-  "currentPassword": "OldPassword123!",
-  "newPassword": "NewPassword123!"
+  "currentPassword": "<current password>",
+  "newPassword": "<new 15-128 character password>"
 }
 ```
 
@@ -135,7 +135,7 @@ Current success:
 Purpose:
 Create a reset request and send a reset link when email delivery is configured.
 
-The response is `202` with a generic message for both matching and non-matching active emails. This avoids account enumeration. Local development can print the generated link through the configured email service.
+The response is `202` with a generic message for both matching and non-matching active emails. This avoids account enumeration. Reset links are sent through the configured email service and are not printed by the backend.
 
 ### `POST /api/v1/auth/password-reset/confirm`
 
@@ -145,7 +145,67 @@ Consume a valid reset token and set a new password. Invalid, expired, or already
 ### `GET /api/v1/auth/password-reset/requests`
 
 Purpose:
-Show recent password recovery requests to managers. Passwords and reset tokens are not returned.
+Show recent password recovery requests to managers or administrators. Passwords and reset tokens are not returned.
+
+## Administrator Authentication And Activation
+
+### `GET /api/v1/auth/bootstrap/admin/status`
+
+Returns whether the fixed first-Admin setup is still required and whether the server has been configured for it. It never returns the bootstrap value.
+
+### `POST /api/v1/auth/bootstrap/first-admin`
+
+Creates `Bruno Suric` at the fixed Admin email once, with no staff profile. The caller submits the configured bootstrap value and a chosen 15-128 character password. The endpoint is rate limited, records success or failure without secret values, and returns `409` after the first active non-review Admin exists.
+
+### `POST /api/v1/auth/admin-invitations/accept`
+
+Consumes one normal Admin invitation and saves the submitted password with peppered Argon2id. The account stays inactive and the server keeps a short pending activation session until passkey registration succeeds. Invalid, expired, cancelled and used tokens all receive the same invalid-invitation response.
+
+### Admin passkey routes
+
+- `POST /api/v1/auth/passkeys/registration/options`
+- `POST /api/v1/auth/passkeys/registration/verify`
+- `POST /api/v1/auth/passkeys/login/options`
+- `POST /api/v1/auth/passkeys/login/verify`
+
+Manager and Admin sessions can register a passkey. Registration verification also completes a pending normal Admin invitation. Reviewer registration is optional, but if the reviewer adds a passkey then later logins use the passkey second step.
+
+## Administrator Account Routes
+
+All `/api/v1/admin` routes require the `ADMIN` role. Ordinary Admin accounts also need an active passkey before the workspace routes open. The account-specific submission reviewer is the only exception. Mutation routes use the same-origin mutation header, and account-changing operations require the Admin password to have been rechecked in the current server session during the previous five minutes.
+
+### `POST /api/v1/admin/reauthenticate`
+
+Checks the current Admin password and records only the server-side confirmation time.
+
+### `GET /api/v1/admin/accounts`
+
+Returns Admin account state plus invitation state. It does not return password hashes, token hashes, pepper versions, session rows or passkey credential material.
+
+### Admin creation routes
+
+- `POST /api/v1/admin/invitations`
+- `POST /api/v1/admin/invitations/{invitationId}/cancel`
+- `POST /api/v1/admin/submission-reviewers`
+
+Normal Admin creation sends a one-use activation link and stores only its SHA-256 token hash. The submission-reviewer route works only when `SUBMISSION_REVIEW_ACCOUNTS_ENABLED=true`; the reviewer flag is stored against that account and is not used for normal Admin creation.
+
+### Account state routes
+
+- `POST /api/v1/admin/accounts/{userId}/enable`
+- `POST /api/v1/admin/accounts/{userId}/disable`
+- `POST /api/v1/admin/accounts/{userId}/revoke-sessions`
+- `POST /api/v1/admin/accounts/{userId}/role`
+
+These routes increment `session_version`, so an older target session fails its next protected request. The final active non-review Admin cannot be disabled or demoted. A standalone Admin without a staff profile cannot be changed to Manager or Staff.
+
+### Passkey and event routes
+
+- `GET /api/v1/admin/accounts/{userId}/passkeys`
+- `POST /api/v1/admin/accounts/{userId}/passkeys/{passkeyId}/revoke`
+- `GET /api/v1/admin/security-events`
+
+The passkey response contains the device label and dates only. The security-event response uses sanitized metadata and does not include password, token, pepper, raw session or credential fields.
 
 ## Current Session Base Note
 
@@ -157,6 +217,8 @@ That matters because the auth direction is no longer abstract. The app already h
 2. `smart_schedule.sid` cookie naming
 3. `user_sessions` store configuration
 4. production `trust proxy` configuration in `backend/src/app.js`
+
+Admin sessions ignore Remember me. Their current policy is a 30-minute idle timeout and an eight-hour absolute lifetime. The session also carries the account `session_version`, which is checked against PostgreSQL on protected requests.
 
 That part is no longer just planned. The session base is live now because the auth routes are using it already. Assignment conflict checks, contract-hours warnings, the rota route layer, and audit log writes are now live too, while deployment checks still come later.
 
@@ -208,7 +270,7 @@ Current request shape:
 
 ```json
 {
-  "email": "alexbyrnefake@gmail.com",
+  "email": "aoifeosullivanfake@gmail.com",
   "password": "InitialTempPassword123",
   "fullName": "Alex Byrne",
   "primaryRole": "FLOOR",
@@ -505,7 +567,7 @@ Current query parameters:
 2. page size is fixed at `25` in the backend.
 3. requesting a page beyond `totalPages` returns `400`.
 
-The response returns `logs` plus `pagination`. Each record has the action, actor name/email, target employee ID/name, source, result and creation time. The frontend deliberately renders employee names as ordinary text on this subpage. This stops an access-history row from becoming another route into Employee Summary.
+The response returns `logs` plus `pagination`. Each record has the action, actor name/email, target employee ID/name, source, result and creation time. Employee names are not links on this subpage, so an access-history row cannot open Employee Summary.
 
 ## NodyChat Routes And WebSocket
 

@@ -59,6 +59,7 @@ const loadActiveSocketUser = async (request, { reload = false } = {}) => {
   const session = reload ? await reloadSession(request) : request.session;
   const userId = session?.user?.id;
   const absoluteExpiresAt = session?.auth?.absoluteExpiresAt;
+  const sessionVersion = Number(session?.auth?.sessionVersion);
 
   if (absoluteExpiresAt) {
     const expiresAtTimestamp = Date.parse(absoluteExpiresAt);
@@ -70,7 +71,14 @@ const loadActiveSocketUser = async (request, { reload = false } = {}) => {
 
   const user = userId ? await findUserById(userId) : null;
 
-  if (!user || !user.isActive || user.staffProfileIsActive === false) {
+  if (
+    !user ||
+    !user.isActive ||
+    user.staffProfileIsActive === false ||
+    user.role === 'ADMIN' ||
+    !Number.isInteger(sessionVersion) ||
+    sessionVersion !== user.sessionVersion
+  ) {
     return null;
   }
 

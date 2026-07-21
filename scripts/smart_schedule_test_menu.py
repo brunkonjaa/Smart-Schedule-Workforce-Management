@@ -556,7 +556,7 @@ def open_local_app() -> None:
     webbrowser.open("http://localhost:3000")
     print()
     print("Manual weekly rota check:")
-    print("1. Log in with the local evidence manager account from docs/testing/local_evidence_workflow.md.")
+    print("1. Log in as Maeve O'Connor using the local setup in docs/testing/local_evidence_workflow.md.")
     print("2. Go to Weekly rota.")
     print("3. Check the department tabs and week controls.")
     print("4. Click Populate next week.")

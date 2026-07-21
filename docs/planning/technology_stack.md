@@ -11,9 +11,9 @@ This is the stack actually used by the current Smart Schedule repo.
 | Hosted database | Neon | This is the current hosted PostgreSQL direction. |
 | Hosted app | Render | This is the current hosted web-service direction. |
 | Sessions | `express-session` and `connect-pg-simple` | Login state stays server-side and session rows are stored in PostgreSQL. |
-| Passwords | `bcrypt` | Passwords are checked against hashes rather than stored as plain text. |
-| Email reset output | Brevo transactional email API with local console fallback | Render sends reset links through Brevo's HTTPS API. Local work prints a safe test link when Brevo is not configured. |
-| Testing | Jest and Supertest | The backend route suites cover auth, staff, leave, shifts, assignments, rota, password reset, and swaps. |
+| Passwords | `argon2` plus legacy `bcrypt` verification | New passwords use HMAC-SHA-256 with a versioned environment pepper before Argon2id. A correct legacy bcrypt login upgrades that one row. |
+| Email reset output | Brevo transactional email API | Render sends reset and Admin activation links through Brevo's HTTPS API. The local fallback does not print the links. |
+| Testing | Jest and Supertest | The backend route suites cover auth, Admin lifecycle, staff, leave, shifts, assignments, rota, password reset, swaps, passkeys and chat. |
 | Tracking | Jira and GitHub | Jira records the work trail and GitHub stores the code checkpoints. |
 | Diagrams | Visual Paradigm | The exported diagrams support the SRS without inventing extra system parts. |
 
@@ -29,6 +29,8 @@ The backend reads these values through `dotenv` and `backend/src/config/env.js`:
 2. `SESSION_SECRET`
 3. `NODE_ENV`
 4. `PORT`
-5. SMTP values when real reset email delivery is enabled
+5. versioned password pepper configuration
+6. temporary first-Admin bootstrap configuration
+7. Brevo values when reset or invitation email delivery is enabled
 
 `backend/local-evidence.env` is for local PostgreSQL only and stays outside Git.

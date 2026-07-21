@@ -45,8 +45,7 @@ window.SmartSchedule.auditLogsUi = (function createAuditLogsUi() {
 
   const getStaffName = (state) => {
     const name = String(state?.fullName || '').trim();
-    const placeholderNames = new Set(['Reset Staff', 'Swap Requester', 'Swap Target']);
-    return name && !placeholderNames.has(name) ? name : 'Staff member';
+    return name || '—';
   };
 
   const getReadableTime = (state) => {
@@ -173,7 +172,7 @@ window.SmartSchedule.auditLogsUi = (function createAuditLogsUi() {
         row.appendChild(helpers.createTableCell('Change', getReadableChange(log)));
         row.appendChild(helpers.createTableCell(
           'Manager',
-          log.actorName || log.actorEmail || 'Manager account'
+          log.actorName || log.actorEmail || '—'
         ));
         const staffCell = helpers.createElement('td', {
           attributes: { 'data-label': 'Staff member' }
@@ -212,7 +211,7 @@ window.SmartSchedule.auditLogsUi = (function createAuditLogsUi() {
     });
     panel.appendChild(helpers.createPanelHeading(
       'Employee access',
-      'View, print-request and denied access events are append-only. Employee names here are ordinary text.'
+      'View, print-request and denied access events are append-only.'
     ));
 
     if (state.employeeLogs.length === 0) {
@@ -239,11 +238,11 @@ window.SmartSchedule.auditLogsUi = (function createAuditLogsUi() {
         row.appendChild(helpers.createTableCell('Action', getAccessAction(log.action)));
         row.appendChild(helpers.createTableCell(
           'Account',
-          log.actorName || log.actorEmail || 'Authenticated account'
+          log.actorName || log.actorEmail || '—'
         ));
         row.appendChild(helpers.createTableCell(
           'Employee',
-          log.targetEmployeeName || 'Employee record unavailable'
+          log.targetEmployeeName || '—'
         ));
         row.appendChild(helpers.createTableCell('Result', helpers.formatStatus(log.result)));
         row.appendChild(helpers.createTableCell(
@@ -311,6 +310,16 @@ window.SmartSchedule.auditLogsUi = (function createAuditLogsUi() {
         className: 'content-panel content-panel--span-16 audit-log-tabs-panel'
       });
       tabPanel.appendChild(renderTabs(state, actions));
+      const information = helpers.createElement('details', {
+        className: 'audit-log-information'
+      });
+      information.appendChild(helpers.createElement('summary', {
+        text: 'About these records'
+      }));
+      information.appendChild(helpers.createElement('p', {
+        text: 'Smart Schedule records rota changes and access to protected Employee Summaries. The records are append-only. Routine navigation and background refreshes are not recorded.'
+      }));
+      tabPanel.appendChild(information);
       grid.appendChild(tabPanel);
 
       if (state.loading) {

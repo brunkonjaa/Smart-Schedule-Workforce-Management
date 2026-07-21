@@ -4545,6 +4545,339 @@ body[data-theme='dark'] .chat-status[data-tone='error'] { color: #fca5a5; }
   outline-offset: 3px;
 }
 
+.audit-log-information {
+  width: min(620px, 100%);
+  margin-top: 10px;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+}
+
+.audit-log-information summary {
+  width: fit-content;
+  color: var(--text);
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.audit-log-information p {
+  margin: 8px 0 0;
+  line-height: 1.55;
+}
+
+.audit-log-information summary:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent, #4f46e5) 65%, white);
+  outline-offset: 3px;
+}
+
+.admin-workspace {
+  width: min(1160px, 100%);
+  margin-inline: auto;
+}
+
+.admin-panel {
+  min-width: 0;
+}
+
+.admin-add-form {
+  margin-top: 16px;
+}
+
+.admin-reviewer-option {
+  display: flex;
+  align-items: flex-start;
+  flex-direction: row;
+  gap: 10px;
+  padding: 12px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.admin-reviewer-option input {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  accent-color: var(--accent);
+}
+
+.admin-reviewer-password[hidden] {
+  display: none;
+}
+
+.admin-form-feedback {
+  min-height: 1.4em;
+  margin: 4px 0 0;
+  color: var(--text-muted);
+}
+
+.admin-table-wrap {
+  margin-top: 16px;
+}
+
+.admin-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.admin-table th:nth-child(1),
+.admin-table td:nth-child(1) {
+  width: 27%;
+}
+
+.admin-table th:nth-child(2),
+.admin-table td:nth-child(2) {
+  width: 20%;
+}
+
+.admin-table th:nth-child(3),
+.admin-table td:nth-child(3) {
+  width: 12%;
+}
+
+.admin-table th:nth-child(4),
+.admin-table td:nth-child(4) {
+  width: 10%;
+}
+
+.admin-table th:nth-child(5),
+.admin-table td:nth-child(5) {
+  width: 31%;
+}
+
+.admin-account-email {
+  display: block;
+  margin-top: 3px;
+  overflow-wrap: anywhere;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.admin-table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.admin-action-button {
+  min-height: 34px;
+  padding: 7px 10px;
+  font-size: 0.78rem;
+}
+
+.admin-passkey-row td {
+  padding-block: 10px 16px;
+  background: color-mix(in srgb, var(--accent-soft) 45%, transparent);
+}
+
+.admin-passkey-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-passkey-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-invitation-table th:nth-child(1),
+.admin-invitation-table td:nth-child(1) {
+  width: 28%;
+}
+
+.admin-invitation-table th:nth-child(2),
+.admin-invitation-table td:nth-child(2),
+.admin-invitation-table th:nth-child(3),
+.admin-invitation-table td:nth-child(3) {
+  width: 19%;
+}
+
+.admin-invitation-table th:nth-child(4),
+.admin-invitation-table td:nth-child(4) {
+  width: 15%;
+}
+
+.admin-invitation-table th:nth-child(5),
+.admin-invitation-table td:nth-child(5) {
+  width: 19%;
+}
+
+.admin-event-table th:nth-child(1),
+.admin-event-table td:nth-child(1) {
+  width: 20%;
+}
+
+.admin-event-table th:nth-child(2),
+.admin-event-table td:nth-child(2) {
+  width: 27%;
+}
+
+.admin-event-table th:nth-child(3),
+.admin-event-table td:nth-child(3),
+.admin-event-table th:nth-child(4),
+.admin-event-table td:nth-child(4) {
+  width: 19%;
+}
+
+.admin-event-table th:nth-child(5),
+.admin-event-table td:nth-child(5) {
+  width: 15%;
+}
+
+.admin-reauth-overlay {
+  position: fixed;
+  z-index: 220;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(15, 23, 42, 0.56);
+  backdrop-filter: blur(5px);
+}
+
+.admin-reauth-dialog {
+  width: min(460px, 100%);
+  padding: 24px;
+  color: var(--text);
+  background: var(--bg-strong);
+  border: 1px solid var(--line-strong);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+}
+
+.admin-reauth-dialog h2 {
+  margin: 0 0 8px;
+  font-size: 1.24rem;
+}
+
+.admin-reauth-feedback {
+  min-height: 1.4em;
+  color: #b42318;
+}
+
+.admin-reauth-dialog :is(button, input):focus-visible,
+.admin-workspace :is(button, input):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent, #4f46e5) 65%, white);
+  outline-offset: 3px;
+}
+
+.submission-review-banner {
+  position: relative;
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px 18px;
+  width: min(1160px, 100%);
+  margin: 0 auto 2px;
+  padding: 14px 46px 14px 16px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent-soft) 72%, var(--bg-strong));
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  border-radius: 14px;
+}
+
+.submission-review-copy strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.submission-review-copy p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.87rem;
+  line-height: 1.48;
+}
+
+.submission-review-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.submission-review-link,
+.submission-review-dismiss {
+  color: var(--accent);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-weight: 750;
+}
+
+.submission-review-link {
+  padding: 6px 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.submission-review-dismiss {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+}
+
+.submission-review-banner button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent, #4f46e5) 65%, white);
+  outline-offset: 3px;
+}
+
+body[data-page='activate-admin'] {
+  background-image:
+    linear-gradient(rgba(245, 247, 251, 0.72), rgba(245, 247, 251, 0.72)),
+    url('/assets/images/cyber_security.png');
+}
+
+body[data-theme='dark'][data-page='activate-admin'] {
+  background-image:
+    linear-gradient(rgba(9, 17, 31, 0.76), rgba(9, 17, 31, 0.76)),
+    url('/assets/images/cyber_security.png');
+}
+
+@media (max-width: 760px) {
+  .admin-table {
+    table-layout: auto;
+  }
+
+  .admin-table th,
+  .admin-table td,
+  .admin-invitation-table th,
+  .admin-invitation-table td,
+  .admin-event-table th,
+  .admin-event-table td {
+    width: auto;
+  }
+
+  .admin-table-actions,
+  .admin-passkey-list li,
+  .submission-review-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-action-button {
+    width: 100%;
+  }
+
+  .submission-review-banner {
+    grid-template-columns: 1fr;
+    padding-right: 44px;
+  }
+
+  .submission-review-actions {
+    gap: 2px;
+  }
+
+  .submission-review-link {
+    width: fit-content;
+  }
+}
+
 .content-panel--alert .panel-copy {
   white-space: pre-line;
 }

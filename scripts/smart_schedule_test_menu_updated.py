@@ -1217,7 +1217,7 @@ def run_direct_security_probes(*, prompt_screenshot: bool = True) -> int:
         )
     )
 
-    malformed = b'{"email":"broken@example.test","password":'
+    malformed = b'{"email":"ciankellyfake@gmail.com","password":'
     status, _headers, body, elapsed = request_once(
         f"{LOCAL_BASE_URL}/api/v1/auth/login",
         method="POST",
@@ -1267,7 +1267,7 @@ def run_direct_security_probes(*, prompt_screenshot: bool = True) -> int:
         )
     )
 
-    oversized_email = "a" * (34 * 1024) + "@example.test"
+    oversized_email = "a" * (34 * 1024) + "fake@gmail.com"
     status, _headers, body, elapsed = json_request(
         f"{LOCAL_BASE_URL}/api/v1/auth/login",
         method="POST",
@@ -1556,7 +1556,7 @@ def open_local_app() -> int:
     webbrowser.open(LOCAL_BASE_URL)
     print()
     print("Manual weekly rota check:")
-    print("1. Log in with the local evidence manager account.")
+    print("1. Log in as Maeve O'Connor.")
     print("2. Go to Weekly rota.")
     print("3. Check the department tabs and week controls.")
     print("4. Click Populate next week.")

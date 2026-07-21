@@ -9,6 +9,7 @@ const {
   healthRateLimiter
 } = require('./config/rate-limit');
 const authRoutes = require('./routes/auth');
+const adminRoutes = require('./routes/admin');
 const staffRoutes = require('./routes/staff');
 const leaveRequestRoutes = require('./routes/leave-requests');
 const shiftRoutes = require('./routes/shifts');
@@ -58,6 +59,7 @@ app.use('/src', express.static(frontendSourceDirectory));
 app.use('/assets', express.static(assetsDirectory));
 app.use('/api/v1', apiRateLimiter);
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/staff', staffRoutes);
 app.use('/api/v1/leave-requests', leaveRequestRoutes);
 app.use('/api/v1/shifts', shiftRoutes);

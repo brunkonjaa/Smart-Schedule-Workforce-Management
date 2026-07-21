@@ -32,16 +32,30 @@ const {
 } = require('../config/db');
 const { getMigrationStatus, runPendingMigrations } = require('../database/migrations');
 
-const evidenceDomain = 'evidence.smart-schedule.test';
-const evidenceManagerEmail = `evidence.manager@${evidenceDomain}`;
-const evidenceManagerPassword = 'EvidenceManager123!';
-const evidenceStaffPassword = 'EvidenceStaff123!';
+const evidenceDomain = 'gmail.com';
+const legacyEvidenceDomain = 'evidence.smart-schedule.test';
+const interimEvidenceDomain = 'qa.smart-schedule.test';
+const evidenceManagerEmail = `maeveoconnorfake@${evidenceDomain}`;
+const evidenceManagerPassword = process.env.LOCAL_EVIDENCE_MANAGER_PASSWORD ||
+  crypto.randomBytes(32).toString('base64url');
+const evidenceStaffPassword = process.env.LOCAL_EVIDENCE_STAFF_PASSWORD ||
+  crypto.randomBytes(32).toString('base64url');
 const evidenceWeekStart = '2026-07-13';
 const evidenceTargetShiftDate = '2026-07-15';
 const evidenceTargetShiftTime = {
   endTime: '21:00',
   startTime: '15:00'
 };
+const seededShiftNotes = [
+  'Wednesday evening bar shift',
+  'Monday bar opening',
+  'Monday bar preparation',
+  'Thursday bar preparation',
+  'Friday daytime bar shift',
+  'Wednesday late bar cover',
+  'Wednesday daytime bar shift',
+  'Tuesday bar opening'
+];
 
 const localHostnames = new Set(['localhost', '127.0.0.1', '::1']);
 
@@ -79,7 +93,7 @@ const assertLocalDatabase = () => {
 
   if (!target.present) {
     throw new Error(
-      `DATABASE_URL is missing. Copy ${path.relative(backendRoot, exampleLocalEnvPath)} to local-evidence.env and set your local PostgreSQL password.`
+      `DATABASE_URL is missing. Copy ${path.relative(backendRoot, exampleLocalEnvPath)} to local-evidence.env and add the local database connection details.`
     );
   }
 
@@ -167,7 +181,7 @@ const insertRows = async (client, tableName, columns, rows) => {
 };
 
 const staffEmail = (name) => {
-  return `${name.toLowerCase().replace(/[^a-z0-9]+/g, '.').replace(/(^\.|\.$)/g, '')}@${evidenceDomain}`;
+  return `${name.toLowerCase().replace(/[^a-z0-9]+/g, '')}fake@${evidenceDomain}`;
 };
 
 const buildStaffSeeds = () => {
@@ -175,23 +189,23 @@ const buildStaffSeeds = () => {
     {
       key: 'bestCandidate',
       contractHours: 30,
-      fullName: 'Liam Carter',
+      fullName: "Sean O'Connor",
       isActive: true,
       primaryRole: 'BAR',
       userIsActive: true
     },
     {
-      key: 'aaronTie',
+      key: 'darraghTie',
       contractHours: 24,
-      fullName: 'Aaron Doyle',
+      fullName: 'Darragh Doyle',
       isActive: true,
       primaryRole: 'BAR',
       userIsActive: true
     },
     {
-      key: 'zoeTie',
+      key: 'roisinTie',
       contractHours: 24,
-      fullName: 'Zoe Walsh',
+      fullName: 'Roisin Walsh',
       isActive: true,
       primaryRole: 'BAR',
       userIsActive: true
@@ -199,7 +213,7 @@ const buildStaffSeeds = () => {
     {
       key: 'overContract',
       contractHours: 8,
-      fullName: 'Owen Murphy',
+      fullName: 'Oisin Murphy',
       isActive: true,
       primaryRole: 'BAR',
       userIsActive: true
@@ -215,7 +229,7 @@ const buildStaffSeeds = () => {
     {
       key: 'inactive',
       contractHours: 24,
-      fullName: 'Mark Hayes',
+      fullName: 'Cormac Hayes',
       isActive: false,
       primaryRole: 'BAR',
       userIsActive: true
@@ -223,7 +237,7 @@ const buildStaffSeeds = () => {
     {
       key: 'wrongRole',
       contractHours: 24,
-      fullName: 'Claire Ryan',
+      fullName: 'Caoimhe Ryan',
       isActive: true,
       primaryRole: 'FLOOR',
       userIsActive: true
@@ -231,7 +245,7 @@ const buildStaffSeeds = () => {
     {
       key: 'leave',
       contractHours: 24,
-      fullName: 'Emma Collins',
+      fullName: 'Orla Collins',
       isActive: true,
       primaryRole: 'BAR',
       userIsActive: true
@@ -239,7 +253,7 @@ const buildStaffSeeds = () => {
     {
       key: 'barReserveOne',
       contractHours: 24,
-      fullName: 'Ryan Byrne',
+      fullName: 'Fionn Byrne',
       isActive: true,
       primaryRole: 'BAR',
       userIsActive: true
@@ -247,7 +261,7 @@ const buildStaffSeeds = () => {
     {
       key: 'barReserveTwo',
       contractHours: 24,
-      fullName: 'Chloe Flynn',
+      fullName: 'Saoirse Flynn',
       isActive: true,
       primaryRole: 'BAR',
       userIsActive: true
@@ -255,7 +269,7 @@ const buildStaffSeeds = () => {
     {
       key: 'overlap',
       contractHours: 24,
-      fullName: 'Daniel Quinn',
+      fullName: 'Cian Quinn',
       isActive: true,
       primaryRole: 'BAR',
       userIsActive: true
@@ -263,7 +277,7 @@ const buildStaffSeeds = () => {
     {
       key: 'touching',
       contractHours: 24,
-      fullName: 'Sophie Nolan',
+      fullName: 'Aisling Nolan',
       isActive: true,
       primaryRole: 'BAR',
       userIsActive: true
@@ -280,9 +294,17 @@ const buildStaffSeeds = () => {
 };
 
 const deleteExistingEvidenceData = async (client) => {
+  const currentEvidenceEmails = [
+    evidenceManagerEmail,
+    ...buildStaffSeeds().map((staffMember) => staffMember.email)
+  ];
   const usersResult = await client.query(
-    'SELECT id FROM users WHERE email LIKE $1',
-    [`%@${evidenceDomain}`]
+    'SELECT id FROM users WHERE email = ANY($1::text[]) OR email LIKE $2 OR email LIKE $3',
+    [
+      currentEvidenceEmails,
+      `%@${legacyEvidenceDomain}`,
+      `%@${interimEvidenceDomain}`
+    ]
   );
   const userIds = usersResult.rows.map((row) => row.id);
 
@@ -296,7 +318,12 @@ const deleteExistingEvidenceData = async (client) => {
   const staffIds = staffResult.rows.map((row) => row.id);
 
   const shiftResult = await client.query(
-    "SELECT id FROM shifts WHERE notes LIKE 'Evidence rota%' OR notes LIKE 'Evidence recommendation%'"
+    `SELECT id
+     FROM shifts
+     WHERE notes LIKE 'Evidence rota%'
+        OR notes LIKE 'Evidence recommendation%'
+        OR notes = ANY($1::text[])`,
+    [seededShiftNotes]
   );
   const shiftIds = shiftResult.rows.map((row) => row.id);
 
@@ -324,7 +351,11 @@ const deleteExistingEvidenceData = async (client) => {
   }
 
   await client.query(
-    "DELETE FROM shifts WHERE notes LIKE 'Evidence rota%' OR notes LIKE 'Evidence recommendation%'"
+    `DELETE FROM shifts
+     WHERE notes LIKE 'Evidence rota%'
+        OR notes LIKE 'Evidence recommendation%'
+        OR notes = ANY($1::text[])`,
+    [seededShiftNotes]
   );
 
   if (userIds.length > 0) {
@@ -346,14 +377,14 @@ const seedRotaEvidence = async () => {
   const staffByKey = new Map(staffSeeds.map((staffMember) => [staffMember.key, staffMember]));
 
   const shiftIds = {
-    aaronHours: crypto.randomUUID(),
+    darraghHours: crypto.randomUUID(),
     heavyHoursOne: crypto.randomUUID(),
     heavyHoursTwo: crypto.randomUUID(),
     overlapExisting: crypto.randomUUID(),
     overContractHours: crypto.randomUUID(),
     target: crypto.randomUUID(),
     touchingExisting: crypto.randomUUID(),
-    zoeHours: crypto.randomUUID()
+    roisinHours: crypto.randomUUID()
   };
 
   await withTransaction(async (client) => {
@@ -417,7 +448,7 @@ const seedRotaEvidence = async () => {
         {
           contract_hours: 40,
           created_at: new Date(),
-          full_name: 'Evidence Manager',
+          full_name: "Maeve O'Connor",
           id: managerStaffProfileId,
           is_active: true,
           phone_number: '0857101000',
@@ -458,7 +489,7 @@ const seedRotaEvidence = async () => {
           created_at: new Date(),
           end_time: evidenceTargetShiftTime.endTime,
           id: shiftIds.target,
-          notes: 'Evidence rota target shift',
+          notes: seededShiftNotes[0],
           required_role: 'BAR',
           shift_date: evidenceTargetShiftDate,
           start_time: evidenceTargetShiftTime.startTime,
@@ -468,8 +499,8 @@ const seedRotaEvidence = async () => {
         {
           created_at: new Date(),
           end_time: '17:00',
-          id: shiftIds.aaronHours,
-          notes: 'Evidence rota Aaron current hours',
+          id: shiftIds.darraghHours,
+          notes: seededShiftNotes[1],
           required_role: 'BAR',
           shift_date: '2026-07-13',
           start_time: '09:00',
@@ -480,7 +511,7 @@ const seedRotaEvidence = async () => {
           created_at: new Date(),
           end_time: '18:00',
           id: shiftIds.heavyHoursOne,
-          notes: 'Evidence rota heavy current hours one',
+          notes: seededShiftNotes[2],
           required_role: 'BAR',
           shift_date: '2026-07-13',
           start_time: '08:00',
@@ -491,7 +522,7 @@ const seedRotaEvidence = async () => {
           created_at: new Date(),
           end_time: '16:00',
           id: shiftIds.heavyHoursTwo,
-          notes: 'Evidence rota heavy current hours two',
+          notes: seededShiftNotes[3],
           required_role: 'BAR',
           shift_date: '2026-07-16',
           start_time: '08:00',
@@ -502,7 +533,7 @@ const seedRotaEvidence = async () => {
           created_at: new Date(),
           end_time: '16:00',
           id: shiftIds.overContractHours,
-          notes: 'Evidence rota over contract hours',
+          notes: seededShiftNotes[4],
           required_role: 'BAR',
           shift_date: '2026-07-17',
           start_time: '08:00',
@@ -513,7 +544,7 @@ const seedRotaEvidence = async () => {
           created_at: new Date(),
           end_time: '23:00',
           id: shiftIds.overlapExisting,
-          notes: 'Evidence rota overlap existing shift',
+          notes: seededShiftNotes[5],
           required_role: 'BAR',
           shift_date: evidenceTargetShiftDate,
           start_time: '18:00',
@@ -524,7 +555,7 @@ const seedRotaEvidence = async () => {
           created_at: new Date(),
           end_time: '15:00',
           id: shiftIds.touchingExisting,
-          notes: 'Evidence rota touching existing shift',
+          notes: seededShiftNotes[6],
           required_role: 'BAR',
           shift_date: evidenceTargetShiftDate,
           start_time: '09:00',
@@ -534,8 +565,8 @@ const seedRotaEvidence = async () => {
         {
           created_at: new Date(),
           end_time: '17:00',
-          id: shiftIds.zoeHours,
-          notes: 'Evidence rota Zoe current hours',
+          id: shiftIds.roisinHours,
+          notes: seededShiftNotes[7],
           required_role: 'BAR',
           shift_date: '2026-07-14',
           start_time: '09:00',
@@ -566,8 +597,8 @@ const seedRotaEvidence = async () => {
           decided_at: new Date(),
           decided_by_user_id: managerUserId,
           end_date: evidenceTargetShiftDate,
-          manager_comment: 'Approved for local rota evidence',
-          reason: 'Local rota evidence leave',
+          manager_comment: 'Approved',
+          reason: 'Annual leave',
           staff_profile_id: staffByKey.get('leave').id,
           start_date: evidenceTargetShiftDate,
           status: 'APPROVED',
@@ -592,16 +623,16 @@ const seedRotaEvidence = async () => {
           assigned_at: new Date(),
           assigned_by_user_id: managerUserId,
           created_at: new Date(),
-          shift_id: shiftIds.aaronHours,
-          staff_profile_id: staffByKey.get('aaronTie').id,
+          shift_id: shiftIds.darraghHours,
+          staff_profile_id: staffByKey.get('darraghTie').id,
           updated_at: new Date()
         },
         {
           assigned_at: new Date(),
           assigned_by_user_id: managerUserId,
           created_at: new Date(),
-          shift_id: shiftIds.zoeHours,
-          staff_profile_id: staffByKey.get('zoeTie').id,
+          shift_id: shiftIds.roisinHours,
+          staff_profile_id: staffByKey.get('roisinTie').id,
           updated_at: new Date()
         },
         {
@@ -650,7 +681,7 @@ const seedRotaEvidence = async () => {
 
   console.log('Local rota evidence data seeded.');
   console.log(`Manager login: ${evidenceManagerEmail}`);
-  console.log(`Manager password: ${evidenceManagerPassword}`);
+  console.log('Local evidence credentials were prepared without printing the password.');
   console.log(`Week start: ${evidenceWeekStart}`);
   console.log(
     `Target shift: ${evidenceTargetShiftDate} ${evidenceTargetShiftTime.startTime}-${evidenceTargetShiftTime.endTime} BAR`

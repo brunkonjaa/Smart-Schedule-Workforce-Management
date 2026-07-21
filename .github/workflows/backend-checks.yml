@@ -52,11 +52,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate isolated CI password pepper
+        run: node -e "const fs=require('fs'),crypto=require('crypto');fs.appendFileSync(process.env.GITHUB_ENV,'PASSWORD_PEPPER_CURRENT_VERSION=1\\nPASSWORD_PEPPER_V1='+crypto.randomBytes(32).toString('base64url')+'\\n')"
+
       - name: Apply migrations
         run: npm run db:migrate
 
       - name: Run tests with coverage
         run: npm run test:coverage
+
+      - name: Measure password hashing under concurrent load
+        run: npm run security:benchmark
 
       - name: Check production dependency advisories
         run: npm audit --omit=dev

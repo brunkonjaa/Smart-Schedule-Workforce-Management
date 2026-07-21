@@ -14,7 +14,7 @@ describe('auth routes', () => {
   const changedPassword = 'SmartScheduleChanged123!';
   const testUserId = crypto.randomUUID();
   const testStaffProfileId = crypto.randomUUID();
-  const testEmail = `auth-test-${Date.now()}@example.com`;
+  const testEmail = `aidanorourke${Date.now()}fake@gmail.com`;
   const mutationHeader = {
     [mutationProtectionHeaderName]: '1'
   };
@@ -67,7 +67,7 @@ describe('auth routes', () => {
           created_at,
           updated_at
         )
-        VALUES ($1, $2, 'Auth Test User', 'FLOOR', 40.00, '0859999999', TRUE, NOW(), NOW())
+        VALUES ($1, $2, 'Aidan O''Rourke', 'FLOOR', 40.00, '0859999999', TRUE, NOW(), NOW())
       `,
       [testStaffProfileId, testUserId]
     );
@@ -90,7 +90,7 @@ describe('auth routes', () => {
       message: 'Login successful.',
       user: {
         email: testEmail,
-        fullName: 'Auth Test User',
+        fullName: "Aidan O'Rourke",
         id: testUserId,
         mustChangePassword: false,
         primaryRole: 'FLOOR',
@@ -161,7 +161,7 @@ describe('auth routes', () => {
     expect(meResponse.body).toEqual({
       user: {
         email: testEmail,
-        fullName: 'Auth Test User',
+        fullName: "Aidan O'Rourke",
         id: testUserId,
         mustChangePassword: false,
         primaryRole: 'FLOOR',
@@ -262,7 +262,7 @@ describe('auth routes', () => {
       message: 'Password changed successfully.',
       user: {
         email: testEmail,
-        fullName: 'Auth Test User',
+        fullName: "Aidan O'Rourke",
         id: testUserId,
         mustChangePassword: false,
         primaryRole: 'FLOOR',

@@ -37,7 +37,7 @@ const measure = async (path, options = {}) => {
 const login = async () => {
   const response = await fetch(`${baseUrl}/api/v1/auth/login`, {
     body: JSON.stringify({
-      email: 'evidence.manager@evidence.smart-schedule.test',
+      email: 'maeveoconnorfake@gmail.com',
       password: 'EvidenceManager123!'
     }),
     headers: { 'content-type': 'application/json' },

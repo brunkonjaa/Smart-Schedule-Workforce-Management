@@ -12,8 +12,8 @@ describe('password reset routes', () => {
   const managerProfileId = crypto.randomUUID();
   const staffId = crypto.randomUUID();
   const staffProfileId = crypto.randomUUID();
-  const managerEmail = `reset-manager-${Date.now()}@example.com`;
-  const staffEmail = `reset-staff-${Date.now()}@example.com`;
+  const managerEmail = `orlamccarthy${Date.now()}fake@gmail.com`;
+  const staffEmail = `cillianbyrne${Date.now()}fake@gmail.com`;
   const oldPassword = 'ResetOldPassword123!';
   const newPassword = 'ResetNewPassword123!';
   const mutationHeader = { [mutationProtectionHeaderName]: '1' };
@@ -34,8 +34,8 @@ describe('password reset routes', () => {
     );
     await query(
       `INSERT INTO staff_profiles (id, user_id, full_name, primary_role, contract_hours, is_active, created_at, updated_at)
-       VALUES ($1, $2, 'Reset Manager', 'FLOOR', 40, TRUE, NOW(), NOW()),
-              ($3, $4, 'Reset Staff', 'BAR', 24, TRUE, NOW(), NOW())`,
+       VALUES ($1, $2, 'Orla McCarthy', 'FLOOR', 40, TRUE, NOW(), NOW()),
+              ($3, $4, 'Cillian Byrne', 'BAR', 24, TRUE, NOW(), NOW())`,
       [managerProfileId, managerId, staffProfileId, staffId]
     );
   });
@@ -60,7 +60,7 @@ describe('password reset routes', () => {
     const managerResponse = await manager.get('/api/v1/auth/password-reset/requests');
     expect(managerResponse.status).toBe(200);
     expect(managerResponse.body.requests).toEqual(
-      expect.arrayContaining([expect.objectContaining({ email: staffEmail, fullName: 'Reset Staff' })])
+      expect.arrayContaining([expect.objectContaining({ email: staffEmail, fullName: 'Cillian Byrne' })])
     );
 
     const staff = await login(staffEmail, oldPassword);
@@ -94,5 +94,16 @@ describe('password reset routes', () => {
       password: newPassword
     });
     expect(loginResponse.status).toBe(200);
+
+    const storedPassword = await query(
+      `SELECT password_hash, password_scheme, password_pepper_version
+       FROM users WHERE id = $1`,
+      [staffId]
+    );
+    expect(storedPassword.rows[0]).toEqual(expect.objectContaining({
+      password_pepper_version: 1,
+      password_scheme: 'ARGON2ID_PEPPERED'
+    }));
+    expect(storedPassword.rows[0].password_hash).toMatch(/^\$argon2id\$/);
   });
 });

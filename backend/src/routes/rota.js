@@ -1,5 +1,5 @@
 const express = require('express');
-const { requireAuth, requireRole } = require('../middleware/auth');
+const { requireRole } = require('../middleware/auth');
 const {
   buildRotaFilters,
   getRota,
@@ -34,7 +34,7 @@ router.get(
 
 router.get(
   '/',
-  requireAuth,
+  requireRole('STAFF', 'MANAGER'),
   asyncHandler(async (request, response) => {
     const { details, filters } = buildRotaFilters(request.query);
 

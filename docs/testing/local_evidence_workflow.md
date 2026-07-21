@@ -29,20 +29,17 @@ npm run db:seed:demo-history:reset
 npm run db:seed:staff-history
 ```
 
-The first command creates 24 active Irish-named staff records, Monday-Friday demo shifts, and the current/next week. The second command gives `alexbyrnefake@gmail.com` two assigned shifts in each of the previous twelve weeks.
+The first command creates 24 active Irish-named staff records, Monday-Friday demo shifts, and the current/next week. The second command gives Aoife O'Sullivan (`aoifeosullivanfake@gmail.com`) two assigned shifts in each of the previous twelve weeks. The `fake` part is deliberate, so the Gmail-format address is not presented as a real staff address.
 
 ## Evidence accounts
 
-The local evidence manager is:
+For this local check, use `Maeve O'Connor` at `maeveoconnorfake@gmail.com`. Her credentials remain in the ignored local environment or exist only for that seed run. They are not printed or written into this document.
 
-```text
-evidence.manager@evidence.smart-schedule.test
-EvidenceManager123!
-```
+If old local chat messages are no longer useful, run `npm run local:chat:reset` from `backend`. This removes local messages, read markers and direct conversations, then leaves the workplace room ready for new messages. The command refuses a non-local database.
 
 The controlled rota week is `2026-07-13`. It contains staff, shifts, leave and assignment-limit cases for repeatable manager testing.
 
-The local seed script prints the exact account names and domain it creates. Do not put local passwords or reset tokens into committed screenshots or Markdown.
+The local seed script prints the account names and fake domain it creates, but it does not print passwords. Do not put local passwords or reset tokens into committed screenshots or Markdown.
 
 ## Safety rule
 

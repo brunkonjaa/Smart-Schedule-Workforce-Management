@@ -29,9 +29,9 @@ describe('assignment routes', () => {
   const staffProfileId = crypto.randomUUID();
   const secondStaffUserId = crypto.randomUUID();
   const secondStaffProfileId = crypto.randomUUID();
-  const managerEmail = `assignment-manager-${Date.now()}@example.com`;
-  const staffEmail = `assignment-staff-${Date.now()}@example.com`;
-  const secondStaffEmail = `assignment-second-staff-${Date.now()}@example.com`;
+  const managerEmail = `fionamurphy${Date.now()}fake@gmail.com`;
+  const staffEmail = `conorbyrne${Date.now()}fake@gmail.com`;
+  const secondStaffEmail = `niamhwalsh${Date.now()}fake@gmail.com`;
   const managerPassword = 'AssignmentManager123!';
   const staffPassword = 'AssignmentStaff123!';
   const secondStaffPassword = 'AssignmentSecondStaff123!';
@@ -97,9 +97,9 @@ describe('assignment routes', () => {
           updated_at
         )
         VALUES
-          ($1, $2, 'Assignment Manager', 'FLOOR', 40.00, '0855000001', TRUE, NOW(), NOW()),
-          ($3, $4, 'Assignment Staff', 'BAR', 28.00, '0855000002', TRUE, NOW(), NOW()),
-          ($5, $6, 'Assignment Second Staff', 'BAR', 24.00, '0855000003', TRUE, NOW(), NOW())
+          ($1, $2, 'Fiona Murphy', 'FLOOR', 40.00, '0855000001', TRUE, NOW(), NOW()),
+          ($3, $4, 'Conor Byrne', 'BAR', 28.00, '0855000002', TRUE, NOW(), NOW()),
+          ($5, $6, 'Niamh Walsh', 'BAR', 24.00, '0855000003', TRUE, NOW(), NOW())
       `,
       [
         managerStaffProfileId,
@@ -302,7 +302,7 @@ describe('assignment routes', () => {
     expect(response.body.assignments).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          fullName: 'Assignment Staff',
+          fullName: 'Conor Byrne',
           requiredRole: 'BAR',
           shiftDate: duplicateShiftDate,
           shiftId: duplicateShiftId,
@@ -356,7 +356,7 @@ describe('assignment routes', () => {
       expect.objectContaining({
         assignedByUserId: managerId,
         endTime: '22:00:00',
-        fullName: 'Assignment Staff',
+        fullName: 'Conor Byrne',
         requiredRole: 'BAR',
         shiftDate: assignableShiftDate,
         shiftId: assignableShiftId,
@@ -401,7 +401,7 @@ describe('assignment routes', () => {
     expect(response.status).toBe(200);
     expect(response.body.assignment).toEqual(
       expect.objectContaining({
-        fullName: 'Assignment Second Staff',
+        fullName: 'Niamh Walsh',
         shiftId: updateAssignmentShiftId,
         staffProfileId: secondStaffProfileId
       })
@@ -612,7 +612,7 @@ describe('assignment routes', () => {
     const contractWarningShiftId = crypto.randomUUID();
     const firstExistingAssignmentId = crypto.randomUUID();
     const secondExistingAssignmentId = crypto.randomUUID();
-    const contractEmail = `assignment-contract-warning-${Date.now()}@example.com`;
+    const contractEmail = `grainneoconnor${Date.now()}fake@gmail.com`;
     const contractPasswordHash = await bcrypt.hash('AssignmentContract123!', 10);
     const firstShiftDate = getDateFromWeek(nextWeekStart, 0);
     const secondShiftDate = getDateFromWeek(nextWeekStart, 1);
@@ -640,7 +640,7 @@ describe('assignment routes', () => {
             created_at,
             updated_at
           )
-          VALUES ($1, $2, 'Contract Warning Staff', 'BAR', 20.00, '0855000099', TRUE, NOW(), NOW())
+          VALUES ($1, $2, 'Grainne O''Connor', 'BAR', 20.00, '0855000099', TRUE, NOW(), NOW())
         `,
         [contractStaffProfileId, contractUserId]
       );
@@ -716,7 +716,7 @@ describe('assignment routes', () => {
           weekStart: nextWeekStart
         })
       ]);
-      expect(response.body.warnings[0].message).toContain('Contract Warning Staff');
+      expect(response.body.warnings[0].message).toContain("Grainne O'Connor");
     } finally {
       await query(
         'DELETE FROM shift_assignments WHERE shift_id IN ($1, $2, $3)',
@@ -740,7 +740,7 @@ describe('assignment routes', () => {
     const targetShiftId = crypto.randomUUID();
     const existingShiftIds = Array.from({ length: 5 }, () => crypto.randomUUID());
     const existingAssignmentIds = Array.from({ length: 5 }, () => crypto.randomUUID());
-    const limitEmail = `assignment-weekly-shift-limit-${Date.now()}@example.com`;
+    const limitEmail = `orankelly${Date.now()}fake@gmail.com`;
     const limitPasswordHash = await bcrypt.hash('AssignmentShiftLimit123!', 10);
     const existingShiftDates = Array.from({ length: 5 }, (_, index) => {
       return getDateFromWeek(nextWeekStart, index);
@@ -769,7 +769,7 @@ describe('assignment routes', () => {
             created_at,
             updated_at
           )
-          VALUES ($1, $2, 'Weekly Shift Limit Staff', 'BAR', 40.00, '0855000100', TRUE, NOW(), NOW())
+          VALUES ($1, $2, 'Oran Kelly', 'BAR', 40.00, '0855000100', TRUE, NOW(), NOW())
         `,
         [limitStaffProfileId, limitUserId]
       );
@@ -866,7 +866,7 @@ describe('assignment routes', () => {
     const targetShiftId = crypto.randomUUID();
     const existingShiftIds = Array.from({ length: 4 }, () => crypto.randomUUID());
     const existingAssignmentIds = Array.from({ length: 4 }, () => crypto.randomUUID());
-    const hoursEmail = `assignment-weekly-hours-limit-${Date.now()}@example.com`;
+    const hoursEmail = `sineaddoyle${Date.now()}fake@gmail.com`;
     const hoursPasswordHash = await bcrypt.hash('AssignmentHoursLimit123!', 10);
     const existingShiftDates = Array.from({ length: 4 }, (_, index) => {
       return getDateFromWeek(nextWeekStart, index);
@@ -895,7 +895,7 @@ describe('assignment routes', () => {
             created_at,
             updated_at
           )
-          VALUES ($1, $2, 'Weekly Hours Limit Staff', 'BAR', 40.00, '0855000101', TRUE, NOW(), NOW())
+          VALUES ($1, $2, 'Sinead Doyle', 'BAR', 40.00, '0855000101', TRUE, NOW(), NOW())
         `,
         [hoursStaffProfileId, hoursUserId]
       );

@@ -24,9 +24,9 @@ describe('leave request routes', () => {
   const otherStaffProfileId = crypto.randomUUID();
   const pendingLeaveId = crypto.randomUUID();
   const approvedLeaveId = crypto.randomUUID();
-  const managerEmail = `leave-manager-${Date.now()}@example.com`;
-  const staffEmail = `leave-staff-${Date.now()}@example.com`;
-  const otherStaffEmail = `leave-other-${Date.now()}@example.com`;
+  const managerEmail = `niallbyrne${Date.now()}fake@gmail.com`;
+  const staffEmail = `caoimhewalsh${Date.now()}fake@gmail.com`;
+  const otherStaffEmail = `tadhgmurphy${Date.now()}fake@gmail.com`;
   const managerPassword = 'LeaveManager123!';
   const staffPassword = 'LeaveStaff123!';
   const mutationHeader = {
@@ -71,9 +71,9 @@ describe('leave request routes', () => {
           updated_at
         )
         VALUES
-          ($1, $2, 'Leave Manager', 'FLOOR', 40.00, '0853000001', TRUE, NOW(), NOW()),
-          ($3, $4, 'Leave Staff', 'BAR', 28.00, '0853000002', TRUE, NOW(), NOW()),
-          ($5, $6, 'Leave Other', 'KITCHEN', 30.00, '0853000003', TRUE, NOW(), NOW())
+          ($1, $2, 'Niall Byrne', 'FLOOR', 40.00, '0853000001', TRUE, NOW(), NOW()),
+          ($3, $4, 'Caoimhe Walsh', 'BAR', 28.00, '0853000002', TRUE, NOW(), NOW()),
+          ($5, $6, 'Tadhg Murphy', 'KITCHEN', 30.00, '0853000003', TRUE, NOW(), NOW())
       `,
       [
         managerStaffProfileId,
@@ -183,11 +183,11 @@ describe('leave request routes', () => {
       expect.arrayContaining([
         expect.objectContaining({
           id: pendingLeaveId,
-          fullName: 'Leave Staff'
+          fullName: 'Caoimhe Walsh'
         }),
         expect.objectContaining({
           id: approvedLeaveId,
-          fullName: 'Leave Other'
+          fullName: 'Tadhg Murphy'
         })
       ])
     );

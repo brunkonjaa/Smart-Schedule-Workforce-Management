@@ -182,6 +182,11 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     return new URLSearchParams(hashQuery).get('token') || '';
   };
 
+  const getInvitationToken = () => {
+    const hashQuery = window.location.hash.split('?')[1] || '';
+    return new URLSearchParams(hashQuery).get('token') || '';
+  };
+
   const renderPasswordResetRequest = (workspaceElement, flashMessage = null) => {
     workspaceElement.textContent = '';
     const grid = createElement('div', { className: 'workspace-grid workspace-grid--login' });
@@ -283,14 +288,22 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
   };
 
   const navigateToUserHome = (user) => {
-    const nextRole = user.role === 'MANAGER' ? 'manager' : 'staff';
+    const nextRole = user.role === 'ADMIN'
+      ? 'admin'
+      : user.role === 'MANAGER'
+        ? 'manager'
+        : 'staff';
     const state = previewState.get();
     const returnRoute = state.summaryReturnRoute;
     const summaryRoute = returnRoute
       ? employeeSummaryUi.parseRoute(returnRoute)
       : null;
     const canReturnToSummary = nextRole === 'manager' && summaryRoute;
-    const nextPage = canReturnToSummary ? summaryRoute.sourcePage : 'rota';
+    const nextPage = nextRole === 'admin'
+      ? 'admin'
+      : canReturnToSummary
+        ? summaryRoute.sourcePage
+        : 'rota';
 
     previewState.set({
       ...state,
@@ -305,12 +318,149 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
       : nextPage;
   };
 
+  const renderAdminActivationPasskey = (workspaceElement, flashMessage = null) => {
+    workspaceElement.textContent = '';
+    const grid = createElement('div', { className: 'workspace-grid workspace-grid--login admin-activation-workspace' });
+    const panel = createElement('section', {
+      className: 'content-panel content-panel--form content-panel--span-8 admin-activation-panel'
+    });
+    panel.appendChild(createElement('div', { className: 'panel-heading' }));
+    panel.lastChild.append(
+      createElement('h3', { text: 'Register administrator passkey' }),
+      createElement('p', {
+        className: 'panel-copy',
+        text: 'The password is saved. Register a passkey now to activate this administrator account.'
+      })
+    );
+    if (flashMessage) {
+      panel.appendChild(createElement('p', {
+        className: `panel-copy panel-copy--${flashMessage.tone}`,
+        text: flashMessage.text,
+        attributes: { role: 'alert' }
+      }));
+    }
+    const button = createElement('button', {
+      className: 'action-button button-primary',
+      text: flashMessage ? 'Try passkey setup again' : 'Register passkey',
+      attributes: { type: 'button' }
+    });
+    button.addEventListener('click', async () => {
+      try {
+        if (!window.PublicKeyCredential || !navigator.credentials) {
+          throw new Error('This browser does not support passkeys.');
+        }
+        button.disabled = true;
+        button.textContent = 'Waiting for passkey...';
+        const optionResult = await apiClient.post('/api/v1/auth/passkeys/registration/options', {});
+        const credential = await navigator.credentials.create({
+          publicKey: prepareRegistrationOptions(optionResult.options)
+        });
+        const result = await apiClient.post(
+          '/api/v1/auth/passkeys/registration/verify',
+          serializeRegistrationCredential(credential)
+        );
+        navigateToUserHome(result.user);
+      } catch (error) {
+        renderAdminActivationPasskey(workspaceElement, {
+          text: getPasskeyRegistrationErrorMessage(error),
+          tone: 'error'
+        });
+      }
+    });
+    panel.appendChild(button);
+    grid.appendChild(panel);
+    workspaceElement.appendChild(grid);
+  };
+
+  const renderAdminActivation = (workspaceElement, token, flashMessage = null) => {
+    workspaceElement.textContent = '';
+    const grid = createElement('div', { className: 'workspace-grid workspace-grid--login admin-activation-workspace' });
+    const panel = createElement('section', {
+      className: 'content-panel content-panel--form content-panel--span-8 admin-activation-panel'
+    });
+    const heading = createElement('div', { className: 'panel-heading' });
+    heading.append(
+      createElement('h3', { text: 'Choose administrator password' }),
+      createElement('p', {
+        className: 'panel-copy',
+        text: 'Use at least 15 characters. Spaces and Unicode are allowed, and a passkey is registered in the next step.'
+      })
+    );
+    panel.appendChild(heading);
+    if (flashMessage) {
+      panel.appendChild(createElement('p', {
+        className: `panel-copy panel-copy--${flashMessage.tone}`,
+        text: flashMessage.text,
+        attributes: { role: 'alert' }
+      }));
+    }
+    const form = createElement('form', {
+      className: 'form-shell',
+      attributes: { autocomplete: 'off', novalidate: true }
+    });
+    const formGrid = createElement('div', { className: 'form-grid' });
+    const password = createElement('input', {
+      className: 'input-control',
+      attributes: { autocomplete: 'new-password', required: true, type: 'password' }
+    });
+    const confirmation = createElement('input', {
+      className: 'input-control',
+      attributes: { autocomplete: 'new-password', required: true, type: 'password' }
+    });
+    [['Password', password], ['Confirm password', confirmation]].forEach(([labelText, input]) => {
+      const field = createElement('label', { className: 'form-field form-field--span-12' });
+      field.append(createElement('span', { text: labelText }), input);
+      formGrid.appendChild(field);
+    });
+    form.appendChild(formGrid);
+    const submit = createElement('button', {
+      className: 'action-button button-primary',
+      text: 'Save password and continue',
+      attributes: { type: 'submit' }
+    });
+    form.appendChild(createElement('div', { className: 'actions-row' }));
+    form.lastChild.appendChild(submit);
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (password.value !== confirmation.value) {
+        renderAdminActivation(workspaceElement, token, {
+          text: 'The passwords do not match.',
+          tone: 'error'
+        });
+        return;
+      }
+      submit.disabled = true;
+      submit.textContent = 'Saving...';
+      try {
+        await apiClient.post('/api/v1/auth/admin-invitations/accept', {
+          password: password.value,
+          token
+        });
+        password.value = '';
+        confirmation.value = '';
+        renderAdminActivationPasskey(workspaceElement);
+      } catch (error) {
+        password.value = '';
+        confirmation.value = '';
+        renderAdminActivation(workspaceElement, token, {
+          text: error.status
+            ? error.message
+            : 'The administrator invitation could not be completed.',
+          tone: 'error'
+        });
+      }
+    });
+    panel.appendChild(form);
+    grid.appendChild(panel);
+    workspaceElement.appendChild(grid);
+  };
+
   const renderPasskeyLogin = (workspaceElement, renderToken, flashMessage = null) => {
     workspaceElement.textContent = '';
     const grid = createElement('div', { className: 'workspace-grid workspace-grid--login' });
     const panel = createElement('section', { className: 'content-panel content-panel--form content-panel--span-8' });
     const heading = createElement('div', { className: 'panel-heading' });
-    heading.appendChild(createElement('h3', { text: 'Confirm manager sign-in' }));
+    heading.appendChild(createElement('h3', { text: 'Confirm privileged sign-in' }));
     heading.appendChild(createElement('p', { className: 'panel-copy', text: 'Use Windows Hello, your phone, fingerprint, or security key to confirm it is you.' }));
     panel.appendChild(heading);
     if (flashMessage) {
@@ -349,8 +499,24 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     workspaceElement.appendChild(grid);
   };
 
+  const updateAccountIntro = (signedIn) => {
+    const intro = document.getElementById('page-intro');
+    if (!intro) return;
+    const kicker = intro.querySelector('.intro-kicker');
+    const title = intro.querySelector('h2');
+    const summary = intro.querySelector('.intro-summary');
+    if (kicker) kicker.textContent = signedIn ? 'Account security' : 'Sign in';
+    if (title) title.textContent = signedIn ? 'Password and passkeys' : 'Sign in';
+    if (summary) {
+      summary.textContent = signedIn
+        ? 'Change your password, reset access or manage a passkey.'
+        : 'Use your work email and password.';
+    }
+  };
+
   const renderSignedOutState = (workspaceElement, flashMessage) => {
     workspaceElement.textContent = '';
+    updateAccountIntro(false);
 
     const grid = createElement('div', { className: 'workspace-grid workspace-grid--login' });
 
@@ -433,6 +599,9 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     });
     rememberField.appendChild(rememberInput);
     rememberField.appendChild(createElement('span', { text: 'Remember me' }));
+    rememberField.appendChild(createElement('small', {
+      text: 'Administrator sessions always ignore this option.'
+    }));
     formGrid.appendChild(rememberField);
 
     clearLoginInputs(emailInput, passwordInput, rememberInput);
@@ -499,6 +668,7 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     renderToken = null
   ) => {
     workspaceElement.textContent = '';
+    updateAccountIntro(true);
     uiHelpers.renderIntroMetrics([
       {
         label: 'Signed in as',
@@ -544,7 +714,9 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     heading.appendChild(
       createElement('p', {
         className: 'panel-copy',
-        text: 'Open the rota or sign out.'
+        text: sessionUser.role === 'ADMIN'
+          ? 'Open the Admin workspace or sign out.'
+          : 'Open the rota or sign out.'
       })
     );
     panel.appendChild(heading);
@@ -552,7 +724,7 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     const actionsRow = createElement('div', { className: 'actions-row' });
     const homeButton = createElement('button', {
       className: 'action-button button-primary',
-      text: 'Open rota',
+      text: sessionUser.role === 'ADMIN' ? 'Open Admin' : 'Open rota',
       attributes: { type: 'button' }
     });
     homeButton.addEventListener('click', () => {
@@ -572,6 +744,7 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
         await apiClient.post('/api/v1/auth/logout', {});
         employeeSummaryUi.clearProtectedState({ clearReturnRoute: true });
         window.SmartSchedule.chatUi?.disconnect?.();
+        window.SmartSchedule.submissionReviewUi?.clearDismissals?.();
         previewState.set({
           ...previewState.get(),
           loginFlash: null,
@@ -594,7 +767,8 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     grid.appendChild(panel);
 
     const passwordPanel = createElement('section', {
-      className: 'content-panel content-panel--form content-panel--span-8'
+      className: 'content-panel content-panel--form content-panel--span-8',
+      attributes: { id: 'change-password-panel' }
     });
     const passwordHeading = createElement('div', { className: 'panel-heading' });
     passwordHeading.appendChild(createElement('h3', { text: 'Password' }));
@@ -603,7 +777,11 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
         className: 'panel-copy',
         text: sessionUser.mustChangePassword
           ? 'You are signed in with a temporary password. Change it before leaving this session.'
-          : 'Change your password here when needed.'
+          : sessionUser.isSubmissionReviewer
+            ? 'Changing the password is optional for this review account.'
+            : sessionUser.role === 'ADMIN'
+              ? 'Change the administrator password here when needed.'
+              : 'Change your password here when needed.'
       })
     );
     passwordPanel.appendChild(passwordHeading);
@@ -627,6 +805,7 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
       className: 'input-control',
       attributes: {
         autocomplete: 'current-password',
+        id: 'current-password',
         type: 'password'
       }
     });
@@ -646,6 +825,10 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     });
     newPasswordField.appendChild(newPasswordInput);
     passwordGrid.appendChild(newPasswordField);
+    passwordGrid.appendChild(createElement('p', {
+      className: 'panel-copy form-field--span-12 password-rule-copy',
+      text: 'Use at least 15 characters. Spaces and Unicode are allowed; common or breached passwords are rejected.'
+    }));
 
     passwordForm.appendChild(passwordGrid);
 
@@ -743,15 +926,24 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
     resetPanel.appendChild(resetButton);
     grid.appendChild(resetPanel);
 
-    if (sessionUser.role === 'MANAGER') {
+    if (['ADMIN', 'MANAGER'].includes(sessionUser.role)) {
       const passkeyPanel = createElement('section', {
         className: 'content-panel content-panel--note content-panel--span-8'
       });
       const passkeyHeading = createElement('div', { className: 'panel-heading' });
       passkeyHeading.appendChild(createElement('h3', { text: 'Passkey protection' }));
-      passkeyHeading.appendChild(createElement('p', { className: 'panel-copy', text: 'Add a passkey to protect future manager logins with your device PIN, biometrics, phone, or security key.' }));
+      passkeyHeading.appendChild(createElement('p', {
+        className: 'panel-copy',
+        text: sessionUser.isSubmissionReviewer
+          ? 'Adding a passkey is optional for this review account. Once added, later logins require it.'
+          : `Add a passkey to protect future ${sessionUser.role === 'ADMIN' ? 'administrator' : 'manager'} logins with your device PIN, biometrics, phone, or security key.`
+      }));
       passkeyPanel.appendChild(passkeyHeading);
-      const registerButton = createElement('button', { className: 'action-button button-secondary', text: 'Add passkey', attributes: { type: 'button' } });
+      const registerButton = createElement('button', {
+        className: 'action-button button-secondary',
+        text: 'Add passkey',
+        attributes: { id: 'register-passkey', type: 'button' }
+      });
       passkeyPanel.appendChild(registerButton);
       registerButton.addEventListener('click', async () => {
         try {
@@ -779,6 +971,19 @@ window.SmartSchedule.sessionUi = (function createSessionUi() {
   };
 
   const mount = async ({ page, workspaceElement, renderToken }) => {
+    if (page.id === 'activate-admin') {
+      const token = getInvitationToken();
+      if (!token) {
+        renderAdminActivation(workspaceElement, '', {
+          text: 'This administrator invitation link is missing its one-time token.',
+          tone: 'error'
+        });
+      } else {
+        renderAdminActivation(workspaceElement, token);
+      }
+      return;
+    }
+
     if (page.id === 'reset-password') {
       const token = getResetToken();
       if (token) {

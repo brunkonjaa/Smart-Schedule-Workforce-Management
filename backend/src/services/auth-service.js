@@ -1,10 +1,16 @@
-const bcrypt = require('bcrypt');
 const { query, withTransaction } = require('../config/db');
 const { allowedWorkRoles } = require('./workflow-service-utils');
+const {
+  ARGON2ID_PEPPERED,
+  BCRYPT,
+  assertPasswordIsSafe,
+  createPasswordHash,
+  validatePassword,
+  verifyPassword
+} = require('./password-security-service');
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phonePattern = /^[0-9+\-\s()]{7,20}$/;
-const passwordHashRounds = 12;
 const legacySeedManagerEmail = 'manager@example.com';
 
 const normalizeEmail = (email) => {
@@ -23,34 +29,6 @@ const normalizePhoneNumber = (value) => {
   return value.trim();
 };
 
-const validatePassword = (password, fieldName = 'password') => {
-  const details = [];
-
-  if (typeof password !== 'string' || !password) {
-    details.push(`${fieldName} is required`);
-  } else if (password !== password.trim()) {
-    details.push(`${fieldName} cannot start or end with spaces`);
-  } else if (password.length < 12) {
-    details.push(`${fieldName} must be at least 12 characters long`);
-  } else if (password.length > 72) {
-    details.push(`${fieldName} must be 72 characters or fewer`);
-  } else if (!/[a-z]/.test(password)) {
-    details.push(`${fieldName} must include a lowercase letter`);
-  } else if (!/[A-Z]/.test(password)) {
-    details.push(`${fieldName} must include an uppercase letter`);
-  } else if (!/[0-9]/.test(password)) {
-    details.push(`${fieldName} must include a number`);
-  } else if (!/[^A-Za-z0-9]/.test(password)) {
-    details.push(`${fieldName} must include a symbol`);
-  }
-
-  return details;
-};
-
-const hashPassword = async (password) => {
-  return bcrypt.hash(password, passwordHashRounds);
-};
-
 const executeQuery = (client, text, params) => {
   if (client) {
     return client.query(text, params);
@@ -65,13 +43,18 @@ const mapUserRecord = (record) => {
   }
 
   return {
+    displayName: record.display_name || null,
     email: record.email,
-    fullName: record.staff_profile_full_name || null,
+    fullName: record.staff_profile_full_name || record.display_name || null,
     id: record.id,
     isActive: record.is_active,
+    isSubmissionReviewer: Boolean(record.is_submission_reviewer),
     mustChangePassword: Boolean(record.must_change_password),
+    passwordPepperVersion: record.password_pepper_version || null,
+    passwordScheme: record.password_scheme || BCRYPT,
     primaryRole: record.staff_profile_primary_role || null,
     role: record.role,
+    sessionVersion: Number(record.session_version || 1),
     staffProfileId: record.staff_profile_id || null,
     staffProfileIsActive:
       typeof record.staff_profile_is_active === 'boolean'
@@ -81,7 +64,7 @@ const mapUserRecord = (record) => {
 };
 
 const buildPublicUser = (user) => {
-  return {
+  const publicUser = {
     email: user.email,
     fullName: user.fullName || null,
     id: user.id,
@@ -90,6 +73,18 @@ const buildPublicUser = (user) => {
     role: user.role,
     staffProfileId: user.staffProfileId
   };
+
+  if (user.role === 'ADMIN') {
+    publicUser.displayName = user.displayName || user.fullName || null;
+    publicUser.isSubmissionReviewer = Boolean(user.isSubmissionReviewer);
+  }
+
+  Object.defineProperty(publicUser, 'sessionVersion', {
+    enumerable: false,
+    value: Number(user.sessionVersion || 1)
+  });
+
+  return publicUser;
 };
 
 const findUserByEmail = async (email, client = null) => {
@@ -101,9 +96,14 @@ const findUserByEmail = async (email, client = null) => {
       SELECT
         users.id,
         users.email,
+        users.display_name,
         users.password_hash,
+        users.password_scheme,
+        users.password_pepper_version,
         users.role,
         users.is_active,
+        users.is_submission_reviewer,
+        users.session_version,
         COALESCE(users.must_change_password, FALSE) AS must_change_password,
         staff_profiles.id AS staff_profile_id,
         staff_profiles.full_name AS staff_profile_full_name,
@@ -128,8 +128,13 @@ const findUserById = async (userId, client = null) => {
       SELECT
         users.id,
         users.email,
+        users.display_name,
         users.role,
         users.is_active,
+        users.is_submission_reviewer,
+        users.password_scheme,
+        users.password_pepper_version,
+        users.session_version,
         COALESCE(users.must_change_password, FALSE) AS must_change_password,
         staff_profiles.id AS staff_profile_id,
         staff_profiles.full_name AS staff_profile_full_name,
@@ -154,9 +159,14 @@ const findUserWithPasswordById = async (userId, client = null) => {
       SELECT
         users.id,
         users.email,
+        users.display_name,
         users.password_hash,
+        users.password_scheme,
+        users.password_pepper_version,
         users.role,
         users.is_active,
+        users.is_submission_reviewer,
+        users.session_version,
         COALESCE(users.must_change_password, FALSE) AS must_change_password,
         staff_profiles.id AS staff_profile_id,
         staff_profiles.full_name AS staff_profile_full_name,
@@ -175,26 +185,93 @@ const findUserWithPasswordById = async (userId, client = null) => {
 };
 
 const authenticateUser = async ({ email, password }) => {
-  const userRecord = await findUserByEmail(email);
+  return withTransaction(async (client) => {
+    const normalizedEmail = normalizeEmail(email);
+    const result = await client.query(
+      `
+        SELECT
+          users.id,
+          users.email,
+          users.display_name,
+          users.password_hash,
+          users.password_scheme,
+          users.password_pepper_version,
+          users.role,
+          users.is_active,
+          users.is_submission_reviewer,
+          users.session_version,
+          COALESCE(users.must_change_password, FALSE) AS must_change_password,
+          staff_profiles.id AS staff_profile_id,
+          staff_profiles.full_name AS staff_profile_full_name,
+          staff_profiles.primary_role AS staff_profile_primary_role,
+          staff_profiles.is_active AS staff_profile_is_active
+        FROM users
+        LEFT JOIN staff_profiles
+          ON staff_profiles.user_id = users.id
+        WHERE users.email = $1
+        LIMIT 1
+        FOR UPDATE OF users
+      `,
+      [normalizedEmail]
+    );
+    const userRecord = result.rows[0] || null;
 
-  if (!userRecord || !userRecord.is_active) {
-    return null;
-  }
+    if (!userRecord || !userRecord.is_active) {
+      return null;
+    }
 
-  if (
-    typeof userRecord.staff_profile_is_active === 'boolean' &&
-    !userRecord.staff_profile_is_active
-  ) {
-    return null;
-  }
+    if (
+      typeof userRecord.staff_profile_is_active === 'boolean' &&
+      !userRecord.staff_profile_is_active
+    ) {
+      return null;
+    }
 
-  const passwordMatches = await bcrypt.compare(password, userRecord.password_hash);
+    const passwordMatches = await verifyPassword({
+      password,
+      passwordHash: userRecord.password_hash,
+      passwordPepperVersion: userRecord.password_pepper_version,
+      passwordScheme: userRecord.password_scheme || BCRYPT
+    });
 
-  if (!passwordMatches) {
-    return null;
-  }
+    if (!passwordMatches) {
+      return null;
+    }
 
-  return buildPublicUser(mapUserRecord(userRecord));
+    let passwordUpgraded = false;
+
+    if ((userRecord.password_scheme || BCRYPT) === BCRYPT) {
+      const passwordRecord = await createPasswordHash(password);
+      await client.query(
+        `
+          UPDATE users
+          SET password_hash = $1,
+              password_scheme = $2,
+              password_pepper_version = $3,
+              password_changed_at = NOW(),
+              updated_at = NOW()
+          WHERE id = $4
+        `,
+        [
+          passwordRecord.passwordHash,
+          passwordRecord.passwordScheme,
+          passwordRecord.passwordPepperVersion,
+          userRecord.id
+        ]
+      );
+      userRecord.password_hash = passwordRecord.passwordHash;
+      userRecord.password_scheme = passwordRecord.passwordScheme;
+      userRecord.password_pepper_version = passwordRecord.passwordPepperVersion;
+      passwordUpgraded = true;
+    }
+
+    const publicUser = buildPublicUser(mapUserRecord(userRecord));
+    Object.defineProperty(publicUser, 'passwordUpgraded', {
+      enumerable: false,
+      value: passwordUpgraded
+    });
+    return publicUser;
+  });
 };
 
 const changeCurrentUserPassword = async ({
@@ -202,6 +279,8 @@ const changeCurrentUserPassword = async ({
   newPassword,
   userId
 }) => {
+  await assertPasswordIsSafe(newPassword);
+
   return withTransaction(async (client) => {
     const userRecord = await findUserWithPasswordById(userId, client);
 
@@ -212,10 +291,12 @@ const changeCurrentUserPassword = async ({
       };
     }
 
-    const currentPasswordMatches = await bcrypt.compare(
-      currentPassword,
-      userRecord.password_hash
-    );
+    const currentPasswordMatches = await verifyPassword({
+      password: currentPassword,
+      passwordHash: userRecord.password_hash,
+      passwordPepperVersion: userRecord.password_pepper_version,
+      passwordScheme: userRecord.password_scheme || BCRYPT
+    });
 
     if (!currentPasswordMatches) {
       return {
@@ -224,10 +305,12 @@ const changeCurrentUserPassword = async ({
       };
     }
 
-    const newPasswordMatchesExisting = await bcrypt.compare(
-      newPassword,
-      userRecord.password_hash
-    );
+    const newPasswordMatchesExisting = await verifyPassword({
+      password: newPassword,
+      passwordHash: userRecord.password_hash,
+      passwordPepperVersion: userRecord.password_pepper_version,
+      passwordScheme: userRecord.password_scheme || BCRYPT
+    });
 
     if (newPasswordMatchesExisting) {
       const error = new Error('The new password must be different from the current password.');
@@ -235,7 +318,7 @@ const changeCurrentUserPassword = async ({
       throw error;
     }
 
-    const passwordHash = await hashPassword(newPassword);
+    const passwordRecord = await createPasswordHash(newPassword);
 
     await executeQuery(
       client,
@@ -243,12 +326,20 @@ const changeCurrentUserPassword = async ({
         UPDATE users
         SET
           password_hash = $1,
+          password_scheme = $2,
+          password_pepper_version = $3,
           must_change_password = FALSE,
           password_changed_at = NOW(),
+          session_version = session_version + 1,
           updated_at = NOW()
-        WHERE id = $2
+        WHERE id = $4
       `,
-      [passwordHash, userId]
+      [
+        passwordRecord.passwordHash,
+        passwordRecord.passwordScheme,
+        passwordRecord.passwordPepperVersion,
+        userId
+      ]
     );
 
     return {
@@ -303,6 +394,8 @@ const bootstrapFirstManager = async ({
   phoneNumber,
   primaryRole
 }) => {
+  await assertPasswordIsSafe(password);
+
   return withTransaction(async (client) => {
     const bootstrapState = await getBootstrapManagerState(client);
 
@@ -312,7 +405,7 @@ const bootstrapFirstManager = async ({
       throw error;
     }
 
-    const passwordHash = await hashPassword(password);
+    const passwordRecord = await createPasswordHash(password);
     let userId = null;
     let staffProfileId = null;
 
@@ -327,12 +420,21 @@ const bootstrapFirstManager = async ({
           SET
             email = $1,
             password_hash = $2,
+            password_scheme = $3,
+            password_pepper_version = $4,
             must_change_password = FALSE,
             password_changed_at = NOW(),
+            session_version = session_version + 1,
             updated_at = NOW()
-          WHERE id = $3
+          WHERE id = $5
         `,
-        [email, passwordHash, userId]
+        [
+          email,
+          passwordRecord.passwordHash,
+          passwordRecord.passwordScheme,
+          passwordRecord.passwordPepperVersion,
+          userId
+        ]
       );
 
       if (staffProfileId) {
@@ -380,6 +482,8 @@ const bootstrapFirstManager = async ({
           INSERT INTO users (
             email,
             password_hash,
+            password_scheme,
+            password_pepper_version,
             role,
             is_active,
             must_change_password,
@@ -387,10 +491,15 @@ const bootstrapFirstManager = async ({
             created_at,
             updated_at
           )
-          VALUES ($1, $2, 'MANAGER', TRUE, FALSE, NOW(), NOW(), NOW())
+          VALUES ($1, $2, $3, $4, 'MANAGER', TRUE, FALSE, NOW(), NOW(), NOW())
           RETURNING id
         `,
-        [email, passwordHash]
+        [
+          email,
+          passwordRecord.passwordHash,
+          passwordRecord.passwordScheme,
+          passwordRecord.passwordPepperVersion
+        ]
       );
 
       userId = insertedUser.rows[0].id;
@@ -431,17 +540,19 @@ module.exports = {
   bootstrapFirstManager,
   buildPublicUser,
   changeCurrentUserPassword,
+  findUserByEmail,
   findUserById,
   getBootstrapStatus,
-  hashPassword,
+  createPasswordHash,
   legacySeedManagerEmail,
+  normalizeEmail,
   normalizeFullName,
-  normalizeEmail
-  ,
   normalizePhoneNumber,
-  passwordHashRounds,
   phonePattern,
   validatePassword,
+  verifyPassword,
+  assertPasswordIsSafe,
+  ARGON2ID_PEPPERED,
   emailPattern,
   allowedWorkRoles
 };

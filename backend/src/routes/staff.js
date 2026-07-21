@@ -52,6 +52,23 @@ const sendConflictError = (response, message) => {
   });
 };
 
+const handlePasswordSecurityError = (error, response) => {
+  if (error.code === 'BREACHED_PASSWORD') {
+    sendValidationError(response, [error.message]);
+    return true;
+  }
+
+  if (error.code === 'BREACHED_PASSWORD_CHECK_UNAVAILABLE') {
+    response.status(503).json({
+      error: 'Service Unavailable',
+      message: error.message
+    });
+    return true;
+  }
+
+  return false;
+};
+
 const logSecurityEventSafely = async (eventInput) => {
   try {
     await createSecurityEvent(eventInput);
@@ -232,6 +249,8 @@ router.post(
         );
       }
 
+      if (handlePasswordSecurityError(error, response)) return;
+
       throw error;
     }
   })
@@ -296,10 +315,16 @@ router.post(
       return sendValidationError(response, details);
     }
 
-    const updatedStaff = await resetStaffPassword(
-      request.params.staffId,
-      temporaryPassword
-    );
+    let updatedStaff;
+    try {
+      updatedStaff = await resetStaffPassword(
+        request.params.staffId,
+        temporaryPassword
+      );
+    } catch (error) {
+      if (handlePasswordSecurityError(error, response)) return;
+      throw error;
+    }
 
     if (!updatedStaff) {
       await logSecurityEventSafely({

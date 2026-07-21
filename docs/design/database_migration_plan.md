@@ -27,6 +27,9 @@ This file follows the migration order that is actually in `database/migrations/`
 21. `021_create_chat_read_states_schema.sql`
 22. `022_create_private_chat_conversations.sql`
 23. `023_extend_audit_logs_for_employee_access.sql`
+24. `024_extend_users_for_admin_and_peppered_passwords.sql`
+25. `025_create_admin_invitations.sql`
+26. `026_normalize_seed_account_addresses.sql`
 
 ## Why this order was used
 
@@ -36,9 +39,15 @@ After that, `OTHER` was added for the Kitchen Porter rota tab, audit rows were a
 
 Migration `023` came after the Audit Log and staff profile structures were already stable. I kept it narrow because Employee Summary access only needed three new allowed action values and the `STAFF_PROFILE` entity type. The existing `actor_user_id`, `entity_id`, `after_state` and timestamp fields were already enough, so adding columns or backfilling older rota events would have created risk without adding useful evidence.
 
+Migration `024` came next because the password compatibility fields and the separate Admin role had to exist before the Admin routes made sense. Existing users keep `password_scheme = BCRYPT` until a correct login. That login verifies the old hash first, then replaces it with the Argon2id result and current pepper version in the same database transaction. I chose this order because a one-off hash conversion is not possible without knowing the submitted password.
+
+Migration `025` adds the normal Admin invitation lifecycle after the Admin identity fields are present. The raw token is sent in the one-use activation link but is never stored in PostgreSQL. The table keeps its SHA-256 hash, the inviting Admin, expiry, and one of used, cancelled or expired state. I added the terminal-state check in SQL as well as the service checks because otherwise one bad update could make an invitation look used and cancelled at the same time.
+
+Migration `026` changes only the four original seed addresses. Morgan Kelly, Alex Byrne, Jamie Murphy and Casey Doyle keep the same user IDs and staff profiles. Their addresses use the existing Gmail format with `fake` added to the local part, which keeps the screenshots readable without presenting them as real staff email addresses. I added a new migration instead of editing `003` or `016` because those files had already been applied to the local database.
+
 ## Current database rules
 
-The SQL layer enforces UUID keys, foreign keys, non-negative contract hours, valid time/date ranges, allowed roles and statuses, unique assignment per shift, and token/request tables. The service layer checks role matching, Time Off, overlap, touching shifts, weekly shift/hour limits, swap eligibility, and ownership.
+The SQL layer enforces UUID keys, foreign keys, non-negative contract hours, valid time/date ranges, allowed roles and statuses, unique assignment per shift, password scheme/pepper consistency, reviewer-only Admin rows, and one terminal Admin invitation state. The service layer checks role matching, Time Off, overlap, touching shifts, weekly shift/hour limits, swap eligibility, ownership, final-Admin protection and passkey setup for ordinary Admin accounts.
 
 ## Running migrations
 

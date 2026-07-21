@@ -16,9 +16,9 @@ describe('NodyChat routes and read states', () => {
   const outsiderUserId = crypto.randomUUID();
   const outsiderProfileId = crypto.randomUUID();
   const suffix = Date.now();
-  const firstEmail = `chat-first-${suffix}@example.com`;
-  const secondEmail = `chat-second-${suffix}@example.com`;
-  const outsiderEmail = `chat-outsider-${suffix}@example.com`;
+  const firstEmail = `declanmurphy${suffix}fake@gmail.com`;
+  const secondEmail = `aoifekelly${suffix}fake@gmail.com`;
+  const outsiderEmail = `cianwalsh${suffix}fake@gmail.com`;
   const password = 'NodyChatPassword123!';
   const mutationHeader = { [mutationProtectionHeaderName]: '1' };
   let directConversationId;
@@ -41,9 +41,9 @@ describe('NodyChat routes and read states', () => {
     );
     await query(
       `INSERT INTO staff_profiles (id, user_id, full_name, primary_role, contract_hours, is_active, created_at, updated_at)
-       VALUES ($1, $2, 'Chat Manager', 'FLOOR', 40, TRUE, NOW(), NOW()),
-              ($3, $4, 'Chat Bar Staff', 'BAR', 24, TRUE, NOW(), NOW()),
-              ($5, $6, 'Chat Outsider', 'KITCHEN', 24, TRUE, NOW(), NOW())`,
+       VALUES ($1, $2, 'Declan Murphy', 'FLOOR', 40, TRUE, NOW(), NOW()),
+              ($3, $4, 'Aoife Kelly', 'BAR', 24, TRUE, NOW(), NOW()),
+              ($5, $6, 'Cian Walsh', 'KITCHEN', 24, TRUE, NOW(), NOW())`,
       [firstProfileId, firstUserId, secondProfileId, secondUserId, outsiderProfileId, outsiderUserId]
     );
   });

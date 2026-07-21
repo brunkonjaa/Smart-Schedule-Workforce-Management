@@ -5,7 +5,9 @@
   const layout = shell.layout;
   const overviewUi = shell.overviewUi;
   const auditLogsUi = shell.auditLogsUi;
+  const adminUi = shell.adminUi;
   const sessionUi = shell.sessionUi;
+  const submissionReviewUi = shell.submissionReviewUi;
   const staffManager = shell.staffManager;
   const leaveUi = shell.leaveUi;
   const swapRequestsUi = shell.swapRequestsUi;
@@ -67,7 +69,11 @@
 
   function pagesForRole(role) {
     if (role === 'guest') {
-      return allPages.filter((page) => ['login', 'reset-password'].includes(page.id));
+      return allPages.filter((page) => ['activate-admin', 'login', 'reset-password'].includes(page.id));
+    }
+
+    if (role === 'admin') {
+      return allPages.filter((page) => page.id === 'login' || page.audience === 'admin');
     }
 
     return allPages.filter((page) => page.audience === 'both' || page.audience === role);
@@ -86,7 +92,7 @@
     const previousState = stateStore.get();
     const hashPage = currentHash();
     const summaryRoute = employeeSummaryUi?.parseRoute();
-    const resolvedRole = hashPage === 'reset-password'
+    const resolvedRole = ['activate-admin', 'reset-password'].includes(hashPage)
       ? 'guest'
       : previousState.role;
     const rolePages = pagesForRole(resolvedRole);
@@ -142,6 +148,7 @@
 
   function renderNavigation(state) {
     navElement.innerHTML = pagesForRole(state.role)
+      .filter((page) => page.id !== 'activate-admin')
       .map((page) => {
         if (page.id === 'login' && state.role !== 'guest') {
           const activeClass = page.id === state.page ? ' is-active' : '';
@@ -214,6 +221,14 @@
       });
     }
 
+    if (adminUi) {
+      await adminUi.mount({
+        page,
+        renderToken,
+        workspaceElement
+      });
+    }
+
     if (leaveUi) {
       await leaveUi.mount({
         page,
@@ -267,6 +282,14 @@
 
     if (sessionUi) {
       await sessionUi.mount({
+        page,
+        renderToken,
+        workspaceElement
+      });
+    }
+
+    if (submissionReviewUi) {
+      await submissionReviewUi.mount({
         page,
         renderToken,
         workspaceElement
@@ -404,6 +427,7 @@
         .then(() => {
           employeeSummaryUi?.clearProtectedState({ clearReturnRoute: true });
           chatUi?.disconnect?.();
+          submissionReviewUi?.clearDismissals?.();
           nextState({
             loginFlash: { text: 'You have signed out.', tone: 'success' },
             page: 'login',
@@ -434,7 +458,11 @@
   brandMarkElement?.addEventListener('click', (event) => {
     event.preventDefault();
     const currentState = stateStore.get();
-    const homePage = currentState.role === 'guest' ? 'login' : 'overview';
+    const homePage = currentState.role === 'guest'
+      ? 'login'
+      : currentState.role === 'admin'
+        ? 'admin'
+        : 'overview';
 
     if (currentState.page === homePage) {
       return;

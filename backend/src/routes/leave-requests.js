@@ -48,7 +48,7 @@ const sendConflictError = (response, message) => {
 
 router.get(
   '/',
-  requireAuth,
+  requireRole('STAFF', 'MANAGER'),
   asyncHandler(async (request, response) => {
     const { details, filters } = buildLeaveRequestListFilters(request.query);
 

@@ -13,5 +13,7 @@ module.exports = {
       statements: 70
     }
   },
+  setupFiles: ['<rootDir>/jest.env.js'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testEnvironment: 'node'
 };

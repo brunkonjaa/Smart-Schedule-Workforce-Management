@@ -18,9 +18,9 @@ describe('shift swap routes', () => {
   const assignmentId = crypto.randomUUID();
   const pastShiftId = crypto.randomUUID();
   const pastAssignmentId = crypto.randomUUID();
-  const managerEmail = `swap-manager-${Date.now()}@example.com`;
-  const requesterEmail = `swap-requester-${Date.now()}@example.com`;
-  const targetEmail = `swap-target-${Date.now()}@example.com`;
+  const managerEmail = `declanoneill${Date.now()}fake@gmail.com`;
+  const requesterEmail = `eimearwalsh${Date.now()}fake@gmail.com`;
+  const targetEmail = `fionnkelly${Date.now()}fake@gmail.com`;
   const password = 'SwapPassword123!';
   const mutationHeader = { [mutationProtectionHeaderName]: '1' };
 
@@ -55,9 +55,9 @@ describe('shift swap routes', () => {
     );
     await query(
       `INSERT INTO staff_profiles (id, user_id, full_name, primary_role, contract_hours, is_active, created_at, updated_at)
-       VALUES ($1, $2, 'Swap Manager', 'FLOOR', 40, TRUE, NOW(), NOW()),
-              ($3, $4, 'Swap Requester', 'BAR', 24, TRUE, NOW(), NOW()),
-              ($5, $6, 'Swap Target', 'BAR', 24, TRUE, NOW(), NOW())`,
+       VALUES ($1, $2, 'Declan O''Neill', 'FLOOR', 40, TRUE, NOW(), NOW()),
+              ($3, $4, 'Eimear Walsh', 'BAR', 24, TRUE, NOW(), NOW()),
+              ($5, $6, 'Fionn Kelly', 'BAR', 24, TRUE, NOW(), NOW())`,
       [managerProfileId, managerId, requesterProfileId, requesterId, targetProfileId, targetId]
     );
     await query(

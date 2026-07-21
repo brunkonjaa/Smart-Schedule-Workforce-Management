@@ -207,11 +207,11 @@ The smaller fixes came from the final button and workflow checks. They were not 
 
 ## 2026-07-15 - Make seeded email addresses visibly fake
 
-The seeded accounts now use addresses like `alexbyrnefake@gmail.com` and `aoifeosullivanfake@gmail.com`. This is still fake data, but the `fake` part makes that obvious if the login list is shown in a demo.
+The seeded accounts use addresses such as `aoifeosullivanfake@gmail.com` and `cianmurphyfake@gmail.com`. The staff names look like the people shown in the rota, while `fake` stays in the local part so the address is not presented as a real staff email.
 
 1. `016_normalize_seed_staff_fake_gmail.sql` updates Alex Byrne, Jamie Murphy, and Casey Doyle in existing databases.
-2. `seed-demo-history.js` now creates compact name-based `...fake@gmail.com` addresses and removes both the old `demo.smart-schedule.test` records and the new fake Gmail records during a reset.
-3. `seed-staff-history.js` now targets `alexbyrnefake@gmail.com` by default.
+2. `seed-demo-history.js` creates name-based Gmail-format addresses with the `fake` marker and removes the older seeded records during a reset.
+3. `seed-staff-history.js` targets Aoife O'Sullivan at `aoifeosullivanfake@gmail.com` by default.
 4. local PostgreSQL and Neon were migrated through `016` and reseeded with 24 staff, 840 shifts, 840 assignments, and 5 approved leave records.
 
 The demo password remains `DemoStaffPass123!`. These accounts are seed data only and are not real humans.
@@ -1240,3 +1240,69 @@ The demo password remains `DemoStaffPass123!`. These accounts are seed data only
 1. capture useful screenshots for the recommendation modal on desktop and mobile
 2. run the manual recommendation scenarios and record the simple evaluation table
 3. keep deployment and hosted checks after the current local evidence is in place
+
+## 2026-07-21
+
+### Snapshot
+
+- Phase: Separate Admin access and peppered password storage
+- Sprint: final security checkpoint
+- Status: local code, migrations, automated tests and browser evidence complete; hosted deployment still pending
+
+### What Changed
+
+1. I added migrations `024` and `025`. The first one adds the separate `ADMIN` role, password scheme and pepper version fields, session versioning, Admin display name and the account-specific reviewer flag. The second one adds normal Admin invitations with a hashed token and one terminal state.
+2. I changed new, changed and reset passwords to HMAC-SHA-256 plus Argon2id. The current Argon2id settings are 19,456 KiB memory, time cost 2 and parallelism 1.
+3. Existing bcrypt rows are not rewritten in bulk. A correct login verifies the old hash first and replaces that one row with Argon2id in the same transaction. A failed login leaves it alone.
+4. I added the first Admin bootstrap for `Bruno Suric`, normal one-use Admin invitations, account enable/disable, role change, session revocation and passkey revocation. The final active non-review Admin cannot be disabled or demoted.
+5. Admin is not above Manager. The Admin routes are for account security, while rota, staff records, Employee Summary, Audit Log and NodyChat still belong to the operational roles.
+6. A normal Admin must register a passkey before the Admin workspace opens. Admin sessions ignore Remember me and use a 30-minute idle timeout with an eight-hour absolute limit.
+7. I added the temporary submission reviewer flag behind `SUBMISSION_REVIEW_ACCOUNTS_ENABLED`. Password change and Add passkey are still shown, but they are optional only on that account. If a passkey is added, later login uses it.
+8. I added the narrow Admin page and the reviewer banner with real links to Change password and Add passkey. The banner dismissal is stored in `sessionStorage`, so it does not become a permanent account setting.
+9. I added an `About these records` control to the existing Manager Audit Log. It says which rota and Employee Summary actions are recorded and also says that ordinary navigation/background refreshes are not recorded.
+10. I removed the remaining local evidence/demo password console output. Reset and invitation links are also not printed by the backend.
+11. I replaced implementation labels in visible staff, Manager and Admin records, seed data and database-backed test fixtures with proper Irish names. The email addresses still use the deliberate Gmail-format `fake` marker because these are demo accounts, not real inboxes.
+12. I added migration `026` for the four original seed addresses instead of rewriting an already-applied migration.
+13. I reset the guarded local NodyChat message history and kept the workplace room ready for a new conversation. Nothing was removed from the hosted database.
+14. I completed the local browser pass at desktop, tablet and mobile sizes. It passed 27 checks, including the reviewer exception, required passkey setup, session invalidation, Manager/Staff regression checks and Employee Summary access history.
+
+### Why It Changed
+
+1. Bcrypt was already in the project, so the safe migration path had to keep working logins instead of forcing every user through a password reset at once.
+2. I kept the pepper outside PostgreSQL because a Neon database copy should not contain everything needed to test a password guess. Losing the pepper would still mean existing Argon2id rows cannot be checked, so recovery and rotation need to be controlled.
+3. Admin needed to stay separate from Manager because account maintenance does not require access to employee records or rota decisions.
+4. The reviewer exception is narrow because forcing a passkey onto a lecturer's own device could block assessment. I would not use the same exception for a workplace Admin.
+
+### Drawbacks Accepted
+
+1. A normal invited Admin that saves a password but abandons passkey setup remains inactive. The current Admin page shows account and invitation state, but there is no separate self-service restart screen for that abandoned setup.
+2. The Have I Been Pwned range check deliberately fails password creation when the service cannot be reached. This is clearer and safer, but it means a temporary external outage can delay a password change or account setup.
+3. The current Argon2id settings have only been measured on the local Windows machine. The local four-operation run measured 85.7 ms for the hash batch, 97.0 ms for verification and a 76 MiB peak RSS increase. GitHub Actions and the free Render service still need measurements.
+4. I have not applied migrations `024` to `026` to Neon, created the real first Admin on Render, or created a lecturer account. Those steps were deliberately left out of this local checkpoint.
+5. The `audit_logs` table is still append-only with no automatic deletion. A real employer would need an agreed retention rule before old records are removed.
+
+### Evidence
+
+1. `database/migrations/024_extend_users_for_admin_and_peppered_passwords.sql`
+2. `database/migrations/025_create_admin_invitations.sql`
+3. `backend/src/services/password-security-service.js`
+4. `backend/src/services/admin-service.js`
+5. `backend/src/routes/admin.js`
+6. `backend/src/__tests__/password-security.test.js`
+7. `backend/src/__tests__/admin-routes.test.js`
+8. `backend/src/__tests__/admin-frontend-contract.test.js`
+9. `npm test -- --runInBand` - 144 tests in 19 suites passed
+10. `npm run test:coverage` - 73.21% statements and 74.27% lines
+11. `npm audit --omit=dev` - zero known production dependency vulnerabilities
+12. `npm run security:benchmark` - local four-operation measurement only
+13. `database/migrations/026_normalize_seed_account_addresses.sql`
+14. `docs/testing/admin_browser_review.md` - 27 local browser checks passed
+15. screenshots `159` to `171` - Admin, passkey, Manager regression and Employee Summary evidence, including the corrected A4 print capture
+16. `npm run local:audit:size` - 0 local rows and 237,568 bytes for the table and indexes after generated test records were cleared
+17. `npm run local:identity:audit` - 41 fake-marked demo Gmail addresses, one fixed owner address, no missing names and no implementation labels used as names
+
+### Next Steps
+
+1. measure the same password settings in GitHub Actions and on the free Render service before calling them final hosted settings
+2. deploy migrations through the existing Render/Neon path only after the required environment configuration is present
+3. create any real reviewer account only through the intended invitation path, without recording its address or setup values in project evidence

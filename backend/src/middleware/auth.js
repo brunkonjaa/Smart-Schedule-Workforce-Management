@@ -66,10 +66,17 @@ const loadAuthenticatedUser = async (request, response) => {
   }
 
   const user = await findUserById(request.session.user.id);
+  const sessionVersion = Number(request.session?.auth?.sessionVersion);
   const hasInactiveStaffProfile =
     typeof user?.staffProfileIsActive === 'boolean' && !user.staffProfileIsActive;
 
-  if (!user || !user.isActive || hasInactiveStaffProfile) {
+  if (
+    !user ||
+    !user.isActive ||
+    hasInactiveStaffProfile ||
+    !Number.isInteger(sessionVersion) ||
+    sessionVersion !== user.sessionVersion
+  ) {
     await invalidateSession(request, response);
     sendAuthenticationRequired(response, 'Your session is no longer valid.');
     return null;
@@ -145,6 +152,7 @@ module.exports = {
   destroySession,
   requireAuth,
   requireRole,
+  resolveAuthenticatedUser,
   setNoStoreHeaders,
   sendForbidden,
   sendAuthenticationRequired

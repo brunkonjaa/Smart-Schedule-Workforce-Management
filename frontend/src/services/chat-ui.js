@@ -430,6 +430,10 @@ window.SmartSchedule.chatUi = (function createChatUi() {
     if (!panel) buildPanel();
     try {
       const result = await apiClient.get('/api/v1/auth/me');
+      if (result.user.role === 'ADMIN') {
+        disconnect();
+        return;
+      }
       const previousUserId = currentUser?.id;
       if (previousUserId && previousUserId !== result.user.id && socket) {
         const previousSocket = socket;

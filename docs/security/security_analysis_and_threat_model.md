@@ -2,7 +2,7 @@
 
 ## Audit point
 
-This review starts from final report-evidence checkpoint `db2837c854291b8965c3f3e4b3d9b1cc9e018527`, committed on 17 July 2026 at 20:13:17 +01:00, and includes the current 18 July WebSocket lifetime test/fix. It covers the Express backend, PostgreSQL/session boundary, browser frontend and NodyChat WebSocket. It does not claim a penetration test or an independent security assessment.
+This review starts from final report-evidence checkpoint `db2837c854291b8965c3f3e4b3d9b1cc9e018527`, committed on 17 July 2026 at 20:13:17 +01:00, and now includes the local 21 July Admin/password checkpoint. It covers the Express backend, PostgreSQL/session boundary, browser frontend and NodyChat WebSocket. The Admin changes have not been deployed yet. This does not claim a penetration test or an independent security assessment.
 
 The GitHub Actions run for `304a8c62b7c88c1ad2288f822849c87e359ad4cb` found a new low-severity `body-parser` denial-of-service advisory on 21 July 2026. The lockfile had selected `body-parser` 1.20.5 through Express. I updated it to the compatible 1.20.6 fix and also accepted the current patched `brace-expansion` lock entries. The repeated `npm audit --omit=dev --json` result is zero known vulnerabilities across 118 production dependencies. This can change again when package advisories change, so the lockfile check remains in GitHub Actions.
 
@@ -10,14 +10,15 @@ The GitHub Actions run for `304a8c62b7c88c1ad2288f822849c87e359ad4cb` found a ne
 
 | Asset | Main risk | Boundary and current control |
 | --- | --- | --- |
-| Passwords and reset links | credential theft or reuse | bcrypt hashes; reset token stored as SHA-256 hash; expiry and one-use check; password values are not returned |
+| Passwords and reset/invitation links | credential theft or reuse | versioned backend pepper plus Argon2id; correct legacy bcrypt login upgrades one row; token hashes, expiry and one-use checks; raw values are not returned or logged |
+| Admin authority | account takeover or Admin inheriting employee access | separate `ADMIN` role; normal Admin passkey gate; short Admin session; recent password recheck; final-Admin rule; no Manager rota/Employee Summary permission |
 | Manager authority | staff/rota changes by a staff account | server-side `requireRole('MANAGER')`; manager passkey option; mutation protection; audit/security records |
 | Staff, leave and rota records | another user reading or changing records | session lookup against current database state; staff ownership filters; parameterised SQL and foreign keys |
 | Session cookie | session theft or fixation | PostgreSQL session store; regenerated login session; `HttpOnly`, `SameSite=Lax`, production `Secure`; idle and absolute lifetime |
 | NodyChat direct messages | outsider read, write or broadcast | participant rows checked for load, send, open and read; WebSocket broadcast uses participant user IDs |
 | Application availability | oversized or repeated requests | 32 KB JSON limit; API/login/health rate limits; 16 KB WebSocket frame limit; 350 ms chat send delay |
 
-The browser-to-Render connection is the first boundary. HTTPS carries the session cookie and REST/WebSocket traffic. Express middleware is the second boundary because it converts that cookie into a current active user and role. The service-to-Neon connection is the third boundary; it uses TLS certificate checks and parameterised queries. Brevo is a separate outbound boundary used only for password-reset email.
+The browser-to-Render connection is the first boundary. HTTPS carries the session cookie and REST/WebSocket traffic. Express middleware is the second boundary because it converts that cookie into a current active user, role and session version. The service-to-Neon connection is the third boundary; it uses TLS certificate checks and parameterised queries. Brevo is a separate outbound boundary for password-reset and Admin-invitation email. The Have I Been Pwned range API is another outbound boundary; it receives only a five-character SHA-1 prefix, not the password or full hash.
 
 ## Threat model
 
@@ -27,12 +28,14 @@ The browser-to-Render connection is the first boundary. HTTPS carries the sessio
 | Session fixation/theft | login cookie | session regeneration; server-side store; secure cookie settings; no password/token storage in localStorage | a stolen active cookie remains usable until expiry or server invalidation |
 | CSRF | state-changing REST calls | custom mutation header, same-origin `Origin`/`Referer` check when supplied, `SameSite=Lax` | the header is not a rotating token; this is accepted for the current same-origin browser client |
 | Broken role or object access | manager routes, leave ownership, swaps, direct chat | backend role middleware plus service ownership/participant queries | each new route needs its own negative test; hidden buttons alone are not treated as security |
+| Admin privilege crossover | Admin account tries Manager rota or employee routes | Admin is not accepted by Manager/Staff middleware; focused `403` tests cover rota, staff, Employee Summary and operational Audit Log | future routes still need an explicit role decision instead of assuming Admin is a super-role |
+| Offline password guessing after database loss | copied `users.password_hash` rows | HMAC-SHA-256 with versioned Render-held pepper before Argon2id; 19 MiB/time-2/parallelism-1 parameters; per-hash salt | losing the pepper blocks legitimate verification too; a compromised app plus database still exposes both sides |
 | Stored XSS through chat or names | NodyChat and staff data | strict CSP and DOM `textContent` for live chat content (`chat-ui.js:82-105`) | static page templates still use `innerHTML`; their data currently comes from local code, not API responses |
 | WebSocket hijacking or stale authority | `/ws/chat` upgrade and existing connection | active session lookup, exact same-origin requirement, and stored-session/account re-check before actions and during heartbeat | the check depends on the PostgreSQL session store being available; idle invalidation is detected on the next heartbeat |
 | Oversized/flood traffic | JSON and WebSocket input | 32 KB JSON limit (`app.js:50`), 16 KB WebSocket maximum (`chat-ws.js:47-51`), rate limits and per-socket send delay | limits are process-local; a multi-instance deployment would need a shared limiter |
 | Direct-message data leak | conversation bootstrap/send/read/broadcast | participant join in `chat-service.js:52-60`, read join at lines 225-239, broadcast list at `chat-ws.js:159-163` | no user-facing delete, retention or moderation workflow exists |
 | SQL injection or invalid relationships | all workflow input | parameterised `pg` calls, exact field validation, foreign keys/checks and serializable assignment operations | database credentials and Neon access controls are deployment concerns outside the repo |
-| Secret/configuration failure | production startup | production session configuration fails closed and requires `SESSION_SECRET` (`session.js:20-45`) | Render/Neon/Brevo dashboard permissions are not proven by repository files |
+| Secret/configuration failure | production startup | production session and current pepper configuration fail closed; repository/CI use generated or blank placeholders only | Render/Neon/Brevo dashboard permissions and hosted pepper setup are not proven by repository files |
 
 ## Verified controls
 
@@ -43,6 +46,9 @@ The browser-to-Render connection is the first boundary. HTTPS carries the sessio
 5. `backend/src/services/chat-ws.js` caps frames at 16 KB, requires an `Origin` matching the request host, loads the server session and rejects inactive accounts. It reloads the stored session and active account before each client action and during heartbeat.
 6. `backend/src/services/chat-service.js:52-60`, `225-239` and `242-252` enforce direct-conversation membership for load, read and send operations.
 7. `frontend/src/services/chat-ui.js:82-105` inserts message and sender data with `textContent`, not HTML parsing. The localStorage values in this frontend are shell page/theme and chat preference values, not passwords, session IDs or reset tokens.
+8. `backend/src/services/password-security-service.js` normalizes with NFKC, checks 15-128 characters, uses the HIBP range request, applies the versioned HMAC step and then calls Argon2id.
+9. `backend/src/middleware/auth.js` compares the session version with the current user row. Password, role, active-state and passkey changes therefore invalidate older sessions on their next protected request.
+10. `backend/src/services/security-event-service.js` removes metadata fields whose names indicate a password, token, pepper, session, cookie, credential, HMAC or hash before JSON is stored.
 
 ## Prioritised findings
 

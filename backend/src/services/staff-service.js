@@ -1,6 +1,7 @@
 const { pool, query } = require('../config/db');
 const {
-  hashPassword,
+  assertPasswordIsSafe,
+  createPasswordHash,
   normalizeEmail,
   validatePassword
 } = require('./auth-service');
@@ -436,27 +437,36 @@ const findStaffById = async (staffId) => {
 };
 
 const createStaff = async (staffInput) => {
+  await assertPasswordIsSafe(staffInput.password);
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN');
 
-    const passwordHash = await hashPassword(staffInput.password);
+    const passwordRecord = await createPasswordHash(staffInput.password);
 
     const userResult = await client.query(
       `
         INSERT INTO users (
           email,
           password_hash,
+          password_scheme,
+          password_pepper_version,
           role,
           is_active,
           created_at,
           updated_at
         )
-        VALUES ($1, $2, 'STAFF', $3, NOW(), NOW())
+        VALUES ($1, $2, $3, $4, 'STAFF', $5, NOW(), NOW())
         RETURNING id, email, role, is_active
       `,
-      [staffInput.email, passwordHash, staffInput.isActive]
+      [
+        staffInput.email,
+        passwordRecord.passwordHash,
+        passwordRecord.passwordScheme,
+        passwordRecord.passwordPepperVersion,
+        staffInput.isActive
+      ]
     );
 
     const createdUser = userResult.rows[0];
@@ -533,6 +543,10 @@ const updateStaff = async (staffId, staffInput) => {
           SET
             email = COALESCE($1, email),
             is_active = COALESCE($2, is_active),
+            session_version = CASE
+              WHEN $2::BOOLEAN IS NULL THEN session_version
+              ELSE session_version + 1
+            END,
             updated_at = NOW()
           WHERE id = $3
         `,
@@ -615,19 +629,28 @@ const resetStaffPassword = async (staffId, temporaryPassword) => {
     return null;
   }
 
-  const passwordHash = await hashPassword(temporaryPassword);
+  await assertPasswordIsSafe(temporaryPassword);
+  const passwordRecord = await createPasswordHash(temporaryPassword);
 
   await query(
     `
       UPDATE users
       SET
         password_hash = $1,
+        password_scheme = $2,
+        password_pepper_version = $3,
         must_change_password = TRUE,
         password_changed_at = NOW(),
+        session_version = session_version + 1,
         updated_at = NOW()
-      WHERE id = $2
+      WHERE id = $4
     `,
-    [passwordHash, existingStaff.userId]
+    [
+      passwordRecord.passwordHash,
+      passwordRecord.passwordScheme,
+      passwordRecord.passwordPepperVersion,
+      existingStaff.userId
+    ]
   );
 
   return findStaffById(staffId);

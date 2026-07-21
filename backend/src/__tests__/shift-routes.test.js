@@ -27,8 +27,8 @@ describe('shift routes', () => {
   const managerStaffProfileId = crypto.randomUUID();
   const staffUserId = crypto.randomUUID();
   const staffProfileId = crypto.randomUUID();
-  const managerEmail = `shift-manager-${Date.now()}@example.com`;
-  const staffEmail = `shift-staff-${Date.now()}@example.com`;
+  const managerEmail = `orlaryan${Date.now()}fake@gmail.com`;
+  const staffEmail = `ciandoyle${Date.now()}fake@gmail.com`;
   const managerPassword = 'ShiftManager123!';
   const staffPassword = 'ShiftStaff123!';
   const mutationHeader = {
@@ -66,8 +66,8 @@ describe('shift routes', () => {
           updated_at
         )
         VALUES
-          ($1, $2, 'Shift Manager', 'FLOOR', 40.00, '0854000001', TRUE, NOW(), NOW()),
-          ($3, $4, 'Shift Staff', 'BAR', 28.00, '0854000002', TRUE, NOW(), NOW())
+          ($1, $2, 'Orla Ryan', 'FLOOR', 40.00, '0854000001', TRUE, NOW(), NOW()),
+          ($3, $4, 'Cian Doyle', 'BAR', 28.00, '0854000002', TRUE, NOW(), NOW())
       `,
       [managerStaffProfileId, managerId, staffProfileId, staffUserId]
     );

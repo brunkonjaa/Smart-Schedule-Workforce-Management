@@ -193,15 +193,26 @@ Examples:
 - `145` hosted manager Rota confirmation after 61 generated next-week assignments were approved and saved
 - `146` hosted manager assignment dialog rejecting a shift that overlaps or touches an existing shift
 - `147` hosted manager passkey registration reaching the browser-managed WebAuthn confirmation prompt
-- `148` local desktop Employee Summary opened over the manager Staff page with the source page dimmed and inactive
 - `149` cropped local proof that the selected rota week is kept separate from Later upcoming shifts
-- `150` local 390 x 844 Employee Summary with visible Back, Print summary and Close controls and internal scrolling
-- `151` rendered A4 Employee Summary page with the decorative app background and screen-only contact fields removed
-- `152` cropped Employee access Audit Log with the Rota-style tabs stacked above the narrower table, including all six record columns
 - `153` local staff denial result returned to the read-only Rota with no Employee Summary panel, email, phone or manager-only employee links
 - `154` cropped local manager Rota workspace after the desktop width was reduced from the full app-shell width to 1560 pixels
 - `155` cropped hosted Employee access page showing five real view and print-request records with the total and page controls
 - `156` cropped hosted Rota activity after page navigation, showing 1,744 records and page 3 of 70
+- `157` Neon production monitoring showing the active compute, low RAM and CPU use, zero deadlocks and the short row-activity spike from the storage check
+- `158` Neon production monitoring showing the connection counts and database-size graph, with `neondb` at about 16 MB and all databases at about 39 MB
+- `159` local Admin workspace signed in as Niamh O'Sullivan, with Ciaran Murphy and the submission-review banner visible
+- `160` the same Admin workspace at 390 x 844 without page-level horizontal overflow
+- `161` Declan O'Connor's one-use invitation after the password step, waiting for passkey registration
+- `162` Ciaran Murphy stopped at the required passkey setup screen before the Admin workspace opens
+- `163` Niamh O'Sullivan's Password and passkeys page with empty password fields and the optional review-account controls
+- `164` the Manager Audit Log with About these records expanded and keyboard checked
+- `165` the Admin workspace at 1024 x 768
+- `166` recent Admin security events showing Niamh O'Sullivan as the actor for the browser checks
+- `167` the Manager Rota after the Admin-only frontend changes
+- `168` desktop Employee Summary for Aoife Brennan over the Staff page
+- `169` the same Aoife Brennan Employee Summary at 390 x 844
+- `170` Employee access history showing Maeve Ryan opening Aoife Brennan's summary, without a linked employee name or implementation note in the heading
+- `171` A4 Employee Summary print evidence for Aoife Brennan after the Irish-name and fake-marked demo-address correction
 
 ## Practical Reminder
 

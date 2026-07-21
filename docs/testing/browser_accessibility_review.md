@@ -2,7 +2,7 @@
 
 ## Current status
 
-I reran the live browser checks on 18 July 2026 against the guarded `smart_schedule_local` database after migrations 001 to 022 were confirmed. I used the local evidence manager and a fake evidence staff account. The browser sizes were 1920 x 855, 1024 x 768 and 390 x 844. The manager and staff rota views, manager pages, invalid login, NodyChat, manager/staff navigation boundary and rota modal keyboard behaviour were checked from the running interface.
+I reran the live browser checks on 18 July 2026 against the guarded `smart_schedule_local` database after migrations 001 to 022 were confirmed. I signed in as Maeve O'Connor and Aaron Collins. The browser sizes were 1920 x 855, 1024 x 768 and 390 x 844. The manager and staff rota views, manager pages, invalid login, NodyChat, manager/staff navigation boundary and rota modal keyboard behaviour were checked from the running interface.
 
 The live checks passed at those three sizes without page-level horizontal overflow or browser console errors. I then used the real Chrome window controls for the zoom check. The measured CSS viewport changed from 1920 x 855 at device pixel ratio 1 to 960 x 427 at device pixel ratio 2. This is an actual 200% browser zoom result, not only a resized window. The staff rota kept its navigation and weekly table without document-level horizontal overflow. Screenshot `135` records the result, and Chrome was reset to 1920 x 855 at 100% afterward.
 

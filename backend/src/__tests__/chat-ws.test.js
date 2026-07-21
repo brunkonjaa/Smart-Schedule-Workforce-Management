@@ -62,7 +62,7 @@ describe('NodyChat WebSocket authentication and lifetime checks', () => {
   const userId = crypto.randomUUID();
   const profileId = crypto.randomUUID();
   const suffix = Date.now();
-  const email = `chat-ws-${suffix}@example.com`;
+  const email = `roisinnolan${suffix}fake@gmail.com`;
   const password = 'NodyChatSocket123!';
   const sockets = new Set();
   let server;
@@ -87,7 +87,7 @@ describe('NodyChat WebSocket authentication and lifetime checks', () => {
     );
     await query(
       `INSERT INTO staff_profiles (id, user_id, full_name, primary_role, contract_hours, is_active, created_at, updated_at)
-       VALUES ($1, $2, 'Chat WebSocket Staff', 'FLOOR', 24, TRUE, NOW(), NOW())`,
+       VALUES ($1, $2, 'Roisin Nolan', 'FLOOR', 24, TRUE, NOW(), NOW())`,
       [profileId, userId]
     );
 

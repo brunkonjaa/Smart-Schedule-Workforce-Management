@@ -46,11 +46,13 @@ const resolveSessionSecret = () => {
 };
 
 const resolveSessionPolicy = ({ rememberMe = false, role = 'STAFF' } = {}) => {
-  const normalizedRole = role === 'MANAGER' ? 'MANAGER' : 'STAFF';
-  const isRememberedSession = Boolean(rememberMe);
+  const normalizedRole = ['ADMIN', 'MANAGER'].includes(role) ? role : 'STAFF';
+  const isRememberedSession = normalizedRole === 'ADMIN' ? false : Boolean(rememberMe);
   let idleTimeoutMinutes = config.sessionStaffIdleTimeoutMinutes;
 
-  if (normalizedRole === 'MANAGER') {
+  if (normalizedRole === 'ADMIN') {
+    idleTimeoutMinutes = config.sessionAdminIdleTimeoutMinutes;
+  } else if (normalizedRole === 'MANAGER') {
     idleTimeoutMinutes = isRememberedSession
       ? config.sessionRememberManagerIdleTimeoutMinutes
       : config.sessionManagerIdleTimeoutMinutes;
@@ -58,9 +60,11 @@ const resolveSessionPolicy = ({ rememberMe = false, role = 'STAFF' } = {}) => {
     idleTimeoutMinutes = config.sessionRememberStaffIdleTimeoutMinutes;
   }
 
-  const absoluteLifetimeHours = isRememberedSession
-    ? config.sessionRememberAbsoluteLifetimeHours
-    : config.sessionAbsoluteLifetimeHours;
+  const absoluteLifetimeHours = normalizedRole === 'ADMIN'
+    ? config.sessionAdminAbsoluteLifetimeHours
+    : isRememberedSession
+      ? config.sessionRememberAbsoluteLifetimeHours
+      : config.sessionAbsoluteLifetimeHours;
 
   return {
     absoluteLifetimeMs: absoluteLifetimeHours * 60 * 60 * 1000,
@@ -70,14 +74,15 @@ const resolveSessionPolicy = ({ rememberMe = false, role = 'STAFF' } = {}) => {
   };
 };
 
-const applySessionPolicy = (request, policyInput) => {
+const applySessionPolicy = (request, policyInput = {}) => {
   const policy = resolveSessionPolicy(policyInput);
 
   request.session.auth = {
     absoluteExpiresAt: new Date(Date.now() + policy.absoluteLifetimeMs).toISOString(),
     idleTimeoutMs: policy.idleTimeoutMs,
     rememberMe: policy.rememberMe,
-    role: policy.role
+    role: policy.role,
+    sessionVersion: Number(policyInput.sessionVersion || 1)
   };
   request.session.cookie.maxAge = policy.idleTimeoutMs;
 

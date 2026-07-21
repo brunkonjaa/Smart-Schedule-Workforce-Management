@@ -16,13 +16,13 @@ describe('staff routes', () => {
   const staffProfileId = crypto.randomUUID();
   const extraStaffUserId = crypto.randomUUID();
   const extraStaffProfileId = crypto.randomUUID();
-  const managerEmail = `staff-manager-${Date.now()}@example.com`;
-  const staffEmail = `staff-route-staff-${Date.now()}@example.com`;
-  const extraStaffEmail = `staff-route-extra-${Date.now()}@example.com`;
+  const managerEmail = `declanbyrne${Date.now()}fake@gmail.com`;
+  const staffEmail = `siobhankelly${Date.now()}fake@gmail.com`;
+  const extraStaffEmail = `eoingallagher${Date.now()}fake@gmail.com`;
   const managerPassword = 'ManagerRoutePass123!';
   const staffPassword = 'StaffRoutePass123!';
   const temporaryResetPassword = 'StaffRouteReset123!';
-  const createdStaffEmail = 'created-route-staff@example.com';
+  const createdStaffEmail = 'aislingbyrnefake@gmail.com';
   const mutationHeader = {
     [mutationProtectionHeaderName]: '1'
   };
@@ -65,9 +65,9 @@ describe('staff routes', () => {
           updated_at
         )
         VALUES
-          ($1, $2, 'Route Manager', 'FLOOR', 40.00, '0851000001', TRUE, NOW(), NOW()),
-          ($3, $4, 'Route Staff', 'BAR', 28.00, '0851000002', TRUE, NOW(), NOW()),
-          ($5, $6, 'Route Extra', 'KITCHEN', 30.00, '0851000003', TRUE, NOW(), NOW())
+          ($1, $2, 'Declan Byrne', 'FLOOR', 40.00, '0851000001', TRUE, NOW(), NOW()),
+          ($3, $4, 'Siobhan Kelly', 'BAR', 28.00, '0851000002', TRUE, NOW(), NOW()),
+          ($5, $6, 'Eoin Gallagher', 'KITCHEN', 30.00, '0851000003', TRUE, NOW(), NOW())
       `,
       [
         managerStaffProfileId,
@@ -91,11 +91,11 @@ describe('staff routes', () => {
     );
     await query(
       'DELETE FROM staff_profiles WHERE full_name IN ($1, $2)',
-      ['Created From Route Test', 'Created Validation Route Test']
+      ['Aisling Byrne', 'Clodagh Murphy']
     );
     await query(
       'DELETE FROM users WHERE email IN ($1, $2)',
-      [createdStaffEmail, 'created-validation-route-staff@example.com']
+      [createdStaffEmail, 'clodaghmurphyfake@gmail.com']
     );
     await closePool();
   });
@@ -152,7 +152,7 @@ describe('staff routes', () => {
       expect.arrayContaining([
         expect.objectContaining({
           email: extraStaffEmail,
-          fullName: 'Route Extra',
+          fullName: 'Eoin Gallagher',
           id: extraStaffProfileId,
           isActive: true,
           primaryRole: 'KITCHEN',
@@ -160,7 +160,7 @@ describe('staff routes', () => {
         }),
         expect.objectContaining({
           email: staffEmail,
-          fullName: 'Route Staff',
+          fullName: 'Siobhan Kelly',
           id: staffProfileId,
           isActive: true,
           primaryRole: 'BAR',
@@ -187,7 +187,7 @@ describe('staff routes', () => {
     const response = await agent.post('/api/v1/staff').send({
       contractHours: 18,
       email: createdStaffEmail,
-      fullName: 'Created From Route Test',
+      fullName: 'Aisling Byrne',
       password: 'CreatedStaffPass123!',
       phoneNumber: '0851000004',
       primaryRole: 'FLOOR'
@@ -209,7 +209,7 @@ describe('staff routes', () => {
       .send({
         contractHours: 18,
         email: createdStaffEmail,
-        fullName: 'Cross Origin Test',
+        fullName: "Niall O'Connor",
         password: 'CreatedStaffPass123!',
         phoneNumber: '0851000004',
         primaryRole: 'FLOOR'
@@ -230,7 +230,7 @@ describe('staff routes', () => {
       .send({
         contractHours: 18,
         email: createdStaffEmail,
-        fullName: 'Created From Route Test',
+        fullName: 'Aisling Byrne',
         password: 'CreatedStaffPass123!',
         phoneNumber: '0851000004',
         primaryRole: 'FLOOR'
@@ -241,12 +241,23 @@ describe('staff routes', () => {
     expect(response.body.staff).toEqual(
       expect.objectContaining({
         email: createdStaffEmail,
-        fullName: 'Created From Route Test',
+        fullName: 'Aisling Byrne',
         isActive: true,
         primaryRole: 'FLOOR',
         role: 'STAFF'
       })
     );
+
+    const storedPassword = await query(
+      `SELECT password_hash, password_scheme, password_pepper_version
+       FROM users WHERE email = $1`,
+      [createdStaffEmail]
+    );
+    expect(storedPassword.rows[0]).toEqual(expect.objectContaining({
+      password_pepper_version: 1,
+      password_scheme: 'ARGON2ID_PEPPERED'
+    }));
+    expect(storedPassword.rows[0].password_hash).toMatch(/^\$argon2id\$/);
   });
 
   test('rejects invalid create payload fields for managers', async () => {
@@ -257,7 +268,7 @@ describe('staff routes', () => {
       .send({
         contractHours: 18.555,
         email: 'not-an-email',
-        fullName: 'Created Validation Route Test',
+        fullName: 'Clodagh Murphy',
         isActive: 'yes',
         notes: 'unexpected',
         password: 'weakpassword',
@@ -270,7 +281,7 @@ describe('staff routes', () => {
       expect.arrayContaining([
         'unsupported fields: notes',
         'email must be a valid email address',
-        'password must include an uppercase letter',
+        'password must be at least 15 characters long',
         'primaryRole must be one of: FLOOR, BAR, KITCHEN, OTHER',
         'contractHours must use no more than 2 decimal places',
         'isActive must be a boolean'
@@ -286,7 +297,7 @@ describe('staff routes', () => {
       .send({
         contractHours: 18,
         email: staffEmail,
-        fullName: 'Created Validation Route Test',
+        fullName: 'Clodagh Murphy',
         password: 'CreatedStaffPass123!',
         primaryRole: 'FLOOR'
       });
@@ -301,7 +312,7 @@ describe('staff routes', () => {
   test('requires the mutation protection header on staff updates', async () => {
     const agent = await loginAsManager();
     const response = await agent.put(`/api/v1/staff/${staffProfileId}`).send({
-      fullName: 'Route Staff Missing Header'
+      fullName: 'Aisling Murphy'
     });
 
     expect(response.status).toBe(403);
@@ -318,7 +329,7 @@ describe('staff routes', () => {
       .set(mutationHeader)
       .send({
         contractHours: 32,
-        fullName: 'Route Staff Updated',
+        fullName: "Siobhan O'Connor",
         isActive: false,
         phoneNumber: '0851999999',
         primaryRole: 'FLOOR'
@@ -330,7 +341,7 @@ describe('staff routes', () => {
       expect.objectContaining({
         contractHours: 32,
         email: staffEmail,
-        fullName: 'Route Staff Updated',
+        fullName: "Siobhan O'Connor",
         id: staffProfileId,
         isActive: false,
         phoneNumber: '0851999999',
@@ -372,7 +383,7 @@ describe('staff routes', () => {
       .put('/api/v1/staff/not-a-uuid')
       .set(mutationHeader)
       .send({
-        fullName: 'Route Staff Invalid Id'
+        fullName: 'Eoin Gallagher'
       });
 
     expect(response.status).toBe(400);
@@ -389,7 +400,7 @@ describe('staff routes', () => {
       .put(`/api/v1/staff/${crypto.randomUUID()}`)
       .set(mutationHeader)
       .send({
-        fullName: 'Missing Staff'
+        fullName: "Fergus O'Neill"
       });
 
     expect(response.status).toBe(404);

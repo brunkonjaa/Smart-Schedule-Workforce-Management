@@ -34,8 +34,13 @@ const userIdToBytes = (userId) => {
   return Buffer.from(String(userId).replace(/-/g, ''), 'hex');
 };
 
-const countActivePasskeys = async (userId) => {
-  const result = await query(
+const executeQuery = (client, text, params) => {
+  return client ? client.query(text, params) : query(text, params);
+};
+
+const countActivePasskeys = async (userId, client = null) => {
+  const result = await executeQuery(
+    client,
     `SELECT COUNT(*)::INTEGER AS count FROM user_passkeys WHERE user_id = $1 AND revoked_at IS NULL`,
     [userId]
   );
@@ -43,8 +48,9 @@ const countActivePasskeys = async (userId) => {
   return result.rows[0].count;
 };
 
-const listActivePasskeys = async (userId) => {
-  const result = await query(
+const listActivePasskeys = async (userId, client = null) => {
+  const result = await executeQuery(
+    client,
     `
       SELECT id, credential_id, public_key, counter, device_name, transports
       FROM user_passkeys
@@ -93,7 +99,7 @@ const buildAuthenticationOptions = async ({ userId }) => {
   });
 };
 
-const saveRegistration = async ({ userId, response, expectedChallenge }) => {
+const saveRegistration = async ({ client = null, userId, response, expectedChallenge }) => {
   const { origin, rpID } = getWebAuthnConfig();
   const verification = await verifyRegistrationResponse({
     expectedChallenge,
@@ -108,7 +114,8 @@ const saveRegistration = async ({ userId, response, expectedChallenge }) => {
   }
 
   const { credential } = verification.registrationInfo;
-  await query(
+  await executeQuery(
+    client,
     `
       INSERT INTO user_passkeys
         (user_id, credential_id, public_key, counter, device_name, transports)
@@ -124,7 +131,22 @@ const saveRegistration = async ({ userId, response, expectedChallenge }) => {
     ]
   );
 
-  return { verified: true };
+  const versionResult = await executeQuery(
+    client,
+    `
+      UPDATE users
+      SET session_version = session_version + 1,
+          updated_at = NOW()
+      WHERE id = $1
+      RETURNING session_version
+    `,
+    [userId]
+  );
+
+  return {
+    sessionVersion: Number(versionResult.rows[0].session_version),
+    verified: true
+  };
 };
 
 const verifyAuthentication = async ({ userId, response, expectedChallenge }) => {
@@ -164,10 +186,65 @@ const verifyAuthentication = async ({ userId, response, expectedChallenge }) => 
   return { verified: true };
 };
 
+const listPublicPasskeys = async (userId) => {
+  const result = await query(
+    `
+      SELECT id, device_name, created_at, last_used_at
+      FROM user_passkeys
+      WHERE user_id = $1 AND revoked_at IS NULL
+      ORDER BY created_at ASC
+    `,
+    [userId]
+  );
+
+  return result.rows.map((row) => ({
+    createdAt: row.created_at,
+    deviceName: row.device_name,
+    id: row.id,
+    lastUsedAt: row.last_used_at
+  }));
+};
+
+const revokePasskey = async ({ client = null, passkeyId, userId }) => {
+  const revokedResult = await executeQuery(
+    client,
+    `
+      UPDATE user_passkeys
+      SET revoked_at = NOW()
+      WHERE id = $1 AND user_id = $2 AND revoked_at IS NULL
+      RETURNING id
+    `,
+    [passkeyId, userId]
+  );
+
+  if (revokedResult.rowCount === 0) {
+    return null;
+  }
+
+  const versionResult = await executeQuery(
+    client,
+    `
+      UPDATE users
+      SET session_version = session_version + 1,
+          updated_at = NOW()
+      WHERE id = $1
+      RETURNING session_version
+    `,
+    [userId]
+  );
+
+  return {
+    id: revokedResult.rows[0].id,
+    sessionVersion: Number(versionResult.rows[0].session_version)
+  };
+};
+
 module.exports = {
   buildAuthenticationOptions,
   buildRegistrationOptions,
   countActivePasskeys,
+  listPublicPasskeys,
+  revokePasskey,
   saveRegistration,
   verifyAuthentication
 };

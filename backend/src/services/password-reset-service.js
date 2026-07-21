@@ -1,7 +1,13 @@
 const crypto = require('crypto');
 const config = require('../config/env');
 const { query, withTransaction } = require('../config/db');
-const { hashPassword, normalizeEmail, validatePassword } = require('./auth-service');
+const {
+  assertPasswordIsSafe,
+  createPasswordHash,
+  normalizeEmail,
+  validatePassword,
+  verifyPassword
+} = require('./auth-service');
 const { sendPasswordResetEmail } = require('./email-service');
 
 const hashToken = (token) => {
@@ -12,7 +18,8 @@ const createPasswordResetRequest = async ({ email, ipAddress }) => {
   const normalizedEmail = normalizeEmail(email);
   const result = await query(
     `
-      SELECT users.id, users.email, staff_profiles.full_name
+      SELECT users.id, users.email,
+             COALESCE(staff_profiles.full_name, users.display_name) AS full_name
       FROM users
       LEFT JOIN staff_profiles ON staff_profiles.user_id = users.id
       WHERE users.email = $1 AND users.is_active = TRUE
@@ -76,12 +83,16 @@ const validateResetPasswordInput = (payload) => {
 };
 
 const consumePasswordReset = async ({ newPassword, token }) => {
+  await assertPasswordIsSafe(newPassword);
+
   return withTransaction(async (client) => {
     const tokenHash = hashToken(token);
     const result = await client.query(
       `
         SELECT password_reset_requests.id, password_reset_requests.user_id,
-               users.password_hash
+               users.password_hash,
+               users.password_scheme,
+               users.password_pepper_version
         FROM password_reset_requests
         INNER JOIN users ON users.id = password_reset_requests.user_id
         WHERE password_reset_requests.token_hash = $1
@@ -98,24 +109,45 @@ const consumePasswordReset = async ({ newPassword, token }) => {
       return { valid: false };
     }
 
-    const passwordHash = await hashPassword(newPassword);
+    const passwordReused = await verifyPassword({
+      password: newPassword,
+      passwordHash: request.password_hash,
+      passwordPepperVersion: request.password_pepper_version,
+      passwordScheme: request.password_scheme
+    });
+
+    if (passwordReused) {
+      const error = new Error('The new password must be different from the current password.');
+      error.code = 'PASSWORD_REUSE';
+      throw error;
+    }
+
+    const passwordRecord = await createPasswordHash(newPassword);
     await client.query(
       `
         UPDATE users
         SET password_hash = $1,
+            password_scheme = $2,
+            password_pepper_version = $3,
             must_change_password = FALSE,
             password_changed_at = NOW(),
+            session_version = session_version + 1,
             updated_at = NOW()
-        WHERE id = $2
+        WHERE id = $4
       `,
-      [passwordHash, request.user_id]
+      [
+        passwordRecord.passwordHash,
+        passwordRecord.passwordScheme,
+        passwordRecord.passwordPepperVersion,
+        request.user_id
+      ]
     );
     await client.query(
       `UPDATE password_reset_requests SET used_at = NOW() WHERE id = $1`,
       [request.id]
     );
 
-    return { valid: true };
+    return { userId: request.user_id, valid: true };
   });
 };
 
@@ -124,7 +156,7 @@ const listPasswordResetRequests = async () => {
     `
       SELECT password_reset_requests.id,
              users.email,
-             staff_profiles.full_name,
+             COALESCE(staff_profiles.full_name, users.display_name) AS full_name,
              password_reset_requests.created_at,
              password_reset_requests.expires_at
       FROM password_reset_requests

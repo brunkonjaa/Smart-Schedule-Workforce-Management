@@ -123,7 +123,7 @@ The earlier SRS requirement `FR-004` for weekly availability is retired from thi
 
 1. all state-changing routes validate input on the backend
 2. manager and ownership rules do not depend only on hidden frontend buttons
-3. passwords are stored as bcrypt hashes
+3. new, changed and reset passwords are stored as peppered Argon2id hashes, while a correct legacy bcrypt login upgrades that row
 4. protected routes use server-side sessions
 5. the frontend works at desktop and mobile widths
 6. errors use useful HTTP status codes and a consistent response shape

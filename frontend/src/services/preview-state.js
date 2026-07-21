@@ -2,7 +2,7 @@ window.SmartSchedule = window.SmartSchedule || {};
 
 window.SmartSchedule.previewState = (function createPreviewState() {
   const storageKey = 'smart-schedule-shell-state';
-  const allowedRoles = ['guest', 'manager', 'staff'];
+  const allowedRoles = ['admin', 'guest', 'manager', 'staff'];
   const fallbackState = {
     page: 'login',
     role: 'guest',

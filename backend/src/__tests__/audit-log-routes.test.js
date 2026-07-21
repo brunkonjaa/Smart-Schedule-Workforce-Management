@@ -12,8 +12,8 @@ describe('audit log routes', () => {
   const staffUserId = crypto.randomUUID();
   const staffProfileId = crypto.randomUUID();
   const shiftId = crypto.randomUUID();
-  const managerEmail = `audit-manager-${Date.now()}@example.com`;
-  const staffEmail = `audit-staff-${Date.now()}@example.com`;
+  const managerEmail = `saoirseryan${Date.now()}fake@gmail.com`;
+  const staffEmail = `eoinbyrne${Date.now()}fake@gmail.com`;
   const managerPassword = 'AuditManager123!';
   const staffPassword = 'AuditStaff123!';
 
@@ -38,8 +38,8 @@ describe('audit log routes', () => {
           is_active, created_at, updated_at
         )
         VALUES
-          ($1, $2, 'Audit Manager', 'FLOOR', 40.00, '0854000011', TRUE, NOW(), NOW()),
-          ($3, $4, 'Audit Staff', 'BAR', 28.00, '0854000012', TRUE, NOW(), NOW())
+          ($1, $2, 'Saoirse Ryan', 'FLOOR', 40.00, '0854000011', TRUE, NOW(), NOW()),
+          ($3, $4, 'Eoin Byrne', 'BAR', 28.00, '0854000012', TRUE, NOW(), NOW())
       `,
       [managerStaffProfileId, managerId, staffProfileId, staffUserId]
     );
@@ -99,7 +99,7 @@ describe('audit log routes', () => {
       expect.objectContaining({
         action: 'SHIFT_CREATED',
         actorEmail: managerEmail,
-        actorName: 'Audit Manager',
+        actorName: 'Saoirse Ryan',
         beforeState: null,
         entityId: shiftId,
         entityType: 'SHIFT',
@@ -131,7 +131,7 @@ describe('audit log routes', () => {
         crypto.randomUUID(),
         `Paged audit record ${index + 1}`,
         JSON.stringify({
-          fullName: 'Audit Staff',
+          fullName: 'Eoin Byrne',
           shiftDate: '2026-07-21',
           staffProfileId
         })

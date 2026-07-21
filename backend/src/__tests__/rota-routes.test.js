@@ -26,9 +26,9 @@ describe('rota routes', () => {
   const staffProfileId = crypto.randomUUID();
   const secondStaffUserId = crypto.randomUUID();
   const secondStaffProfileId = crypto.randomUUID();
-  const managerEmail = `rota-manager-${Date.now()}@example.com`;
-  const staffEmail = `rota-staff-${Date.now()}@example.com`;
-  const secondStaffEmail = `rota-second-staff-${Date.now()}@example.com`;
+  const managerEmail = `fionnmurphy${Date.now()}fake@gmail.com`;
+  const staffEmail = `eimearkelly${Date.now()}fake@gmail.com`;
+  const secondStaffEmail = `darraghbyrne${Date.now()}fake@gmail.com`;
   const managerPassword = 'RotaManager123!';
   const staffPassword = 'RotaStaff123!';
   const secondStaffPassword = 'RotaSecondStaff123!';
@@ -79,9 +79,9 @@ describe('rota routes', () => {
           updated_at
         )
         VALUES
-          ($1, $2, 'Rota Manager', 'FLOOR', 40.00, '0856000001', TRUE, NOW(), NOW()),
-          ($3, $4, 'Rota Bar Staff', 'BAR', 28.00, '0856000002', TRUE, NOW(), NOW()),
-          ($5, $6, 'Rota Leave Staff', 'BAR', 20.00, '0856000003', TRUE, NOW(), NOW())
+          ($1, $2, 'Fionn Murphy', 'FLOOR', 40.00, '0856000001', TRUE, NOW(), NOW()),
+          ($3, $4, 'Eimear Kelly', 'BAR', 28.00, '0856000002', TRUE, NOW(), NOW()),
+          ($5, $6, 'Darragh Byrne', 'BAR', 20.00, '0856000003', TRUE, NOW(), NOW())
       `,
       [
         managerStaffProfileId,
@@ -233,7 +233,7 @@ describe('rota routes', () => {
         expect.objectContaining({
           notes: 'Assigned rota shift',
           shiftId: assignedShiftId,
-          staffName: 'Rota Bar Staff',
+          staffName: 'Eimear Kelly',
           state: 'ASSIGNED'
         })
       ])
@@ -275,7 +275,7 @@ describe('rota routes', () => {
       return row.staffProfileId === staffProfileId;
     });
     const assignedCell = staffRow.days[assignedShiftDate].find((cell) => {
-      return cell.staffName === 'Rota Bar Staff' && cell.state === 'ASSIGNED';
+      return cell.staffName === 'Eimear Kelly' && cell.state === 'ASSIGNED';
     });
 
     expect(assignedCell).toEqual(
@@ -283,7 +283,7 @@ describe('rota routes', () => {
         endTime: '20:00',
         shiftDate: assignedShiftDate,
         startTime: '12:00',
-        staffName: 'Rota Bar Staff',
+        staffName: 'Eimear Kelly',
         state: 'ASSIGNED'
       })
     );
@@ -291,7 +291,7 @@ describe('rota routes', () => {
     expect(assignedCell.notes).toBeUndefined();
     expect(assignedCell.shiftId).toBe(assignedShiftId);
     expect(
-      response.body.rota.rows.some((row) => row.staffName === 'Rota Leave Staff')
+      response.body.rota.rows.some((row) => row.staffName === 'Darragh Byrne')
     ).toBe(true);
   });
 

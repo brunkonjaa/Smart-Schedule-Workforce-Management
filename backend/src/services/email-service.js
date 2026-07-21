@@ -4,6 +4,15 @@ const hasBrevoConfiguration = () => {
   return Boolean(config.brevoApiKey && config.brevoFromEmail);
 };
 
+const escapeHtml = (value) => {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+};
+
 const sendWithBrevo = async (message) => {
   const response = await fetch('https://api.brevo.com/v3/smtp/email', {
     headers: {
@@ -33,9 +42,11 @@ const sendWithBrevo = async (message) => {
 };
 
 const sendPasswordResetEmail = async ({ email, fullName, resetUrl }) => {
+  const safeName = escapeHtml(fullName || 'there');
+  const safeResetUrl = escapeHtml(resetUrl);
   const message = {
     from: config.brevoFromEmail,
-    html: `<p>Hello ${fullName || 'there'},</p><p>Use the link below to create a new Smart Schedule password. The link expires in ${config.passwordResetExpiryMinutes} minutes and can only be used once.</p><p><a href="${resetUrl}">Create a new password</a></p><p>If you did not request this, you can ignore this email.</p>`,
+    html: `<p>Hello ${safeName},</p><p>Use the link below to create a new Smart Schedule password. The link expires in ${config.passwordResetExpiryMinutes} minutes and can only be used once.</p><p><a href="${safeResetUrl}">Create a new password</a></p><p>If you did not request this, you can ignore this email.</p>`,
     subject: 'Smart Schedule password reset',
     text: `Hello ${fullName || 'there'},\n\nUse this link to create a new Smart Schedule password: ${resetUrl}\n\nThe link expires in ${config.passwordResetExpiryMinutes} minutes and can only be used once. If you did not request this, you can ignore this email.`,
     to: email
@@ -52,11 +63,36 @@ const sendPasswordResetEmail = async ({ email, fullName, resetUrl }) => {
     throw error;
   }
 
-  console.log(`[password-reset] ${email}: ${resetUrl}`);
+  return { delivered: false, developmentFallback: true };
+};
+
+const sendAdminInvitationEmail = async ({ activationUrl, displayName, email }) => {
+  const safeName = escapeHtml(displayName || 'there');
+  const safeActivationUrl = escapeHtml(activationUrl);
+  const message = {
+    from: config.brevoFromEmail,
+    html: `<p>Hello ${safeName},</p><p>You were invited to set up a Smart Schedule administrator account.</p><p><a href="${safeActivationUrl}">Set up administrator account</a></p><p>The link expires in ${config.adminInvitationExpiryMinutes} minutes and can only be used once.</p>`,
+    subject: 'Set up your Smart Schedule administrator account',
+    text: `Hello ${displayName || 'there'},\n\nUse this one-time link to set up your Smart Schedule administrator account: ${activationUrl}\n\nThe link expires in ${config.adminInvitationExpiryMinutes} minutes.`,
+    to: email
+  };
+
+  if (hasBrevoConfiguration()) {
+    await sendWithBrevo(message);
+    return { delivered: true, provider: 'brevo' };
+  }
+
+  if (config.nodeEnv === 'production') {
+    const error = new Error('Administrator invitation email is not configured.');
+    error.code = 'EMAIL_NOT_CONFIGURED';
+    throw error;
+  }
+
   return { delivered: false, developmentFallback: true };
 };
 
 module.exports = {
   hasBrevoConfiguration,
+  sendAdminInvitationEmail,
   sendPasswordResetEmail
 };

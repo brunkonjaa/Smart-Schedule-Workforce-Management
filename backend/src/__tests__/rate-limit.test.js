@@ -22,15 +22,15 @@ describe('login rate limiter', () => {
     );
 
     const firstResponse = await request(app).post('/login').send({
-      email: 'rate-limit@example.com',
+      email: 'ciankellyfake@gmail.com',
       password: 'bad-password'
     });
     const secondResponse = await request(app).post('/login').send({
-      email: 'rate-limit@example.com',
+      email: 'ciankellyfake@gmail.com',
       password: 'bad-password'
     });
     const thirdResponse = await request(app).post('/login').send({
-      email: 'rate-limit@example.com',
+      email: 'ciankellyfake@gmail.com',
       password: 'bad-password'
     });
 
