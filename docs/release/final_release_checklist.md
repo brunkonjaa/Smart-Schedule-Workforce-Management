@@ -39,8 +39,8 @@ This is the last checklist before a Smart Schedule release tag. A checked item m
 - [x] A fresh Edge context loaded the hosted sign-in form with zero page errors.
 - [x] All 21 hosted JavaScript and CSS responses matched merge `14e66cf`.
 - [ ] Permanent hosted ordinary Admin and passkey state confirmed in committed evidence.
-- [ ] Required Render pepper variable names confirmed without displaying their values.
-- [ ] `FIRST_ADMIN_BOOTSTRAP_TOKEN` removed from Render after the permanent Admin/passkey check.
+- [x] Required Render pepper variable names confirmed earlier on 21 July without displaying their values.
+- [x] `FIRST_ADMIN_BOOTSTRAP_TOKEN` removed from Render after the permanent Admin/passkey setup.
 - [ ] Hosted logs checked for password, pepper, reset/invitation token and cookie output.
 - [ ] Phase 6 invitation, account-state, session/passkey revocation and final-Admin checks repeated against the hosted SHA.
 - [ ] Phase 6 Manager, Staff, Admin and final browser smoke matrix repeated against the hosted SHA.
@@ -63,4 +63,4 @@ This is the last checklist before a Smart Schedule release tag. A checked item m
 - [x] Phase 5 exact source checkpoint passed locally, in GitHub Actions and on Render with connected Neon health.
 - [ ] Release tag created and pushed.
 
-The tag should not be created just to make this checklist look complete. It comes last, after the Render bootstrap variable is removed and the remaining hosted checks above have been confirmed.
+The tag should not be created just to make this checklist look complete. The Render bootstrap variable has been removed, but the remaining hosted checks above still need confirmation.

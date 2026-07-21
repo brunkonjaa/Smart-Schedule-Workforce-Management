@@ -28,7 +28,7 @@ The Render free service does not provide safe shell or one-off job access for th
 
 ## Phase 6 hosted verification boundary
 
-The deployed SHA is proven as `14e66cfc8c6ced641558e95808dc51e28fd9bb3e`, and screenshot `191` proves connected Neon migrations, public login and matching static assets. The Chrome connector used for the Phase 6 rerun blocks both the hosted application and the Render dashboard. Because of that, the permanent Admin/passkey state, full hosted Admin mutation matrix, bcrypt-upgrade demo, environment-name check, bootstrap removal, log review and final browser smoke matrix are still open. The automated suites pass those application rules, but they do not prove the current Render environment values or a fresh hosted interaction.
+The deployed SHA is proven as `14e66cfc8c6ced641558e95808dc51e28fd9bb3e`, and screenshot `191` proves connected Neon migrations, public login and matching static assets. Earlier on 21 July the required pepper variable names were checked without exposing their values and `FIRST_ADMIN_BOOTSTRAP_TOKEN` was removed. The Chrome connector used for the later Phase 6 rerun blocks both the hosted application and the Render dashboard. Because of that, the permanent Admin/passkey evidence, full hosted Admin mutation matrix, bcrypt-upgrade demo, log review and final browser smoke matrix are still open. The automated suites pass those application rules, but they do not prove a fresh hosted interaction.
 
 ## Time and hours
 

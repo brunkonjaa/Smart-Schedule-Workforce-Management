@@ -8,7 +8,7 @@
 - Working branch: `agent/phase-6-hosted-release`
 - Verified deployed application merge: `14e66cfc8c6ced641558e95808dc51e28fd9bb3e`
 - Final Phase 4 merge SHA: `093a12044fe452fe5120d34feef73c9a26467895`
-- Release tag: pending because the Render bootstrap cleanup and fresh hosted checks are still open
+- Release tag: pending because the fresh hosted checks are still open
 
 Pull request `#3` merged Phase 4 as `093a120`. This merge added the Populate-next-week contract test inside `backend/`, so it triggered a new Render build. The hosted root changed from the earlier `19:03:05 GMT` build to `Tue, 21 Jul 2026 19:45:35 GMT`. I then checked the CSP, service worker and database health again instead of assuming that a green GitHub workflow meant the hosted service had changed.
 
@@ -89,4 +89,4 @@ The current limits are recorded in `docs/release/known_limitations.md`. The main
 
 ## Still pending before a release tag
 
-The Phase 5 merge, exact-SHA workflow, Render deployment and Neon status are verified. Phase 6 also repeats the local gate. The Chrome connector blocks both Render domains in this workspace, so I could not remove `FIRST_ADMIN_BOOTSTRAP_TOKEN`, confirm the pepper variable names, inspect hosted logs or repeat the final hosted browser matrix. Those are listed in `docs/release/phase_6_release_record.md`. The requested tag name is now known, but `v1.0.0-submission` remains uncreated until those release conditions are confirmed.
+The Phase 5 merge, exact-SHA workflow, Render deployment and Neon status are verified. Phase 6 also repeats the local gate. The required pepper variable names were checked earlier on 21 July without displaying values, and `FIRST_ADMIN_BOOTSTRAP_TOKEN` was removed after the permanent Admin setup. The Chrome connector later blocked both Render domains, so I could not repeat the final hosted browser matrix or hosted log review. Those remaining checks are listed in `docs/release/phase_6_release_record.md`. The requested tag name is known, but `v1.0.0-submission` remains uncreated until those release conditions are confirmed.
