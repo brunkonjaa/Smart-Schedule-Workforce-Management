@@ -30,6 +30,7 @@ The migrations in this folder are ordered PostgreSQL changes. Do not renumber an
 24. `024_extend_users_for_admin_and_peppered_passwords.sql` - adds the separate `ADMIN` role, Admin display/reviewer fields, password scheme and pepper version tracking, and session versioning
 25. `025_create_admin_invitations.sql` - stores hashed one-use Admin invitations with expiry and one terminal state
 26. `026_normalize_seed_account_addresses.sql` - gives the four original Irish-named seed accounts name-based Gmail-format addresses with the existing `fake` safety marker
+27. `027_allow_overnight_shifts.sql` - treats an end time earlier than the start as the next calendar day while still blocking zero-length shifts
 
 ## Running them
 

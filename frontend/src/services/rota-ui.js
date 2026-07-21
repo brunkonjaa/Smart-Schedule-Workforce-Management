@@ -576,19 +576,6 @@ window.SmartSchedule.rotaUi = (function createRotaUi() {
     });
   };
 
-  const createMenuButton = (label, onClick) => {
-    const button = uiHelpers.createElement('button', {
-      className: 'rota-cell-menu-button',
-      text: '*',
-      attributes: {
-        'aria-label': label,
-        type: 'button'
-      }
-    });
-    button.addEventListener('click', onClick);
-    return button;
-  };
-
   const renderWeekControls = (state, actions) => {
     const panel = uiHelpers.createElement('section', {
       className: 'rota-toolbar'

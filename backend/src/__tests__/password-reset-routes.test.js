@@ -4,6 +4,7 @@ const request = require('supertest');
 const app = require('../app');
 const { closePool, query } = require('../config/db');
 const { mutationProtectionHeaderName } = require('../middleware/request-security');
+const { revokeUserSessions } = require('../services/admin-service');
 
 jest.setTimeout(20000);
 
@@ -12,15 +13,18 @@ describe('password reset routes', () => {
   const managerProfileId = crypto.randomUUID();
   const staffId = crypto.randomUUID();
   const staffProfileId = crypto.randomUUID();
+  const inactiveUserId = crypto.randomUUID();
+  const inactiveProfileId = crypto.randomUUID();
   const managerEmail = `orlamccarthy${Date.now()}fake@gmail.com`;
   const staffEmail = `cillianbyrne${Date.now()}fake@gmail.com`;
+  const inactiveEmail = `inactive.reset${Date.now()}fake@gmail.com`;
   const oldPassword = 'ResetOldPassword123!';
   const newPassword = 'ResetNewPassword123!';
   const mutationHeader = { [mutationProtectionHeaderName]: '1' };
 
   const login = async (email, password) => {
     const agent = request.agent(app);
-    await agent.post('/api/v1/auth/login').send({ email, password });
+    await agent.post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({ email, password });
     return agent;
   };
 
@@ -29,21 +33,23 @@ describe('password reset routes', () => {
     await query(
       `INSERT INTO users (id, email, password_hash, role, is_active, created_at, updated_at)
        VALUES ($1, $2, $3, 'MANAGER', TRUE, NOW(), NOW()),
-              ($4, $5, $3, 'STAFF', TRUE, NOW(), NOW())`,
-      [managerId, managerEmail, passwordHash, staffId, staffEmail]
+              ($4, $5, $3, 'STAFF', TRUE, NOW(), NOW()),
+              ($6, $7, $3, 'STAFF', FALSE, NOW(), NOW())`,
+      [managerId, managerEmail, passwordHash, staffId, staffEmail, inactiveUserId, inactiveEmail]
     );
     await query(
       `INSERT INTO staff_profiles (id, user_id, full_name, primary_role, contract_hours, is_active, created_at, updated_at)
        VALUES ($1, $2, 'Orla McCarthy', 'FLOOR', 40, TRUE, NOW(), NOW()),
-              ($3, $4, 'Cillian Byrne', 'BAR', 24, TRUE, NOW(), NOW())`,
-      [managerProfileId, managerId, staffProfileId, staffId]
+              ($3, $4, 'Cillian Byrne', 'BAR', 24, TRUE, NOW(), NOW()),
+              ($5, $6, 'Inactive Reset', 'BAR', 24, FALSE, NOW(), NOW())`,
+      [managerProfileId, managerId, staffProfileId, staffId, inactiveProfileId, inactiveUserId]
     );
   });
 
   afterAll(async () => {
-    await query('DELETE FROM password_reset_requests WHERE user_id IN ($1, $2)', [managerId, staffId]);
-    await query('DELETE FROM staff_profiles WHERE id IN ($1, $2)', [managerProfileId, staffProfileId]);
-    await query('DELETE FROM users WHERE id IN ($1, $2)', [managerId, staffId]);
+    await query('DELETE FROM password_reset_requests WHERE user_id IN ($1, $2, $3)', [managerId, staffId, inactiveUserId]);
+    await query('DELETE FROM staff_profiles WHERE id IN ($1, $2, $3)', [managerProfileId, staffProfileId, inactiveProfileId]);
+    await query('DELETE FROM users WHERE id IN ($1, $2, $3)', [managerId, staffId, inactiveUserId]);
     await closePool();
   });
 
@@ -68,6 +74,26 @@ describe('password reset routes', () => {
     expect(staffResponse.status).toBe(403);
   });
 
+  test('known, unknown and inactive accounts receive the same public reset response', async () => {
+    const emails = [
+      staffEmail,
+      `unknown.reset${Date.now()}fake@gmail.com`,
+      inactiveEmail
+    ];
+    const responses = [];
+
+    for (const email of emails) {
+      responses.push(await request(app)
+        .post('/api/v1/auth/password-reset/request')
+        .set(mutationHeader)
+        .send({ email }));
+    }
+
+    expect(responses.map((response) => response.status)).toEqual([202, 202, 202]);
+    expect(responses[1].body).toEqual(responses[0].body);
+    expect(responses[2].body).toEqual(responses[0].body);
+  });
+
   test('accepts one valid reset token and rejects it when reused', async () => {
     const rawToken = crypto.randomBytes(32).toString('hex');
     const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
@@ -89,7 +115,7 @@ describe('password reset routes', () => {
       .send({ newPassword: 'AnotherPassword123!', token: rawToken });
     expect(secondResponse.status).toBe(400);
 
-    const loginResponse = await request(app).post('/api/v1/auth/login').send({
+    const loginResponse = await request(app).post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({
       email: staffEmail,
       password: newPassword
     });
@@ -105,5 +131,72 @@ describe('password reset routes', () => {
       password_scheme: 'ARGON2ID_PEPPERED'
     }));
     expect(storedPassword.rows[0].password_hash).toMatch(/^\$argon2id\$/);
+  });
+
+  test('two simultaneous attempts can consume the same reset token only once', async () => {
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    await query(
+      `INSERT INTO password_reset_requests (user_id, token_hash, expires_at)
+       VALUES ($1, $2, NOW() + INTERVAL '20 minutes')`,
+      [staffId, tokenHash]
+    );
+
+    const responses = await Promise.all([
+      request(app)
+        .post('/api/v1/auth/password-reset/confirm')
+        .set(mutationHeader)
+        .send({ newPassword: 'Concurrent reset first 123!', token: rawToken }),
+      request(app)
+        .post('/api/v1/auth/password-reset/confirm')
+        .set(mutationHeader)
+        .send({ newPassword: 'Concurrent reset second 123!', token: rawToken })
+    ]);
+
+    expect(responses.map((response) => response.status).sort()).toEqual([200, 400]);
+  });
+
+  test('changing a password invalidates every outstanding reset token', async () => {
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    await query(
+      `INSERT INTO password_reset_requests (user_id, token_hash, expires_at)
+       VALUES ($1, $2, NOW() + INTERVAL '20 minutes')`,
+      [managerId, tokenHash]
+    );
+
+    const manager = await login(managerEmail, oldPassword);
+    const changed = await manager
+      .post('/api/v1/auth/change-password')
+      .set(mutationHeader)
+      .send({
+        currentPassword: oldPassword,
+        newPassword: 'Manager changed password 123!'
+      });
+    expect(changed.status).toBe(200);
+
+    const reset = await request(app)
+      .post('/api/v1/auth/password-reset/confirm')
+      .set(mutationHeader)
+      .send({ newPassword: 'Should not be accepted 123!', token: rawToken });
+    expect(reset.status).toBe(400);
+  });
+
+  test('an account-security session reset invalidates outstanding reset tokens', async () => {
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    await query(
+      `INSERT INTO password_reset_requests (user_id, token_hash, expires_at)
+       VALUES ($1, $2, NOW() + INTERVAL '20 minutes')`,
+      [staffId, tokenHash]
+    );
+
+    await revokeUserSessions({ actorUserId: managerId, targetUserId: staffId });
+
+    const reset = await request(app)
+      .post('/api/v1/auth/password-reset/confirm')
+      .set(mutationHeader)
+      .send({ newPassword: 'Should also be rejected 123!', token: rawToken });
+    expect(reset.status).toBe(400);
   });
 });

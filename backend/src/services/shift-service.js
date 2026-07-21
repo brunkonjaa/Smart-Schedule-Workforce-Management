@@ -172,8 +172,8 @@ const validateShiftInput = (payload, requireAllFields = true) => {
   const startTime = shiftInput.startTime;
   const endTime = shiftInput.endTime;
 
-  if (startTime && endTime && compareTimes(endTime, startTime) <= 0) {
-    details.push('endTime must be after startTime');
+  if (startTime && endTime && compareTimes(endTime, startTime) === 0) {
+    details.push('endTime must not equal startTime');
   }
 
   if (!requireAllFields && Object.keys(shiftInput).length === 0 && details.length === 0) {

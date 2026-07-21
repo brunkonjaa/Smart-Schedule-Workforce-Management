@@ -1,5 +1,5 @@
 const express = require('express');
-const { requireAuth, requireRole, sendForbidden } = require('../middleware/auth');
+const { requireRole, sendForbidden } = require('../middleware/auth');
 const { requireMutationProtection } = require('../middleware/request-security');
 const { createSecurityEvent } = require('../services/security-event-service');
 const {

@@ -102,7 +102,7 @@ describe('staff routes', () => {
 
   const loginAsManager = async () => {
     const agent = request.agent(app);
-    const response = await agent.post('/api/v1/auth/login').send({
+    const response = await agent.post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({
       email: managerEmail,
       password: managerPassword
     });
@@ -113,7 +113,7 @@ describe('staff routes', () => {
 
   const loginAsStaff = async () => {
     const agent = request.agent(app);
-    const response = await agent.post('/api/v1/auth/login').send({
+    const response = await agent.post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({
       email: staffEmail,
       password: staffPassword
     });
@@ -423,13 +423,13 @@ describe('staff routes', () => {
     expect(response.body.message).toBe('Temporary password reset successfully.');
 
     const oldPasswordLoginResponse = await request(app)
-      .post('/api/v1/auth/login')
+      .post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1')
       .send({
         email: extraStaffEmail,
         password: staffPassword
       });
     const temporaryPasswordLoginResponse = await request(app)
-      .post('/api/v1/auth/login')
+      .post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1')
       .send({
         email: extraStaffEmail,
         password: temporaryResetPassword

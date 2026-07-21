@@ -39,7 +39,7 @@ describe('shift swap routes', () => {
 
   const login = async (email) => {
     const agent = request.agent(app);
-    await agent.post('/api/v1/auth/login').send({ email, password });
+    await agent.post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({ email, password });
     return agent;
   };
 

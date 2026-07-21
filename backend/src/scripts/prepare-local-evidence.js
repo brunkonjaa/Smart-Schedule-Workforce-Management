@@ -26,7 +26,6 @@ const config = require('../config/env');
 const {
   closePool,
   isLocalDatabaseUrl,
-  pool,
   query,
   withTransaction
 } = require('../config/db');

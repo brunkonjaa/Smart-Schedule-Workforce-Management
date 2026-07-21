@@ -165,11 +165,16 @@ const setupChatWebSocket = (server) => {
       sendJson(socket, { message: 'Chat history could not be loaded.', type: 'error' });
     }
 
-    socket.on('message', async (rawMessage) => {
+    socket.on('message', async (rawMessage, isBinary) => {
       let payload;
 
       const activeUser = await reauthorizeSocket(socket);
       if (!activeUser) {
+        return;
+      }
+
+      if (isBinary) {
+        sendJson(socket, { message: 'Chat messages must use text frames.', type: 'error' });
         return;
       }
 

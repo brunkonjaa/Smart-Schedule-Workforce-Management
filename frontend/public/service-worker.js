@@ -1,9 +1,17 @@
-const CACHE_NAME = 'smart-schedule-shell-v11';
+const CACHE_NAME = 'smart-schedule-static-v12';
+const OFFLINE_URL = '/offline.html';
+const STATIC_PATH_PREFIXES = ['/assets/images/', '/icons/', '/src/'];
+const STATIC_PATHS = new Set(['/manifest.webmanifest', OFFLINE_URL]);
+
+const isStaticAssetRequest = (requestUrl) => {
+  return STATIC_PATHS.has(requestUrl.pathname) ||
+    STATIC_PATH_PREFIXES.some((prefix) => requestUrl.pathname.startsWith(prefix));
+};
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.add('/'))
+      .then((cache) => cache.add(OFFLINE_URL))
       .then(() => self.skipWaiting())
   );
 });
@@ -27,7 +35,14 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (requestUrl.pathname.startsWith('/api/')) {
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match(OFFLINE_URL))
+    );
+    return;
+  }
+
+  if (!isStaticAssetRequest(requestUrl)) {
     return;
   }
 
@@ -40,8 +55,6 @@ self.addEventListener('fetch', (event) => {
         }
         return response;
       })
-      .catch(() => caches.match(event.request).then((cachedResponse) => {
-        return cachedResponse || caches.match('/');
-      }))
+      .catch(() => caches.match(event.request))
   );
 });

@@ -3,7 +3,7 @@ const {
   evaluateAssignmentEligibility,
   findShiftForAssignment,
   findStaffProfileForAssignment,
-  updateAssignment
+  updateAssignmentInTransaction
 } = require('./assignment-service');
 const { isPlainObject, listUnexpectedFields } = require('./workflow-service-utils');
 
@@ -21,7 +21,9 @@ const validateSwapInput = (payload) => {
   const targetStaffProfileId = payload.targetStaffProfileId
     ? String(payload.targetStaffProfileId).trim()
     : null;
-  const reason = payload.reason == null ? null : String(payload.reason).trim();
+  const reason = payload.reason === null || payload.reason === undefined
+    ? null
+    : String(payload.reason).trim();
 
   const unexpected = listUnexpectedFields(payload, swapFields);
   if (unexpected.length > 0) details.push(`unsupported fields: ${unexpected.join(', ')}`);
@@ -103,11 +105,20 @@ const createSwapRequest = async ({ requesterStaffProfileId, swapInput }) => {
 
     if (swapInput.targetStaffProfileId) {
       const targetResult = await client.query(
-        `SELECT id, primary_role, is_active FROM staff_profiles WHERE id = $1`,
+        `SELECT staff_profiles.id, staff_profiles.primary_role,
+                staff_profiles.is_active, users.is_active AS user_is_active
+         FROM staff_profiles
+         INNER JOIN users ON users.id = staff_profiles.user_id
+         WHERE staff_profiles.id = $1`,
         [swapInput.targetStaffProfileId]
       );
       const target = targetResult.rows[0] || null;
-      if (!target || !target.is_active || target.primary_role !== assignment.required_role) {
+      if (
+        !target ||
+        !target.is_active ||
+        !target.user_is_active ||
+        target.primary_role !== assignment.required_role
+      ) {
         return { code: 'TARGET_INELIGIBLE' };
       }
     }
@@ -132,7 +143,7 @@ const createSwapRequest = async ({ requesterStaffProfileId, swapInput }) => {
   });
 };
 
-const listSwapRequests = async (authUser) => {
+const listSwapRequests = async () => {
   const conditions = `requests.status IN ('PENDING', 'ACCEPTED')`;
   const result = await query(
     `${swapSelect} WHERE ${conditions} AND shifts.shift_date >= CURRENT_DATE ORDER BY shifts.shift_date, shifts.start_time, requests.created_at`
@@ -174,31 +185,78 @@ const acceptSwapRequest = async ({ allowIneligible = false, swapId, staffProfile
 };
 
 const decideSwapRequest = async ({ decision, managerNote, swapId, managerUserId }) => {
-  const swap = await findSwap(swapId);
-  if (!swap || !['PENDING', 'ACCEPTED'].includes(swap.status)) return { code: 'NOT_AVAILABLE' };
-  if (decision === 'APPROVE') {
-    if (!swap.acceptedByStaffProfileId) return { code: 'STAFF_NOT_ACCEPTED' };
-    let result;
-    try {
-      result = await updateAssignment(
-        swap.assignmentId,
-        { staffProfileId: swap.acceptedByStaffProfileId },
-        managerUserId
-      );
-    } catch (error) {
-      if (error.code?.startsWith('ASSIGNMENT_')) {
-        return { code: 'ASSIGNMENT_CONFLICT', detail: error.message };
-      }
-      throw error;
+  return withTransaction(async (client) => {
+    const swap = await findSwap(swapId, client, true);
+    if (!swap || !['PENDING', 'ACCEPTED'].includes(swap.status)) {
+      return { code: 'NOT_AVAILABLE' };
     }
-    if (result.missingResource) return { code: 'NOT_FOUND' };
-  }
-  const nextStatus = decision === 'APPROVE' ? 'APPROVED' : 'REJECTED';
-  const result = await query(
-    `UPDATE shift_swap_requests SET status = $1, manager_note = $2, decided_at = NOW(), decided_by_user_id = $3 WHERE id = $4 RETURNING id`,
-    [nextStatus, managerNote || null, managerUserId, swapId]
-  );
-  return { swap: result.rows[0] ? await findSwap(swapId) : null };
+
+    if (decision === 'APPROVE') {
+      if (!swap.acceptedByStaffProfileId) return { code: 'STAFF_NOT_ACCEPTED' };
+
+      const ownershipResult = await client.query(
+        'SELECT staff_profile_id FROM shift_assignments WHERE id = $1',
+        [swap.assignmentId]
+      );
+      if (
+        ownershipResult.rows[0]?.staff_profile_id !== swap.requesterStaffProfileId
+      ) {
+        return {
+          code: 'ASSIGNMENT_CONFLICT',
+          detail: 'The original assignment owner has changed.'
+        };
+      }
+
+      let result;
+      try {
+        result = await updateAssignmentInTransaction(
+          client,
+          swap.assignmentId,
+          { staffProfileId: swap.acceptedByStaffProfileId },
+          managerUserId
+        );
+      } catch (error) {
+        if (
+          error.code?.startsWith('ASSIGNMENT_') ||
+          ['SHIFT_NOT_OPEN', 'STAFF_NOT_ACTIVE'].includes(error.code)
+        ) {
+          return { code: 'ASSIGNMENT_CONFLICT', detail: error.message };
+        }
+        throw error;
+      }
+      if (result.missingResource) return { code: 'NOT_FOUND' };
+    }
+
+    const nextStatus = decision === 'APPROVE' ? 'APPROVED' : 'REJECTED';
+    const result = await client.query(
+      `UPDATE shift_swap_requests
+       SET status = $1, manager_note = $2, decided_at = NOW(), decided_by_user_id = $3
+       WHERE id = $4 AND status IN ('PENDING', 'ACCEPTED')
+       RETURNING id`,
+      [nextStatus, managerNote || null, managerUserId, swapId]
+    );
+    return { swap: result.rows[0] ? await findSwap(swapId, client) : null };
+  });
+};
+
+const withdrawSwapRequest = async ({ requesterStaffProfileId, swapId }) => {
+  return withTransaction(async (client) => {
+    const swap = await findSwap(swapId, client, true);
+    if (!swap || !['PENDING', 'ACCEPTED'].includes(swap.status)) {
+      return { code: 'NOT_AVAILABLE' };
+    }
+    if (swap.requesterStaffProfileId !== requesterStaffProfileId) {
+      return { code: 'FORBIDDEN' };
+    }
+
+    await client.query(
+      `UPDATE shift_swap_requests
+       SET status = 'CANCELLED', decided_at = NOW()
+       WHERE id = $1`,
+      [swapId]
+    );
+    return { withdrawn: true };
+  });
 };
 
 module.exports = {
@@ -207,5 +265,6 @@ module.exports = {
   decideSwapRequest,
   findSwapRequestById: findSwap,
   listSwapRequests,
-  validateSwapInput
+  validateSwapInput,
+  withdrawSwapRequest
 };

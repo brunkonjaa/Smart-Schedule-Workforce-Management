@@ -9,7 +9,6 @@ const legacyDemoDomain = 'demo.smart-schedule.test';
 const demoPassword = process.env.DEMO_STAFF_PASSWORD || crypto.randomBytes(32).toString('base64url');
 const hashRounds = 12;
 const roles = ['BAR', 'FLOOR', 'KITCHEN', 'OTHER'];
-const currentWeekOffset = 0;
 const nextWeekOffset = 1;
 const firstWeekOffset = -12;
 const staffCount = 24;
@@ -72,11 +71,6 @@ const getCurrentWeekStart = () => {
 
 const addWeeks = (weekStart, weeks) => addDays(weekStart, weeks * 7);
 
-const getDayOfWeek = (dateText) => {
-  const day = parseIsoDate(dateText).getUTCDay();
-  return day === 0 ? 7 : day;
-};
-
 const compactSlugify = (value) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
 
 const buildDemoEmail = (fullName) => `${compactSlugify(fullName)}fake@${demoDomain}`;
@@ -89,7 +83,7 @@ const hasSameDayTimeConflict = (left, right) => {
 
 const timeRange = (startTime, endTime) => ({ startTime, endTime });
 
-const buildShiftPatterns = (role, dayIndex) => {
+const buildShiftPatterns = (role) => {
   if (role === 'BAR') {
     return [
       timeRange('10:00', '17:00'),
@@ -186,10 +180,6 @@ const hasApprovedLeave = (leaveRequests, staffProfileId, dateText) => {
   });
 };
 
-const shouldKeepShiftOpen = (weekOffset, role, dayIndex, patternIndex) => {
-  return false;
-};
-
 const chooseStaffForShift = (
   staffByRole,
   leaveRequests,
@@ -251,7 +241,7 @@ const buildRotaRows = (staff, leaveRequests, managerUserId) => {
       const shiftDate = addDays(weekStart, dayIndex);
 
       roles.forEach((role) => {
-        buildShiftPatterns(role, dayIndex).forEach((shiftWindow, patternIndex) => {
+        buildShiftPatterns(role).forEach((shiftWindow) => {
           const shiftId = crypto.randomUUID();
 
           shifts.push({
@@ -262,10 +252,6 @@ const buildRotaRows = (staff, leaveRequests, managerUserId) => {
             shiftDate,
             startTime: shiftWindow.startTime
           });
-
-          if (shouldKeepShiftOpen(weekOffset, role, dayIndex, patternIndex)) {
-            return;
-          }
 
           const staffMember = chooseStaffForShift(
             staffByRole,

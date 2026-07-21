@@ -428,6 +428,9 @@ const getStaffWorkHistory = async (staffProfileId) => {
     };
     const start = new Date(`1970-01-01T${row.start_time}Z`);
     const end = new Date(`1970-01-01T${row.end_time}Z`);
+    if (end <= start) {
+      end.setUTCDate(end.getUTCDate() + 1);
+    }
     const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
     const weekEnd = new Date(`${row.week_start}T00:00:00Z`);
     weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);

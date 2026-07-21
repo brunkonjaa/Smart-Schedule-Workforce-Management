@@ -1,5 +1,6 @@
 const express = require('express');
 const config = require('../config/env');
+const { passwordActionRateLimiter } = require('../config/rate-limit');
 const { withTransaction } = require('../config/db');
 const {
   requireAuth,
@@ -186,6 +187,7 @@ router.use(requireAuth, requireAdminRole, requireAdminWorkspace);
 
 router.post(
   '/reauthenticate',
+  passwordActionRateLimiter,
   requireMutationProtection,
   asyncHandler(async (request, response) => {
     const password = typeof request.body?.password === 'string'

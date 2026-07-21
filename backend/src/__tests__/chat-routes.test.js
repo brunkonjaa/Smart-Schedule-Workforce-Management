@@ -25,7 +25,7 @@ describe('NodyChat routes and read states', () => {
 
   const login = async (email) => {
     const agent = request.agent(app);
-    const response = await agent.post('/api/v1/auth/login').send({ email, password });
+    const response = await agent.post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({ email, password });
     expect(response.status).toBe(200);
     return agent;
   };
@@ -161,5 +161,19 @@ describe('NodyChat routes and read states', () => {
 
     expect(response.status).toBe(400);
     expect(response.body.error).toBe('Validation Failed');
+  });
+
+  test('rejects an HTTP chat body above the explicit JSON limit with 413', async () => {
+    const first = await login(firstEmail);
+    const response = await first
+      .post('/api/v1/chat/messages')
+      .set(mutationHeader)
+      .send({ message: 'x'.repeat(40 * 1024) });
+
+    expect(response.status).toBe(413);
+    expect(response.body).toEqual({
+      error: 'Payload Too Large',
+      message: 'The request body is larger than the server limit.'
+    });
   });
 });

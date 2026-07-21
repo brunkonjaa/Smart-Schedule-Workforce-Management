@@ -1,6 +1,9 @@
 const express = require('express');
 const request = require('supertest');
-const { buildLoginRateLimiter } = require('../config/rate-limit');
+const {
+  buildLoginRateLimiter,
+  buildPasswordResetRateLimiter
+} = require('../config/rate-limit');
 
 describe('login rate limiter', () => {
   test('blocks repeated failed login attempts', async () => {
@@ -40,6 +43,38 @@ describe('login rate limiter', () => {
     expect(thirdResponse.body).toEqual({
       error: 'Too Many Requests',
       message: 'Too many login attempts. Please try again later.'
+    });
+  });
+});
+
+describe('password reset rate limiter', () => {
+  test('counts generic successful reset responses instead of skipping them', async () => {
+    const app = express();
+
+    app.use(express.json());
+    app.post(
+      '/password-reset',
+      buildPasswordResetRateLimiter({
+        limit: 2,
+        windowMs: 60 * 1000
+      }),
+      (request, response) => {
+        response.status(202).json({
+          message: 'If an active account matches that email, a reset link has been sent.'
+        });
+      }
+    );
+
+    const firstResponse = await request(app).post('/password-reset').send({});
+    const secondResponse = await request(app).post('/password-reset').send({});
+    const thirdResponse = await request(app).post('/password-reset').send({});
+
+    expect(firstResponse.status).toBe(202);
+    expect(secondResponse.status).toBe(202);
+    expect(thirdResponse.status).toBe(429);
+    expect(thirdResponse.body).toEqual({
+      error: 'Too Many Requests',
+      message: 'Too many password reset requests. Please try again later.'
     });
   });
 });

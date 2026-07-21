@@ -71,7 +71,7 @@ describe('audit log routes', () => {
 
   const login = async (email, password) => {
     const agent = request.agent(app);
-    const response = await agent.post('/api/v1/auth/login').send({ email, password });
+    const response = await agent.post('/api/v1/auth/login').set('x-smart-schedule-csrf', '1').send({ email, password });
     expect(response.status).toBe(200);
     return agent;
   };
@@ -169,6 +169,57 @@ describe('audit log routes', () => {
     expect(secondPage.status).toBe(200);
     expect(secondPage.body.logs.length).toBeGreaterThan(0);
     expect(secondPage.body.pagination.hasPrevious).toBe(true);
+  });
+
+  test('first, middle, final and beyond-final pages have explicit outcomes', async () => {
+    const agent = await login(managerEmail, managerPassword);
+    const first = await agent.get('/api/v1/audit-logs?page=1&limit=10');
+    expect(first.status).toBe(200);
+    const totalPages = first.body.pagination.totalPages;
+    const middlePage = Math.max(1, Math.ceil(totalPages / 2));
+
+    const middle = await agent.get(`/api/v1/audit-logs?page=${middlePage}&limit=10`);
+    const final = await agent.get(`/api/v1/audit-logs?page=${totalPages}&limit=10`);
+    const beyond = await agent.get(`/api/v1/audit-logs?page=${totalPages + 1}&limit=10`);
+
+    expect(middle.status).toBe(200);
+    expect(middle.body.pagination.page).toBe(middlePage);
+    expect(final.status).toBe(200);
+    expect(final.body.pagination).toEqual(expect.objectContaining({
+      hasNext: false,
+      page: totalPages
+    }));
+    expect(beyond.status).toBe(400);
+    expect(beyond.body.details).toContain('page is beyond the available Rota activity records');
+  });
+
+  test('equal timestamps keep a stable descending UUID order', async () => {
+    const lowerId = '00000000-0000-4000-8000-000000000001';
+    const higherId = '00000000-0000-4000-8000-000000000002';
+    const timestamp = '2099-01-01T12:00:00.000Z';
+    await query(
+      `INSERT INTO audit_logs (
+         id, actor_user_id, action, entity_type, entity_id, summary,
+         before_state, after_state, created_at
+       ) VALUES
+         ($1, $3, 'SHIFT_CREATED', 'SHIFT', $4, 'Stable lower', NULL, NULL, $5),
+         ($2, $3, 'SHIFT_CREATED', 'SHIFT', $6, 'Stable higher', NULL, NULL, $5)`,
+      [lowerId, higherId, managerId, crypto.randomUUID(), timestamp, crypto.randomUUID()]
+    );
+
+    const agent = await login(managerEmail, managerPassword);
+    const response = await agent.get('/api/v1/audit-logs?limit=200');
+    const stableIds = response.body.logs
+      .filter((record) => [lowerId, higherId].includes(record.id))
+      .map((record) => record.id);
+    expect(stableIds).toEqual([higherId, lowerId]);
+  });
+
+  test('normal application routes do not expose audit update or delete operations', async () => {
+    const agent = await login(managerEmail, managerPassword);
+    const auditId = crypto.randomUUID();
+    expect((await agent.put(`/api/v1/audit-logs/${auditId}`).send({})).status).toBe(404);
+    expect((await agent.delete(`/api/v1/audit-logs/${auditId}`)).status).toBe(404);
   });
 
   test.each([

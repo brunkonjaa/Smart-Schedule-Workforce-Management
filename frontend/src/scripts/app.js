@@ -188,7 +188,7 @@
     clearTransientOverlays();
     pageIntroElement.dataset.page = page.id;
     document.body.dataset.page = page.id;
-    pageIntroElement.innerHTML = layout.renderPageIntro(page, state.role);
+    pageIntroElement.innerHTML = layout.renderPageIntro(page);
     workspaceElement.innerHTML =
       page.id === 'login' ? '' : layout.renderWorkspace(page);
 
