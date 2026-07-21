@@ -8,6 +8,8 @@ Hosted app: [Smart Schedule on Render](https://smart-schedule-workforce-manageme
 
 Render is using its free service tier, so the first load can take longer if the service has gone to sleep.
 
+The public `/health` response also includes `releaseCommit`. On Render this is the validated 40-character Git SHA for the running build. Local runs return `null`, which keeps an unset or malformed value from being presented as release evidence.
+
 ## Current build
 
 The current build includes:

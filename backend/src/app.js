@@ -3,6 +3,7 @@ const path = require('path');
 const helmet = require('helmet');
 const config = require('./config/env');
 const { checkDatabaseConnection } = require('./config/db');
+const { getReleaseCommit } = require('./config/release');
 const {
   buildHelmetOptions,
   configureTrustProxy
@@ -52,16 +53,20 @@ app.use('/api/v1/chat', chatRoutes);
 app.use(express.static(frontendPublicDirectory));
 
 app.get('/health', healthRateLimiter, async (request, response) => {
+  const releaseCommit = getReleaseCommit();
+
   try {
     await checkDatabaseConnection();
 
     response.status(200).json({
       database: 'connected',
+      releaseCommit,
       status: 'ok'
     });
   } catch (error) {
     response.status(503).json({
       database: 'disconnected',
+      releaseCommit,
       status: 'error'
     });
   }

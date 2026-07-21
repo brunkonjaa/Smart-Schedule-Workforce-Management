@@ -225,10 +225,11 @@ Examples:
 - `186` Phase 4 local verification showing 29 passing suites, 236 passing tests, final coverage, migrations `001` to `027`, clean ESLint and zero known production dependency vulnerabilities
 - `187` Phase 4 pull-request GitHub Actions run showing the passed PostgreSQL migration, coverage, Argon2id, audit and artifact steps with 29 suites and 236 tests
 - `188` hosted Phase 4 deployment verification showing merge `093a120`, passed merged-branch Actions run `29862501251`, the new Render timestamp, exact WebSocket CSP origin, service-worker cache v12 and connected database health
+- `189` Phase 5 local release gate showing a fresh empty PostgreSQL build through migration `027`, 30 passing suites, 243 passing tests, final coverage, Argon2id measurement and zero production dependency vulnerabilities
 
 ## Phase 4 index review
 
-I checked the numbered image files against this index on 21 July 2026. There are 184 numbered files and every one has a caption here. Number `108` is a JPG, not a missing PNG. Numbers `148` and `150` to `152` are unused. I left those gaps in place because renumbering later screenshots would make older report references point at the wrong evidence. No evidence number is duplicated.
+I checked the numbered image files against this index on 21 July 2026. There are 185 numbered files and every one has a caption here. Number `108` is a JPG, not a missing PNG. Numbers `148` and `150` to `152` are unused. I left those gaps in place because renumbering later screenshots would make older report references point at the wrong evidence. No evidence number is duplicated.
 
 ## Practical Reminder
 
