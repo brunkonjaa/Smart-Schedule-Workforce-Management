@@ -216,10 +216,12 @@ Examples:
 - `177` combined Phase 1 and Phase 2 lint evidence showing the `chore/phase-1-verification` branch, the exact lint command and a clean returned PowerShell prompt
 - `178` combined Phase 1 and Phase 2 backend coverage showing 25 passing suites, 219 passing tests and 62.18% branch coverage
 - `179` combined Phase 1 and Phase 2 production dependency audit and Argon2id benchmark showing zero known vulnerabilities, the configured parameters, four concurrent operations and the observed local timing and memory result
-- `181` filtered hosted Render response headers showing the deployed CSP, frame protection, nosniff, no-referrer and HSTS values without credentials
+- `180` PR-triggered GitHub Actions evidence for pull request `#1`, commit `f97d9a5` and successful backend workflow run `29859249959`
+- `181` deployed Render response evidence showing the exact hosted WebSocket CSP origin, frame protection, nosniff, no-referrer, HSTS, service-worker cache v12 and connected health result
 - `182` production session-cookie attributes with the value omitted, followed by six passing Phase 3 HTTP security tests
 - `183` GitHub repository security settings showing secret scanning, push protection, Dependabot security updates and vulnerability alerts enabled
 - `184` repository security review showing clean current-file and Git-history scans plus the five largest tracked files, without printing matched secret values
+- `185` authenticated hosted login and `/me` evidence showing `Secure`, `HttpOnly` and `SameSite=Lax` with the cookie value omitted, followed by a `204` cleanup logout
 
 ## Practical Reminder
 
