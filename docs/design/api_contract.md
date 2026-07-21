@@ -2,7 +2,7 @@
 
 ## Read This File The Right Way
 
-This file records the route shapes in the current repo. Password recovery, shift swaps, rota reads, assignment changes, audit reads, and NodyChat conversations are included. Weekly availability is historical and is not a live route.
+This is the detailed agreement between the browser and the backend. For each route it records what is sent, what can come back and which role or ownership rule applies. It is technical by purpose, but it follows the real routes in the repo rather than the first proposal. Password recovery, swaps, rota, assignments, audit records, Admin security and NodyChat are included. Weekly availability is historical and has no live route.
 
 ## Current Live Backend Surface
 
@@ -224,11 +224,11 @@ That matters because the auth direction is no longer abstract. The app already h
 
 Admin sessions ignore Remember me. Their current policy is a 30-minute idle timeout and an eight-hour absolute lifetime. The session also carries the account `session_version`, which is checked against PostgreSQL on protected requests.
 
-That part is no longer just planned. The session base is live now because the auth routes are using it already. Assignment conflict checks, contract-hours warnings, the rota route layer, and audit log writes are now live too, while deployment checks still come later.
+This is not a future design note. The auth, assignment, rota, audit, Admin and chat routes all use this session base in the submitted application.
 
-## Contract Conventions For The Next Routes
+## Shared Contract Conventions
 
-For the current and next routes, these are the rules I am keeping:
+These are the shared rules used across the current routes:
 
 1. base path: `/api/v1`
 2. auth style: server-side session with `express-session`
@@ -250,13 +250,7 @@ Example error payload:
 
 ## Current Build Reality
 
-The auth routes above are live now. Staff, leave, shift, assignment, swap, and rota routes are live as well.
-
-That means:
-
-1. the route shapes here are a mix of current and next
-2. the repo already exposes the staff, leave, shift, assignment, swap, and rota read surface
-3. manager audit records can be read through the protected audit-log route
+The routes in this file are implemented in the submitted repo. A route still has to pass its session, role, ownership, validation and workflow checks; being listed here does not mean every signed-in user can call it.
 
 ## Staff Routes
 
@@ -275,7 +269,7 @@ Current request shape:
 ```json
 {
   "email": "aoifeosullivanfake@gmail.com",
-  "password": "InitialTempPassword123",
+  "password": "<temporary password>",
   "fullName": "Alex Byrne",
   "primaryRole": "FLOOR",
   "contractHours": 25,

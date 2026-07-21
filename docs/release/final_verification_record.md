@@ -1,5 +1,7 @@
 # Final verification record
 
+This file is the detailed proof behind the short release summary in the README. It keeps exact commits, commands, totals and evidence numbers so the result can be checked instead of relying on a broad claim that the application was "tested".
+
 ## Verification point
 
 - Date: 21 July 2026

@@ -1,6 +1,6 @@
 # Lighthouse Evidence
 
-I ran these reports in Chrome Incognito on 20 July 2026 against the warm hosted Smart Schedule application. The files are kept in HTML for reading and JSON so the exact scores, URL, mode and audit details are still available.
+These are the saved Lighthouse checks for the hosted application. I ran them in Chrome Incognito on 20 July 2026 after the free Render service was warm. The HTML files are easier to read and the JSON files keep the exact scores, URL, mode and audit details. Lighthouse supports the browser review, but it does not replace the keyboard and focus checks I did myself.
 
 | Report | Mode | Result |
 | --- | --- | --- |

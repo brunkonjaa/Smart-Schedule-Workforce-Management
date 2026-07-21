@@ -1,6 +1,6 @@
 # API Method, Role, Validation And Error Table
 
-This is the short report version of the live API contract. It is based on the route files under `backend/src/routes`, not on the first proposal. `M` means the `x-smart-schedule-csrf` mutation header is required. Normal unauthenticated and wrong-role responses are `401` and `403`.
+This is the compact report version of the live API contract. Each row says which request the browser makes, who may use it, what the backend checks and what result comes back. It is based on `backend/src/routes`, not the first proposal. `M` means the application mutation header is required. A signed-out request normally gets `401`; a signed-in user with the wrong role normally gets `403`.
 
 | Method and path | Access | Main validation or ownership rule | Main success / error responses |
 | --- | --- | --- | --- |
@@ -30,7 +30,7 @@ This is the short report version of the live API contract. It is based on the ro
 | `PUT /api/v1/leave-requests/{id}/reject` | Manager + M | UUID, pending state, optional comment | `200`; `400`, `404`, `409` |
 | `DELETE /api/v1/leave-requests/{id}` | Staff + M | owner and pending state | `204`; `400`, `403`, `404`, `409` |
 | `GET /api/v1/shifts` | Manager | week/date filters | `200`; `400` |
-| `POST /api/v1/shifts` | Manager + M | date, time order, role, status and notes | `201`; `400`, `409` |
+| `POST /api/v1/shifts` | Manager + M | date, times, non-zero length, role, status and notes; an earlier end clock time means overnight | `201`; `400`, `409` |
 | `PUT /api/v1/shifts/{shiftId}` | Manager + M | UUID and allowed fields | `200`; `400`, `404`, `409` |
 | `DELETE /api/v1/shifts/{shiftId}` | Manager + M | UUID; deletion rules and references | `204`; `400`, `404`, `409` |
 | `GET /api/v1/assignments` | Manager | route filters and UUIDs | `200`; `400` |

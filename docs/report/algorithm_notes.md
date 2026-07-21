@@ -1,10 +1,10 @@
 # Smart Schedule Algorithm Notes
 
-These notes describe the current order in the repo. They do not claim a separate scheduling engine. The manager-reviewed next-week population is a browser draft which still saves through the normal shift and assignment routes.
+This file explains the parts of Smart Schedule that make a decision in a set order. In plain terms, it shows why an assignment is accepted or refused, how a next-week suggestion is chosen, how a swap changes state and how NodyChat knows what is unread. There is no separate AI scheduling engine. The Manager-reviewed next-week result is a browser draft and still saves through the normal protected shift and assignment routes.
 
 ## Assignment order and hard conflicts
 
-An assignment starts with exact request validation. The service then uses a serializable transaction and locks the rows needed for the decision. The checks run in this order:
+An assignment starts by checking the request contains the right kind of values. The backend then protects the decision as one database transaction so two requests cannot quietly save conflicting results at the same time. The rules run in this order:
 
 1. the shift must exist and have `OPEN` status
 2. the staff profile and linked user must both be active

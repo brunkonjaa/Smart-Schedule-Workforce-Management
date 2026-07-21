@@ -1,59 +1,57 @@
 # Project Scope
 
-## Project problem
+This file sets the boundary around Smart Schedule. It explains the problem I chose, what I finished, and what I deliberately left outside a small hospitality rota application.
 
-Smart Schedule is for a small hospitality team where the weekly rota depends on staff roles, leave dates, shift times, and last-minute changes. The problem is not only writing names into a table. A manager also needs to avoid putting someone on approved leave, giving them overlapping work, or breaking the weekly shift and hour limits.
+## The problem I chose
 
-Staff have a different problem. They need to see the roster, request time off, see previous worked weeks, and ask for a future shift swap without sending separate messages to every colleague.
+I have spent over 25 years in hospitality management, so the problem came from work I know first hand. A weekly rota is not just names in boxes. Before assigning somebody, a manager has to know whether the person is active, can work that role, is on approved leave, already has a clashing shift, or is reaching the weekly limits. Last-minute swaps then add another set of messages and checks.
 
-## Current MVP
+Staff need the same information from the other side. They should be able to see the rota, request Time Off and deal with a future shift change without learning a large HR system or contacting several people to find the right answer.
 
-The current build includes:
+## The finished MVP
 
-1. manager and staff login with server-side sessions
-2. manager staff records with active/inactive state and role information
-3. leave requests with manager decisions and staff withdrawal of pending requests
-4. shift creation and editing for Bar, Floor, Kitchen, and Kitchen Porter work
-5. manager assignment and reassignment actions
-6. role, leave, active-account, duplicate, overlap, touching-shift, five-shift, and forty-hour checks
-7. contract-hour warnings where the manager can still save the assignment
-8. weekly rota view with week navigation and department filters
-9. staff access to the full weekly roster while manager edit actions remain protected
-10. manager-controlled next-week rota drafts copied from the current weekly pattern
-11. password reset links with expiry and single-use tokens
-12. manager-only password request display
-13. future-shift swap requests with optional target staff, target acceptance, and manager approval
-14. staff overview history and responsive time-off, swap, and rota navigation cards
+Smart Schedule now includes:
 
-## Not part of this MVP
+1. separate Admin, Manager and Staff accounts with backend permission checks;
+2. staff records with role, contract hours and active state;
+3. a Monday-to-Sunday rota for Bar, Floor, Kitchen and Kitchen Porter;
+4. shift creation, editing and assignment from the Manager workflow;
+5. overnight shifts and checks for approved leave, role mismatch, duplicate assignment, overlapping or touching shifts, five shifts and forty hours per week;
+6. a contract-hours warning that still lets the Manager make the final decision when the hard limits pass;
+7. Time Off submission, withdrawal and Manager approval or rejection;
+8. future shift swaps with an optional target, staff acceptance and a final Manager decision;
+9. a reviewable `Populate next week` draft based on the current week's shift pattern;
+10. previous worked weeks, Employee Summary and separate rota/employee-access audit records;
+11. password reset, password change, passkeys and the narrow Admin account-security workspace;
+12. NodyChat workplace and direct conversations with participant checks; and
+13. an installable web-app shell for browsers that support it.
 
-I have left these out of the current build:
+## Why the application stays small
 
-1. full automatic rota generation
-2. payroll and attendance integration
-3. POS or sales forecasting
-4. multi-branch support
-5. native mobile app
-6. reports and wider audit reporting beyond the current manager audit page
+The focus is ordinary staffing work in one hospitality workplace. I did not add payroll, accounting or a large HR section just to make the system appear bigger. A small hospitality business may not need those parts, and it may already use another service for them. Keeping them out leaves a shorter route between signing in and doing the actual rota job.
 
-`Populate next week` creates a manager-controlled draft for the next seven days. It copies the current shift pattern, checks the same assignment rules, and waits for manager approval before saving. This is not treated as full automatic scheduling because the manager still reviews the rota.
+This is a scope choice, not a claim that payroll or HR never matter. A business can use Smart Schedule if this focused setup fits how it works. A larger or multi-site organisation would need more than this MVP provides.
 
-## Main workflow rules
+## Main rules
 
-1. only an active staff account with the correct role can be assigned
-2. approved leave blocks assignment on matching dates
-3. overlapping and touching shifts are blocked on the same day
-4. more than five assigned shifts in a week is blocked
-5. more than forty assigned hours in a week is blocked
-6. contract-hour excess is returned as a warning when the hard limits still allow the save
-7. staff can view the rota but cannot edit shifts or assignments
-8. only the logged-in owner can request a swap for their own future assignment
-9. a swap changes the assignment only after the target accepts and a manager approves it
+1. Only an active staff account with the required role can be assigned.
+2. Approved Time Off blocks an assignment on the matching date.
+3. Overlapping and touching shifts are blocked.
+4. More than five assigned shifts or forty assigned hours in one week is blocked.
+5. Contract-hour excess returns a warning when the hard rules still allow the save.
+6. Staff can read the full rota but cannot change shifts or assignments.
+7. Only the owner can request a swap from their own future assignment.
+8. A swap changes the rota only after staff acceptance, Manager approval and one final eligibility check.
+9. An Admin does not inherit Manager access to employee or rota information.
 
-## Direction change: weekly availability
+## Two deliberate workflow limits
 
-Weekly availability was removed from the final workflow. In a real hospitality team staff are not normally expected to send management a fresh availability form every week. The rota uses the normal staffing pattern and records exceptions through Time Off and future shift swap requests. The old availability migration remains in the ordered history, and migration `014_remove_weekly_availability.sql` removes the old table safely.
+`Populate next week` is not automatic scheduling. It copies a pattern, applies fixed rules and shows a draft. The Manager remains responsible for checking the demand, the people and any unfilled shift before approving it.
 
-## What still needs proof
+Weekly availability was removed. Asking every staff member to fill in another form each week did not match the normal hospitality routine I was trying to support. Smart Schedule treats the regular pattern as normal and records exceptions through Time Off and shift swaps. Migration `014_remove_weekly_availability.sql` keeps that direction change visible in the real database history.
 
-The main code workflow and manager audit page are present. The remaining project work is final hosted verification, formal UAT evidence, and final report alignment.
+## Outside this MVP
+
+The finished submission does not include payroll or accounting, POS/sales forecasting, billing, multi-branch management, native Android or iOS applications, or autonomous rota publishing. Chat retention/deletion controls and independent participant testing are also outside this release.
+
+The application, database and main automated checks are complete for the submitted scope. Hosted checks that could not be repeated are listed in [known_limitations.md](../release/known_limitations.md) and the exact release evidence is in [final_verification_record.md](../release/final_verification_record.md).

@@ -1,6 +1,6 @@
 # Final release checklist
 
-This is the last checklist before a Smart Schedule release tag. A checked item means there is a command, file, workflow run or screenshot behind it. Phase 6 hosted items stay unchecked until they are repeated or confirmed against the deployed SHA.
+This is the last checklist used for the Smart Schedule submission tag. A checked item means there is a command, file, workflow run or screenshot behind it. An unchecked item stays visible even when the automated version of the same rule passed, because a local test does not prove a hosted browser or provider setting.
 
 ## Repository and database
 

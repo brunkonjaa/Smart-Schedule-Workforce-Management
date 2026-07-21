@@ -1,6 +1,6 @@
 # Local Evidence Workflow
 
-Use this workflow for repeatable Smart Schedule checks against local PostgreSQL. The guard is important: the hosted `.env` points to Neon, so reset and seed commands must use `backend/local-evidence.env` instead.
+Use this workflow when a clean, repeatable rota is needed for screenshots or manual checks. It deliberately uses local PostgreSQL. The guard matters because the normal hosted setup points to Neon, and an evidence reset must never delete or replace hosted records.
 
 ## Setup
 

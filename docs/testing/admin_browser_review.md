@@ -1,5 +1,7 @@
 # Admin Browser Review
 
+This is the manual browser plan for the separate Admin workspace. It checks the visible account-security actions, but it also makes sure Admin does not accidentally gain the Manager's rota and employee pages.
+
 ## QA inventory
 
 This pass uses Niamh O'Sullivan, Ciaran Murphy, Declan O'Connor, Maeve Ryan and Aoife Brennan against the guarded local PostgreSQL database. Their Gmail-format addresses keep the deliberate `fake` marker. The script does not print or save passwords, invitation values, cookies or passkey credential material. It removes the temporary rows when the run finishes.

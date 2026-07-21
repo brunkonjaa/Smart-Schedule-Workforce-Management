@@ -1,5 +1,7 @@
 # Phase 3 security and repository evidence
 
+This is the evidence record for the security hardening checkpoint. It explains what changed, which hosted response belonged to the merge and where the remaining limits were, instead of using one green workflow as proof of every browser and deployment setting.
+
 ## Result
 
 I completed the Phase 3 review on `chore/phase-3-security-review`. The final automated result is 28 Jest suites and 232 tests passing. Coverage finished at 77.26% statements, 62.56% branches, 86.34% functions and 78.24% lines. ESLint also returned with no errors or warnings.

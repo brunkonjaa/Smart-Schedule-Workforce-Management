@@ -1,8 +1,10 @@
 # Smart Schedule Security Analysis And Threat Model
 
+This file explains what I was trying to protect, where data crosses a boundary and what could still go wrong. It comes from the cybersecurity side of the project, but every control is tied back to the actual Smart Schedule code or evidence. It is not a claim that the application had an independent penetration test.
+
 ## Audit point
 
-This review starts from final report-evidence checkpoint `db2837c854291b8965c3f3e4b3d9b1cc9e018527`, committed on 17 July 2026 at 20:13:17 +01:00, and now includes the local 21 July Admin/password checkpoint. It covers the Express backend, PostgreSQL/session boundary, browser frontend and NodyChat WebSocket. The Admin changes have not been deployed yet. This does not claim a penetration test or an independent security assessment.
+This review started from report-evidence checkpoint `db2837c854291b8965c3f3e4b3d9b1cc9e018527` and was then updated through the 21 July Admin/password and final release work. It covers the Express backend, PostgreSQL/session boundary, browser frontend and NodyChat WebSocket. The Admin changes are included in deployed application SHA `14e66cfc8c6ced641558e95808dc51e28fd9bb3e`. Some final hosted Admin/passkey actions and log checks could not be repeated after the browser connector blocked the Render domains, so the automated result is not presented as a fresh hosted check.
 
 The GitHub Actions run for `304a8c62b7c88c1ad2288f822849c87e359ad4cb` found a new low-severity `body-parser` denial-of-service advisory on 21 July 2026. The lockfile had selected `body-parser` 1.20.5 through Express. I updated it to the compatible 1.20.6 fix and also accepted the current patched `brace-expansion` lock entries. The repeated `npm audit --omit=dev --json` result is zero known vulnerabilities across 118 production dependencies. This can change again when package advisories change, so the lockfile check remains in GitHub Actions.
 

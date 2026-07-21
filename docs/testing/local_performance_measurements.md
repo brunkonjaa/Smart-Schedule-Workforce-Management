@@ -1,5 +1,7 @@
 # Local Performance Measurements
 
+This is a narrow timing check from one local computer. It is useful for spotting a slow backend request under the same conditions, but it is not a claim about every phone, internet connection or Render cold start.
+
 ## What I measured
 
 I ran `node scripts/measure_local_performance.js` on 17 July 2026 against `http://localhost:3000` and the guarded `smart_schedule_local` PostgreSQL database. Migrations 001 to 022 were applied. Each row below is fifteen sequential HTTP requests after one manager login.
