@@ -226,10 +226,12 @@ Examples:
 - `187` Phase 4 pull-request GitHub Actions run showing the passed PostgreSQL migration, coverage, Argon2id, audit and artifact steps with 29 suites and 236 tests
 - `188` hosted Phase 4 deployment verification showing merge `093a120`, passed merged-branch Actions run `29862501251`, the new Render timestamp, exact WebSocket CSP origin, service-worker cache v12 and connected database health
 - `189` Phase 5 local release gate showing a fresh empty PostgreSQL build through migration `027`, 30 passing suites, 243 passing tests, final coverage, Argon2id measurement and zero production dependency vulnerabilities
+- `190` Phase 5 pull-request workflow showing exact source commit `a0303bc`, run `29864595561`, all required steps passed in 66 seconds, 30 suites and 243 tests, and the `backend-coverage` artifact
+- `191` Phase 5 final deployment showing merged SHA `14e66cf` passed the main workflow and exactly matched Render, with Neon 27/27 applied, the public Edge login check passing and all 21 JavaScript/CSS responses matching the commit
 
-## Phase 4 index review
+## Phase 4 and Phase 5 index review
 
-I checked the numbered image files against this index on 21 July 2026. There are 185 numbered files and every one has a caption here. Number `108` is a JPG, not a missing PNG. Numbers `148` and `150` to `152` are unused. I left those gaps in place because renumbering later screenshots would make older report references point at the wrong evidence. No evidence number is duplicated.
+I checked the numbered image files against this index on 21 July 2026. There are 187 numbered files and every one has a caption here. Number `108` is a JPG, not a missing PNG. Numbers `148` and `150` to `152` are unused. I left those gaps in place because renumbering later screenshots would make older report references point at the wrong evidence. No evidence number is duplicated.
 
 ## Practical Reminder
 

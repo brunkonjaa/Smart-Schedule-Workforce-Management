@@ -20,6 +20,9 @@ This is the last checklist before a Smart Schedule release tag. A checked item m
 - [x] Baseline `main` GitHub Actions run `29860448346` passed.
 - [x] Phase 4 pull-request GitHub Actions run `29862074201` passed with 29 suites and 236 tests.
 - [x] Phase 4 merged `main` GitHub Actions run `29862501251` passed.
+- [x] Phase 5 source commit `a0303bc` passed pull-request run `29864595561`.
+- [x] Phase 5 merge `14e66cf` passed `main` run `29864800275`.
+- [x] Both Phase 5 workflows uploaded the `backend-coverage` artifact.
 
 ## Hosted checks
 
@@ -29,6 +32,10 @@ This is the last checklist before a Smart Schedule release tag. A checked item m
 - [x] Neon production monitoring and database-size evidence exists in screenshots `157` and `158`.
 - [x] Render free-tier cold starts remain documented instead of treated as an application failure.
 - [x] Render served the Phase 4 merge with a new `Tue, 21 Jul 2026 19:45:35 GMT` timestamp in screenshot `188`.
+- [x] Render `/health.releaseCommit` exactly matched Phase 5 merge `14e66cf` in screenshot `191`.
+- [x] Neon reported migrations `001` through `027` applied, with nothing pending.
+- [x] A fresh Edge context loaded the hosted sign-in form with zero page errors.
+- [x] All 21 hosted JavaScript and CSS responses matched merge `14e66cf`.
 
 ## Main workflows and presentation
 
@@ -45,6 +52,7 @@ This is the last checklist before a Smart Schedule release tag. A checked item m
 - [x] Phase 4 pull request merged as `093a12044fe452fe5120d34feef73c9a26467895`.
 - [x] Final merge SHA recorded after the merge exists.
 - [x] Live service rechecked after the backend-triggered Render deployment.
+- [x] Phase 5 exact source checkpoint passed locally, in GitHub Actions and on Render with connected Neon health.
 - [ ] Release tag created and pushed.
 
 The tag should not be created just to make this checklist look complete. It comes last, after the final SHA and hosted state have both been checked.

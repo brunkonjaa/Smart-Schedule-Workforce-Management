@@ -28,11 +28,18 @@ The Phase 5 instruction mentions migrations `001` through `026`. The current rep
 
 ## Exact checkpoint evidence
 
-- Source commit: pending until the Phase 5 commit exists.
-- Pull-request workflow URL, duration and `backend-coverage` artifact: pending.
-- Merged `main` commit and workflow: pending.
-- Render-reported `releaseCommit`: pending.
-- Neon status through migration `027`: pending until the target is checked again after deployment.
-- Hosted login, JavaScript and CSS response check: pending.
+- Source commit: `a0303bc1677ad0d94aefb90ffd58facacbef1d30`.
+- Pull-request workflow: run `29864595561` passed that exact SHA in 66 seconds and uploaded `backend-coverage`.
+- Merged `main` commit: `14e66cfc8c6ced641558e95808dc51e28fd9bb3e`.
+- Merged workflow: run `29864800275` passed the merge SHA in 71 seconds and uploaded `backend-coverage`.
+- Render-reported `releaseCommit`: `14e66cfc8c6ced641558e95808dc51e28fd9bb3e`.
+- Render root timestamp: `Tue, 21 Jul 2026 20:16:18 GMT`.
+- Neon status: migrations `001` through `027` reported `APPLIED`, with no pending migration.
+- Hosted login: fresh headless Edge context returned HTTP 200 and displayed the form, email input, password input and Sign in button with zero page errors.
+- Hosted frontend: all 21 referenced JavaScript and CSS responses matched the files at merge `14e66cf`; `smart-schedule-static-v12` was still served.
 
-These values stay pending until they actually exist. An older Phase 4 workflow or Render timestamp is not Phase 5 evidence.
+Screenshot `190` records the exact pull-request workflow and artifact. Screenshot `191` records the merged workflow, exact Render SHA, Neon migration count, browser login result and frontend content comparison. The connection string, login details, cookies, tokens and secrets are omitted.
+
+## Completion result
+
+Phase 5 is complete. The merged commit `14e66cf` passed GitHub Actions and the hosted `/health` response reports the same full SHA while connected to the up-to-date Neon database. The evidence-only follow-up does not change `backend/`, so it does not replace that application deployment.
