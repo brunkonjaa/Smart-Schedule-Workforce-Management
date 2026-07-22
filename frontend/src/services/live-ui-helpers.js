@@ -157,6 +157,7 @@ window.SmartSchedule.liveUiHelpers = (function createLiveUiHelpers() {
 
   const formatRole = (role) => {
     const labels = {
+      ADMIN: 'Administrator',
       ALL: 'All roles',
       BAR: 'Bar',
       FLOOR: 'Floor',
@@ -167,6 +168,27 @@ window.SmartSchedule.liveUiHelpers = (function createLiveUiHelpers() {
     };
 
     return labels[role] || role || 'Not set';
+  };
+
+  const formatAccountFunction = (user) => {
+    const accountRole = String(user?.role || '').trim().toUpperCase();
+
+    if (accountRole === 'ADMIN') {
+      return 'Administrator';
+    }
+
+    const accountLabel = accountRole === 'MANAGER'
+      ? 'Manager'
+      : accountRole === 'STAFF'
+        ? 'Staff'
+        : formatRole(accountRole);
+    const primaryRole = String(user?.primaryRole || '').trim().toUpperCase();
+
+    if (!primaryRole) {
+      return accountLabel;
+    }
+
+    return `${formatRole(primaryRole)} ${accountLabel}`;
   };
 
   const formatStatus = (status) => {
@@ -467,6 +489,7 @@ window.SmartSchedule.liveUiHelpers = (function createLiveUiHelpers() {
     createTableCell,
     createStepsPanel,
     createWizardProgress,
+    formatAccountFunction,
     formatRole,
     formatStatus,
     getErrorFeedback,

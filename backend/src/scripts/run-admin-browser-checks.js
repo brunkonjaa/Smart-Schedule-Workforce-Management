@@ -182,7 +182,7 @@ const run = async () => {
   };
   const emails = {
     invited: 'declanoconnoradminfake@gmail.com',
-    manager: 'maeveryanmanagerfake@gmail.com',
+    manager: 'fionahughesmanagerfake@gmail.com',
     normalAdmin: 'ciaranmurphyadminfake@gmail.com',
     reviewer: 'niamhosullivanadminfake@gmail.com',
     staff: 'aoifebrennanstafffake@gmail.com'
@@ -232,7 +232,7 @@ const run = async () => {
           id, user_id, full_name, primary_role, contract_hours,
           phone_number, is_active, created_at, updated_at
         )
-        VALUES ($1, $2, 'Maeve Ryan', 'FLOOR', 40, NULL, TRUE, NOW(), NOW()),
+        VALUES ($1, $2, 'Fiona Hughes', 'FLOOR', 40, NULL, TRUE, NOW(), NOW()),
                ($3, $4, 'Aoife Brennan', 'BAR', 20, NULL, TRUE, NOW(), NOW())
       `,
       [ids.managerProfile, ids.manager, ids.staffProfile, ids.staff]
@@ -467,6 +467,10 @@ const run = async () => {
     await waitForSettledAuthenticatedPage(managerPage, 'rota');
     await managerPage.locator('.rota-table').waitFor();
     check(
+      await managerPage.locator('#user-greeting').getByText('Floor Manager', { exact: false }).isVisible(),
+      'Manager greeting shows the Floor Manager position'
+    );
+    check(
       JSON.stringify(await getNavigationLabels(managerPage)) === JSON.stringify([
         'Rota', 'Overview', 'Audit log', 'Password', 'Logout', 'Staff', 'Time Off', 'Swap Requests'
       ]),
@@ -550,6 +554,10 @@ const run = async () => {
     await login(staffPage, emails.staff, passwords.staff);
     await waitForSettledAuthenticatedPage(staffPage, 'rota');
     await staffPage.locator('.rota-table').waitFor();
+    check(
+      await staffPage.locator('#user-greeting').getByText('Bar Staff', { exact: false }).isVisible(),
+      'Staff greeting shows the Bar Staff position'
+    );
     check(
       JSON.stringify(await getNavigationLabels(staffPage)) === JSON.stringify([
         'Rota', 'Overview', 'Password', 'Logout', 'Time Off', 'Swap Requests'

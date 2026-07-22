@@ -100,6 +100,8 @@ describe('audit log routes', () => {
         action: 'SHIFT_CREATED',
         actorEmail: managerEmail,
         actorName: 'Saoirse Ryan',
+        actorPrimaryRole: 'FLOOR',
+        actorRole: 'MANAGER',
         beforeState: null,
         entityId: shiftId,
         entityType: 'SHIFT',

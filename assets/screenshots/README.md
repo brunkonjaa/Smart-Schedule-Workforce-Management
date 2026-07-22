@@ -211,7 +211,7 @@ Examples:
 - `167` the Manager Rota after the Admin-only frontend changes
 - `168` desktop Employee Summary for Aoife Brennan over the Staff page
 - `169` the same Aoife Brennan Employee Summary at 390 x 844
-- `170` Employee access history showing Maeve Ryan opening Aoife Brennan's summary, without a linked employee name or implementation note in the heading
+- `170` Employee access history showing Floor Manager Fiona Hughes opening Bar Staff Aoife Brennan's Employee Summary.
 - `171` A4 Employee Summary print evidence for Aoife Brennan after the Irish-name and fake-marked demo-address correction
 - `172` safely cropped hosted Admin workspace after the first administrator account and passkey were created, without account email details
 - `173` PageSpeed Insights desktop result for the hosted login page: 95 Performance, 100 Accessibility, 96 Best Practices and 100 SEO

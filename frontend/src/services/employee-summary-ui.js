@@ -503,7 +503,10 @@ window.SmartSchedule.employeeSummaryUi = (function createEmployeeSummaryUi() {
     identity.appendChild(titleRow);
     identity.appendChild(createElement('p', {
       className: 'employee-summary-role-line',
-      text: `${formatRole(employee.department)} · ${formatRole(employee.role)}`
+      text: window.SmartSchedule.liveUiHelpers.formatAccountFunction({
+        primaryRole: employee.department,
+        role: employee.role
+      })
     }));
     const contactDetails = createElement('dl', { className: 'employee-summary-details' });
     appendDefinition(contactDetails, 'Email', employee.email, 'employee-summary-print-excluded');

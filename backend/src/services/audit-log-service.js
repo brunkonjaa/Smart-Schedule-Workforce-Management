@@ -10,6 +10,8 @@ const mapAuditLogRecord = (record) => ({
   action: record.action,
   actorEmail: record.actor_email || null,
   actorName: record.actor_name || null,
+  actorPrimaryRole: record.actor_primary_role || null,
+  actorRole: record.actor_role || null,
   afterState: record.after_state,
   beforeState: record.before_state,
   createdAt: record.created_at,
@@ -47,7 +49,9 @@ const listAuditLogs = async ({ page = 1, pageSize = 25 } = {}) => {
           audit_logs.after_state,
           audit_logs.created_at,
           users.email AS actor_email,
-          staff_profiles.full_name AS actor_name
+          users.role AS actor_role,
+          staff_profiles.full_name AS actor_name,
+          staff_profiles.primary_role AS actor_primary_role
         FROM audit_logs
         LEFT JOIN users
           ON users.id = audit_logs.actor_user_id
@@ -148,6 +152,8 @@ const mapEmployeeAccessRecord = (record) => ({
   action: record.action,
   actorEmail: record.actor_email || null,
   actorName: record.actor_name || null,
+  actorPrimaryRole: record.actor_primary_role || null,
+  actorRole: record.actor_role || null,
   createdAt: record.created_at,
   id: record.id,
   result: record.result,
@@ -169,7 +175,9 @@ const listEmployeeAccessLogs = async ({ page = 1, pageSize = 25 } = {}) => {
           audit_logs.after_state ->> 'result' AS result,
           audit_logs.after_state ->> 'source' AS source,
           users.email AS actor_email,
+          users.role AS actor_role,
           actor_profiles.full_name AS actor_name,
+          actor_profiles.primary_role AS actor_primary_role,
           target_profiles.full_name AS target_employee_name
         FROM audit_logs
         LEFT JOIN users

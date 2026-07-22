@@ -4,7 +4,7 @@ This is the manual browser plan for the separate Admin workspace. It checks the 
 
 ## QA inventory
 
-This pass uses Niamh O'Sullivan, Ciaran Murphy, Declan O'Connor, Maeve Ryan and Aoife Brennan against the guarded local PostgreSQL database. Their Gmail-format addresses keep the deliberate `fake` marker. The script does not print or save passwords, invitation values, cookies or passkey credential material. It removes the temporary rows when the run finishes.
+This pass uses Niamh O'Sullivan, Ciaran Murphy, Declan O'Connor, Fiona Hughes and Aoife Brennan against the guarded local PostgreSQL database. Fiona is the temporary Floor Manager and Aoife is the temporary Bar Staff account. The names do not reuse a hosted staff identity. Their Gmail-format addresses keep the deliberate `fake` marker. The script does not print or save passwords, invitation values, cookies or passkey credential material. It removes the temporary rows when the run finishes.
 
 | Visible claim or control | Functional check | Visual state and expected evidence |
 | --- | --- | --- |
@@ -20,7 +20,7 @@ This pass uses Niamh O'Sullivan, Ciaran Murphy, Declan O'Connor, Maeve Ryan and 
 | Manager and Staff navigation stays unchanged | sign in with generated operational accounts and record labels/order | labels match the confirmed pages and no Admin link appears |
 | Audit Log information control works | Manager opens the control by pointer and keyboard | existing tabs/table width remain unchanged around the new details block |
 | Existing Rota and Employee Summary presentation stays unchanged | inspect Rota and the protected summary at desktop/mobile and A4 print size | evidence 167-169 and 171; no Admin selector leakage |
-| Employee access uses current staff names | open Aoife Brennan's summary as Maeve Ryan, then return to Employee access | evidence 170 contains the one current access row and no implementation note in the heading |
+| Employee access uses current names and positions | open Aoife Brennan's summary as Floor Manager Fiona Hughes, then return to Employee access | evidence 170 identifies Fiona as Floor Manager and Aoife as the Bar Staff employee without reusing hosted Maeve Ryan's identity |
 
 Exploratory checks:
 
@@ -30,4 +30,4 @@ Exploratory checks:
 
 ## Result
 
-The final run on 21 July 2026 passed 27 checks. A Chromium virtual authenticator completed Niamh O'Sullivan's optional passkey registration and later passkey login, then completed Declan O'Connor's required invitation activation. The account list, re-authentication dialog, logout/back behaviour, invalidated session, direct Manager hash, Manager and Staff navigation, Audit Log disclosure, Rota, Employee Summary and Employee access history all passed. Evidence `159` to `171` records the stable states, including the replacement A4 print capture for Aoife Brennan. Each screenshot was blocked until every password input on the page was empty.
+The final run on 22 July 2026 passed 29 checks. A Chromium virtual authenticator completed Niamh O'Sullivan's optional passkey registration and later passkey login, then completed Declan O'Connor's required invitation activation. The account list, re-authentication dialog, logout/back behaviour, invalidated session, direct Manager hash, Manager and Staff navigation, Audit Log disclosure, Rota, Employee Summary and Employee access history all passed. The two added checks prove that Fiona's greeting says `Floor Manager` and Aoife's says `Bar Staff`. Evidence `159` to `171` records the stable states, including the replacement A4 print capture for Aoife Brennan. Each screenshot was blocked until every password input on the page was empty.

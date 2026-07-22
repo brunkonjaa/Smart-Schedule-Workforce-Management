@@ -83,6 +83,16 @@ window.SmartSchedule.auditLogsUi = (function createAuditLogsUi() {
     EMPLOYEE_SUMMARY_VIEWED: 'Viewed Employee Summary'
   }[action] || action);
 
+  const getActorDescription = (log) => {
+    const name = log.actorName || log.actorEmail || '—';
+    const position = helpers.formatAccountFunction({
+      primaryRole: log.actorPrimaryRole,
+      role: log.actorRole
+    });
+
+    return log.actorRole ? `${name} (${position})` : name;
+  };
+
   const renderPagination = ({ label, onNext, onPrevious, pagination }) => {
     const paginationElement = helpers.createElement('nav', {
       className: 'audit-log-pagination',
@@ -172,7 +182,7 @@ window.SmartSchedule.auditLogsUi = (function createAuditLogsUi() {
         row.appendChild(helpers.createTableCell('Change', getReadableChange(log)));
         row.appendChild(helpers.createTableCell(
           'Manager',
-          log.actorName || log.actorEmail || '—'
+          getActorDescription(log)
         ));
         const staffCell = helpers.createElement('td', {
           attributes: { 'data-label': 'Staff member' }
@@ -238,7 +248,7 @@ window.SmartSchedule.auditLogsUi = (function createAuditLogsUi() {
         row.appendChild(helpers.createTableCell('Action', getAccessAction(log.action)));
         row.appendChild(helpers.createTableCell(
           'Account',
-          log.actorName || log.actorEmail || '—'
+          getActorDescription(log)
         ));
         row.appendChild(helpers.createTableCell(
           'Employee',
@@ -288,6 +298,7 @@ window.SmartSchedule.auditLogsUi = (function createAuditLogsUi() {
         total: 0,
         totalPages: 1
       },
+      sessionUser: null,
       tab: 'rota'
     };
 
@@ -301,7 +312,13 @@ window.SmartSchedule.auditLogsUi = (function createAuditLogsUi() {
             : String(state.tab === 'rota' ? state.rotaPagination.total : state.pagination.total),
           tone: 'accent'
         },
-        { label: 'Access', value: 'Manager', tone: 'neutral' }
+        {
+          label: 'Access',
+          value: state.sessionUser
+            ? helpers.formatAccountFunction(state.sessionUser)
+            : 'Loading...',
+          tone: 'neutral'
+        }
       ]);
       const grid = helpers.createElement('div', {
         className: 'workspace-grid workspace-grid--audit-log'
@@ -393,6 +410,8 @@ window.SmartSchedule.auditLogsUi = (function createAuditLogsUi() {
       }
     };
 
+    const sessionResult = await apiClient.get('/api/v1/auth/me');
+    state.sessionUser = sessionResult.user;
     await loadRotaPage(1);
   };
 

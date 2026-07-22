@@ -470,7 +470,7 @@ window.SmartSchedule.leaveUi = (function createLeaveUi() {
         {
           label: 'Role',
           value: state.sessionUser
-            ? uiHelpers.formatRole(state.sessionUser.role === 'MANAGER' ? 'MANAGER' : state.sessionUser.primaryRole || state.sessionUser.role)
+            ? uiHelpers.formatAccountFunction(state.sessionUser)
             : 'Loading',
           tone: 'accent'
         },
