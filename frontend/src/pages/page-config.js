@@ -103,7 +103,7 @@ window.SmartSchedule.pageConfig = {
       context: 'This page shows the recorded action, actor, time, and before/after state.',
       compactIntro: true,
       metrics: [
-        { label: 'Access', value: 'Manager', tone: 'accent' },
+        { label: 'Access', value: 'Loading...', tone: 'accent' },
         { label: 'Records', value: 'Latest 100', tone: 'neutral' },
         { label: 'Scope', value: 'Shifts', tone: 'neutral' }
       ],
@@ -162,7 +162,7 @@ window.SmartSchedule.pageConfig = {
       context: 'Managers keep the team list, role, hours, and active status up to date.',
       compactIntro: true,
       metrics: [
-        { label: 'Your role', value: 'Manager', tone: 'accent' },
+        { label: 'Your position', value: 'Loading...', tone: 'accent' },
         { label: 'Active staff', value: '12', tone: 'neutral' },
         { label: 'Unassigned roles', value: '1', tone: 'neutral' }
       ],

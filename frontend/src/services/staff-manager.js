@@ -309,7 +309,7 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
     const table = createElement('table');
     const thead = createElement('thead');
     const headRow = createElement('tr');
-    ['Name', 'Email', 'Role', 'Contract hours', 'Status', 'Action'].forEach((title) => {
+    ['Name', 'Email', 'Position', 'Contract hours', 'Status', 'Action'].forEach((title) => {
       headRow.appendChild(createElement('th', { text: title }));
     });
     thead.appendChild(headRow);
@@ -335,8 +335,8 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
       row.appendChild(createElement('td', { text: record.email, attributes: { 'data-label': 'Email' } }));
       row.appendChild(
         createElement('td', {
-          text: uiHelpers.formatRole(record.primaryRole),
-          attributes: { 'data-label': 'Role' }
+          text: uiHelpers.formatAccountFunction(record),
+          attributes: { 'data-label': 'Position' }
         })
       );
       row.appendChild(createElement('td', { text: `${record.contractHours} hrs`, attributes: { 'data-label': 'Contract hours' } }));
@@ -733,7 +733,13 @@ window.SmartSchedule.staffManager = (function createStaffManager() {
       const activeStaffCount = state.records.filter((record) => record.isActive).length;
       const inactiveStaffCount = state.records.filter((record) => !record.isActive).length;
       uiHelpers.renderIntroMetrics([
-        { label: 'Your role', value: 'Manager', tone: 'accent' },
+        {
+          label: 'Your position',
+          value: state.sessionUser
+            ? uiHelpers.formatAccountFunction(state.sessionUser)
+            : 'Loading...',
+          tone: 'accent'
+        },
         {
           label: 'Active staff',
           value: state.loading ? 'Loading...' : String(activeStaffCount),

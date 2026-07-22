@@ -288,7 +288,7 @@ window.SmartSchedule.swapRequestsUi = (function createSwapRequestsUi() {
       uiHelpers.renderIntroMetrics([
         { label: 'Visibility', value: 'Team wide', tone: 'accent' },
         { label: 'Requests', value: loading ? 'Loading...' : String(requests.length), tone: 'neutral' },
-        { label: 'Role', value: sessionUser ? uiHelpers.formatRole(sessionUser.role === 'MANAGER' ? 'MANAGER' : sessionUser.primaryRole || sessionUser.role) : 'Loading', tone: 'neutral' }
+        { label: 'Role', value: sessionUser ? uiHelpers.formatAccountFunction(sessionUser) : 'Loading', tone: 'neutral' }
       ]);
 
       const grid = uiHelpers.createElement('div', { className: 'workspace-grid workspace-grid--swap-requests' });

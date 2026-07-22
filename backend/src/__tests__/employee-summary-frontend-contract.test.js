@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const vm = require('vm');
 
 const repositoryRoot = path.resolve(__dirname, '../../..');
 const readFrontendFile = (relativePath) => {
@@ -9,6 +10,7 @@ const readFrontendFile = (relativePath) => {
 describe('Employee Summary frontend contract', () => {
   const panelSource = readFrontendFile('frontend/src/services/employee-summary-ui.js');
   const appSource = readFrontendFile('frontend/src/scripts/app.js');
+  const helperSource = readFrontendFile('frontend/src/services/live-ui-helpers.js');
   const styles = readFrontendFile('frontend/src/styles/main.css');
 
   test('uses a strict route-backed employee summary hash', () => {
@@ -36,6 +38,20 @@ describe('Employee Summary frontend contract', () => {
     );
     expect(readFrontendFile('frontend/src/services/swap-requests-ui.js')).toContain(
       "sessionUser.role === 'MANAGER'"
+    );
+
+    const context = { window: { SmartSchedule: {} } };
+    vm.runInNewContext(helperSource, context);
+    const { formatAccountFunction } = context.window.SmartSchedule.liveUiHelpers;
+    expect(formatAccountFunction({ primaryRole: 'FLOOR', role: 'MANAGER' })).toBe('Floor Manager');
+    expect(formatAccountFunction({ primaryRole: 'FLOOR', role: 'STAFF' })).toBe('Floor Staff');
+    expect(formatAccountFunction({ primaryRole: 'BAR', role: 'STAFF' })).toBe('Bar Staff');
+    expect(formatAccountFunction({ primaryRole: 'KITCHEN', role: 'STAFF' })).toBe('Kitchen Staff');
+    expect(formatAccountFunction({ primaryRole: 'OTHER', role: 'STAFF' })).toBe('Kitchen Porter Staff');
+    expect(formatAccountFunction({ role: 'ADMIN' })).toBe('Administrator');
+    expect(appSource).toContain('formatAccountFunction(result.user)');
+    expect(readFrontendFile('frontend/src/services/audit-logs-ui.js')).toContain(
+      'getActorDescription(log)'
     );
   });
 

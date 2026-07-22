@@ -26,7 +26,7 @@ describe('administrator and submission-review routes', () => {
   const concurrentAdminId = crypto.randomUUID();
   const reviewerEmail = `niamhosullivan${runId}fake@gmail.com`;
   const secondReviewerEmail = `eimearmurphy${runId}fake@gmail.com`;
-  const managerEmail = `maeveryan${runId}fake@gmail.com`;
+  const managerEmail = `fionahughes${runId}fake@gmail.com`;
   const staffEmail = `aoifebrennan${runId}fake@gmail.com`;
   const invitedEmail = `declanoconnor${runId}fake@gmail.com`;
   const acceptedEmail = `orlabyrne${runId}fake@gmail.com`;
@@ -127,7 +127,7 @@ describe('administrator and submission-review routes', () => {
           id, user_id, full_name, primary_role, contract_hours,
           is_active, created_at, updated_at
         )
-        VALUES ($1, $2, 'Maeve Ryan', 'FLOOR', 40, TRUE, NOW(), NOW()),
+        VALUES ($1, $2, 'Fiona Hughes', 'FLOOR', 40, TRUE, NOW(), NOW()),
                ($3, $4, 'Aoife Brennan', 'BAR', 20, TRUE, NOW(), NOW())
       `,
       [managerProfileId, managerId, staffProfileId, staffId]

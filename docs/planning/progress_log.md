@@ -1266,7 +1266,7 @@ The demo password stayed outside committed notes and screenshots. These accounts
 11. I replaced implementation labels in visible staff, Manager and Admin records, seed data and database-backed test fixtures with proper Irish names. The email addresses still use the deliberate Gmail-format `fake` marker because these are demo accounts, not real inboxes.
 12. I added migration `026` for the four original seed addresses instead of rewriting an already-applied migration.
 13. I reset the guarded local NodyChat message history and kept the workplace room ready for a new conversation. Nothing was removed from the hosted database.
-14. I completed the local browser pass at desktop, tablet and mobile sizes. It passed 27 checks, including the reviewer exception, required passkey setup, session invalidation, Manager/Staff regression checks and Employee Summary access history.
+14. I completed the local browser pass at desktop, tablet and mobile sizes. The 22 July rerun passed 29 checks, including the reviewer exception, required passkey setup, session invalidation, Manager/Staff regression checks, visible `Floor Manager` and `Bar Staff` descriptions, and Employee Summary access history.
 
 ### Why It Changed
 

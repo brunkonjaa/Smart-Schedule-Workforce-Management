@@ -176,7 +176,8 @@
         return;
       }
 
-      userGreetingElement.textContent = `Hello ${firstName}`;
+      const accountFunction = shell.liveUiHelpers.formatAccountFunction(result.user);
+      userGreetingElement.textContent = `Hello ${firstName} · ${accountFunction}`;
       userGreetingElement.removeAttribute('hidden');
     } catch (error) {
       userGreetingElement.setAttribute('hidden', '');
